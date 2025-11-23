@@ -1,0 +1,1437 @@
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useCartStore } from "@/store/useCartStore";
+import { createOrder } from "@/services/orders";
+import { restClient } from "@/lib/restClient";
+import { validateAndSanitizeEmail, sanitizeString } from "@/lib/validation";
+import { useCSRF } from "@/hooks/useCSRF";
+import Image from "next/image";
+import {
+  FiArrowLeft as ArrowLeft,
+  FiTruck as Truck,
+  FiLock as Lock,
+  FiCheck as Check,
+  FiUser as User,
+  FiCreditCard as CreditCard,
+} from "react-icons/fi";
+import {
+  useShippingZonesStore,
+  ShippingMethod,
+  ShippingZone,
+} from "@/store/useShippingZonesStore";
+import { z } from "zod";
+
+export default function CheckoutPage() {
+  const router = useRouter();
+  const { cart } = useCartStore();
+  const { getCSRFField } = useCSRF();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [shippingInfo, setShippingInfo] = useState({
+    firstName: "",
+    firstLastName: "",
+    secondLastName: "",
+    company: "",
+    email: "",
+    phone: "",
+    address: "",
+    apartment: "",
+    city: "",
+    state: "",
+    zipCode: "",
+  });
+  const [shippingMethod, setShippingMethod] = useState<number | string>(
+    "standard"
+  );
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [orderError, setOrderError] = useState("");
+  const [orderSuccess, setOrderSuccess] = useState("");
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
+
+  type PaymentMethod = {
+    id: string;
+    title?: string;
+    method_title?: string;
+    description?: string;
+    enabled?: boolean;
+  };
+
+  interface WooCommerceZone {
+    id: number;
+    name: string;
+  }
+
+  interface WooCommerceLocation {
+    type: string;
+    code: string;
+    name?: string;
+  }
+  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [selectedPayment, setSelectedPayment] = useState<string>("bacs");
+  const [isLoadingShipping, setIsLoadingShipping] = useState(false);
+
+  const PROVINCIAS_PERU = [
+    { label: "Lima Metropolitana", value: "PE:LMA" },
+    { label: "Arequipa", value: "PE:ARE" },
+    { label: "Cusco", value: "PE:CUS" },
+    { label: "Loreto", value: "PE:LOR" },
+    { label: "Piura", value: "PE:PIU" },
+    { label: "Lambayeque", value: "PE:LAM" },
+    { label: "Áncash", value: "PE:ANC" },
+    { label: "Junín", value: "PE:JUN" },
+    { label: "La Libertad", value: "PE:LAL" },
+    { label: "Ica", value: "PE:ICA" },
+    { label: "Puno", value: "PE:PUN" },
+    { label: "Huánuco", value: "PE:HUC" },
+    { label: "Ayacucho", value: "PE:AYA" },
+    { label: "Cajamarca", value: "PE:CAJ" },
+    { label: "Amazonas", value: "PE:AMA" },
+    { label: "Tacna", value: "PE:TAC" },
+    { label: "Tumbes", value: "PE:TUM" },
+    { label: "Pasco", value: "PE:PAS" },
+    { label: "Huancavelica", value: "PE:HUV" },
+    { label: "Apurímac", value: "PE:APU" },
+    { label: "Madre de Dios", value: "PE:MDD" },
+    { label: "Moquegua", value: "PE:MOC" },
+    { label: "Ucayali", value: "PE:UCA" },
+    { label: "San Martín", value: "PE:SMN" },
+    { label: "Callao", value: "PE:CAL" },
+  ];
+  const DISTRITOS_LIMA = [
+    "Barranco",
+    "Chorrillos",
+    "La Molina",
+    "Miraflores",
+    "San Isidro",
+    "Surco",
+    "San Miguel",
+    "Cercado de Lima",
+    "La Victoria",
+    "Lince",
+    "Magdalena",
+  ];
+  const CODIGOS_POSTALES_LIMA: { [key: string]: string } = {
+    Barranco: "15063",
+    "Cercado de Lima": "15001",
+    Chorrillos: "15064",
+    "La Molina": "15024",
+    "La Planicie (alta)": "15023",
+    "La Victoria": "15013",
+    Lince: "15014",
+    Magdalena: "15076",
+    Miraflores: "15074",
+    "San Isidro": "15073",
+    "San Miguel": "15088",
+    Surco: "15039",
+  };
+
+  const shippingZonesStore = useShippingZonesStore();
+
+  // Estado para saber si las zonas ya están cargadas
+  const [shippingZonesLoaded, setShippingZonesLoaded] = useState(false);
+
+  useEffect(() => {
+    // Solo cargar zonas si el store está vacío (gracias a persistencia Zustand)
+    if (shippingZonesStore.zones.length === 0) {
+      async function preloadShippingZones() {
+        const zones = await restClient<WooCommerceZone[]>(
+          "wc/v3/shipping/zones"
+        );
+        const allZones: ShippingZone[] = [];
+        for (const zone of zones) {
+          const locations = await restClient<WooCommerceLocation[]>(
+            `wc/v3/shipping/zones/${zone.id}/locations`
+          );
+          const methods = await restClient<ShippingMethod[]>(
+            `wc/v3/shipping/zones/${zone.id}/methods`
+          );
+          allZones.push({ ...zone, locations, methods });
+        }
+        useShippingZonesStore.getState().setZones(allZones);
+        setShippingZonesLoaded(true);
+      }
+      preloadShippingZones();
+    } else {
+      setShippingZonesLoaded(true);
+    }
+  }, [shippingZonesStore.zones.length]);
+
+  useEffect(() => {
+    // Obtener métodos de envío dinámicamente
+    async function fetchShippingMethods() {
+      try {
+        const methods = await restClient("wc/v3/shipping_methods");
+        setShippingMethods(Array.isArray(methods) ? methods : []);
+      } catch {
+        setShippingMethods([]);
+      }
+    }
+    fetchShippingMethods();
+    // Obtener métodos de pago dinámicamente
+    async function fetchPaymentMethods() {
+      try {
+        const payments = await restClient("wc/v3/payment_gateways");
+        console.log("[DEBUG] Métodos de pago obtenidos:", payments);
+
+        const enabledPayments = Array.isArray(payments)
+          ? payments.filter((p) => p.enabled)
+          : [];
+        console.log("[DEBUG] Métodos de pago habilitados:", enabledPayments);
+
+        setPaymentMethods(enabledPayments);
+        if (enabledPayments.length > 0) {
+          const firstEnabled = enabledPayments[0];
+          console.log("[DEBUG] Primer método habilitado:", firstEnabled);
+          setSelectedPayment(firstEnabled.id);
+        }
+      } catch (error) {
+        console.error("[DEBUG] Error al obtener métodos de pago:", error);
+        setPaymentMethods([]);
+      }
+    }
+    fetchPaymentMethods();
+  }, []);
+
+  // Autocompletar código postal cuando cambia el distrito
+  useEffect(() => {
+    if (shippingInfo.state === "PE:LMA" && shippingInfo.city) {
+      const codigoPostal = CODIGOS_POSTALES_LIMA[shippingInfo.city] || "";
+      if (codigoPostal && shippingInfo.zipCode !== codigoPostal) {
+        setShippingInfo((prev) => ({ ...prev, zipCode: codigoPostal }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shippingInfo.state, shippingInfo.city]);
+
+  // Consultar métodos de envío solo cuando los valores estén listos y zonas cargadas
+  useEffect(() => {
+    console.log("[DEBUG] Condición de carga de métodos:", {
+      shippingZonesLoaded,
+      state: shippingInfo.state,
+      city: shippingInfo.city,
+      zipCode: shippingInfo.zipCode,
+      isLima: shippingInfo.state === "PE:LMA",
+      conditionMet:
+        shippingZonesLoaded &&
+        shippingInfo.state &&
+        ((shippingInfo.state === "PE:LMA" &&
+          shippingInfo.city &&
+          shippingInfo.zipCode) ||
+          shippingInfo.state !== "PE:LMA"),
+    });
+
+    if (
+      shippingZonesLoaded &&
+      shippingInfo.state &&
+      ((shippingInfo.state === "PE:LMA" &&
+        shippingInfo.city &&
+        shippingInfo.zipCode) ||
+        shippingInfo.state !== "PE:LMA")
+    ) {
+      setIsLoadingShipping(true);
+      // LOG de depuración
+      console.log("[DEBUG] Consultando métodos de envío para:", {
+        state: shippingInfo.state,
+        city: shippingInfo.city,
+        zipCode: shippingInfo.zipCode,
+        zonas: shippingZonesStore.zones,
+      });
+      const shippingMethods = shippingZonesStore.getMethodsForAddress(
+        shippingInfo.state,
+        shippingInfo.city,
+        shippingInfo.zipCode
+      );
+      console.log("[DEBUG] Métodos de envío encontrados:", shippingMethods);
+
+      // Si no hay métodos de envío y es una provincia que no es Lima,
+      // mantener los métodos existentes para evitar que se borren al escribir distrito o código postal
+      if (
+        shippingMethods.length === 0 &&
+        shippingInfo.state !== "PE:LMA" &&
+        (shippingInfo.city || shippingInfo.zipCode)
+      ) {
+        console.log(
+          "[DEBUG] Manteniendo métodos de envío existentes para distrito libre o código postal"
+        );
+        // No actualizar los métodos de envío, mantener los que ya estaban
+      } else {
+        setShippingMethods(shippingMethods);
+        if (shippingMethods.length > 0) {
+          setShippingMethod(shippingMethods[0].id);
+        } else {
+          setShippingMethod(0);
+        }
+      }
+      setIsLoadingShipping(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    shippingZonesLoaded,
+    shippingInfo.state,
+    shippingInfo.city,
+    shippingInfo.zipCode,
+  ]);
+
+  const handlePersonalDataSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationErrors({});
+
+    try {
+      // Validar datos personales
+      const personalData = {
+        firstName: shippingInfo.firstName,
+        firstLastName: shippingInfo.firstLastName,
+        secondLastName: shippingInfo.secondLastName,
+        email: shippingInfo.email,
+        phone: shippingInfo.phone,
+      };
+
+      // Validar con Zod (solo campos personales)
+      const validatedData = z
+        .object({
+          firstName: z
+            .string()
+            .min(1, "El nombre es requerido")
+            .min(2, "El nombre debe tener al menos 2 caracteres"),
+          firstLastName: z
+            .string()
+            .min(1, "El primer apellido es requerido")
+            .min(2, "El primer apellido debe tener al menos 2 caracteres"),
+          secondLastName: z
+            .string()
+            .min(1, "El segundo apellido es requerido")
+            .min(2, "El segundo apellido debe tener al menos 2 caracteres"),
+          email: z
+            .string()
+            .min(1, "El email es requerido")
+            .email("Formato de email inválido"),
+          phone: z.string().min(1, "El teléfono es requerido"),
+        })
+        .parse(personalData);
+
+      // Sanitizar datos y concatenar apellidos para el backend
+      const sanitizedData = {
+        firstName: sanitizeString(validatedData.firstName),
+        lastName: `${sanitizeString(
+          validatedData.firstLastName
+        )} ${sanitizeString(validatedData.secondLastName)}`.trim(),
+        email: validateAndSanitizeEmail(validatedData.email),
+        phone: validatedData.phone,
+      };
+
+      // Actualizar estado con datos sanitizados
+      setShippingInfo((prev) => ({
+        ...prev,
+        ...sanitizedData,
+      }));
+
+      setCurrentStep(2);
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "errors" in error) {
+        const errors: Record<string, string> = {};
+        (
+          error as { errors: Array<{ path: string[]; message: string }> }
+        ).errors.forEach((err) => {
+          if (err.path && err.path[0]) {
+            errors[err.path[0]] = err.message;
+          }
+        });
+        setValidationErrors(errors);
+      }
+    }
+  };
+
+  const handleShippingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationErrors({});
+
+    try {
+      // Validar dirección de envío
+      const shippingData = {
+        address: shippingInfo.address,
+        city: shippingInfo.city,
+        state: shippingInfo.state,
+        zipCode: shippingInfo.zipCode,
+      };
+
+      // Validar con Zod
+      const validatedData = z
+        .object({
+          address: z
+            .string()
+            .min(1, "La dirección es requerida")
+            .min(10, "La dirección debe tener al menos 10 caracteres"),
+          city: z.string().min(1, "La ciudad es requerida"),
+          state: z.string().min(1, "La provincia es requerida"),
+          zipCode:
+            shippingInfo.state === "PE:LMA"
+              ? z
+                  .string()
+                  .min(1, "El código postal es requerido")
+                  .regex(/^\d{5}$/, "El código postal debe tener 5 dígitos")
+              : z.string().optional(),
+        })
+        .parse(shippingData);
+
+      // Sanitizar datos
+      const sanitizedData = {
+        address: sanitizeString(validatedData.address),
+        city: sanitizeString(validatedData.city),
+        state: validatedData.state,
+        zipCode: validatedData.zipCode || "",
+      };
+
+      // Actualizar estado con datos sanitizados
+      setShippingInfo((prev) => ({
+        ...prev,
+        ...sanitizedData,
+      }));
+
+      setCurrentStep(3);
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "errors" in error) {
+        const errors: Record<string, string> = {};
+        (
+          error as { errors: Array<{ path: string[]; message: string }> }
+        ).errors.forEach((err) => {
+          if (err.path && err.path[0]) {
+            errors[err.path[0]] = err.message;
+          }
+        });
+        setValidationErrors(errors);
+      }
+    }
+  };
+
+  type MPItem = {
+    title: string;
+    quantity: number;
+    unit_price: number;
+    currency_id?: string;
+  };
+
+  async function pagarConMercadoPago({
+    items,
+    orderId,
+  }: {
+    items: MPItem[];
+    orderId: number;
+  }) {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    const res = await fetch(`${apiUrl}/wp-json/mp/v1/init-point`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items, order_id: orderId }), // <-- Enviar order_id
+    });
+    const data = await res.json();
+    if (data.init_point) {
+      window.location.href = data.init_point;
+    } else {
+      alert("Error al iniciar pago con Mercado Pago");
+      console.error(data);
+    }
+  }
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsProcessing(true);
+    setOrderError("");
+    setOrderSuccess("");
+    try {
+      // Construir payload de WooCommerce
+      const billingShipping = {
+        first_name: shippingInfo.firstName,
+        last_name:
+          `${shippingInfo.firstLastName} ${shippingInfo.secondLastName}`.trim(),
+        address_1: shippingInfo.address,
+        address_2: shippingInfo.apartment,
+        city: shippingInfo.city,
+        company: shippingInfo.company,
+        state: shippingInfo.state,
+        postcode: shippingInfo.zipCode,
+        country: "PE",
+        email: shippingInfo.email,
+        phone: shippingInfo.phone,
+        billing_distrito_pro:
+          shippingInfo.state !== "PE:LMA" ? shippingInfo.city : undefined,
+      };
+      const selectedShipping = shippingMethods.find(
+        (m) => m.id === shippingMethod
+      ) || {
+        id: shippingMethod,
+        method_title: String(shippingMethod),
+        settings: { cost: { value: "0.00" } },
+      };
+      const shippingLine = {
+        method_id: String(selectedShipping.id),
+        method_title: selectedShipping.method_title || String(shippingMethod),
+        total: selectedShipping.settings?.cost?.value || "0.00",
+      };
+      const lineItems = cart.map((item) => {
+        let variation_id: number | undefined = undefined;
+        if (
+          item.selectedAttributes &&
+          item.variations &&
+          item.variations.length > 0
+        ) {
+          const match = item.variations.find((v) => {
+            return v.attributes.every((a) => {
+              const selected = item.selectedAttributes?.[a.id];
+              return selected && selected === a.option;
+            });
+          });
+          if (match) variation_id = match.id;
+        }
+        return {
+          product_id: Number(item.id),
+          quantity: item.quantity,
+          ...(variation_id ? { variation_id } : {}),
+        };
+      });
+      const paymentMethod = paymentMethods.find(
+        (p) => p.id === selectedPayment
+      );
+      const orderPayload = {
+        payment_method: paymentMethod?.id || "bacs",
+        payment_method_title:
+          paymentMethod?.title ||
+          paymentMethod?.method_title ||
+          "Transferencia bancaria",
+        set_paid: false,
+        billing: billingShipping,
+        shipping: billingShipping,
+        line_items: lineItems,
+        shipping_lines: [shippingLine],
+        ...(paymentMethod?.id === "bacs" && { status: "on-hold" }), // Solo incluir status si es bacs
+      };
+      // Crear la orden SIEMPRE antes de Mercado Pago
+      const order = (await createOrder(orderPayload)) as {
+        id: number;
+        status: string;
+        total: string;
+        payment_method_title: string;
+        order_key: string;
+      };
+      console.log("[DEBUG] paymentMethod:", paymentMethod);
+      console.log("[DEBUG] order:", order);
+      console.log("[DEBUG] orderPayload enviado:", orderPayload);
+      console.log("[DEBUG] Respuesta completa del API:", order);
+      // Debug extra antes de redirección
+      console.log("[DEBUG] paymentMethod?.id:", paymentMethod?.id);
+      // Si el método de pago es cualquier Mercado Pago, redirigir a Mercado Pago
+      if (paymentMethod?.id?.startsWith("woo-mercado-pago")) {
+        await pagarConMercadoPago({
+          items: cart.map((item) => ({
+            title: item.name,
+            quantity: item.quantity,
+            unit_price: parseFloat(item.price),
+            currency_id: "PEN",
+          })),
+          orderId: order.id, // <-- Pasar orderId
+        });
+        return;
+      }
+      // Para otros métodos, solo redirigir a thank-you con el id de la orden
+      router.push(`/thank-you?order=${order.id}`);
+      return;
+    } catch (error) {
+      setOrderError(
+        (error as { message?: string })?.message ||
+          "No se pudo crear la orden. Intenta de nuevo."
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Calcular subtotal, envío y total dinámicamente
+  const envioSeleccionado = shippingMethods.find(
+    (m) => m.id === shippingMethod
+  );
+  const costoEnvio =
+    envioSeleccionado && envioSeleccionado.settings?.cost?.value
+      ? parseFloat(envioSeleccionado.settings.cost.value)
+      : 0;
+  const subtotal = cart.reduce(
+    (acc, item) => acc + parseFloat(item.price) * item.quantity,
+    0
+  );
+  const total = subtotal + costoEnvio;
+
+  // Skeleton para métodos de envío con shimmer
+  function ShippingMethodsSkeleton() {
+    return (
+      <div className="space-y-3">
+        <div className="h-14 rounded-xl bg-gray-200 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <div className="pt-10 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 ">
+          <div className="flex items-center gap-4 mb-8">
+            <button
+              onClick={() => router.push("/cart")}
+              className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors"
+            >
+              <ArrowLeft size={20} />
+              Volver al carrito
+            </button>
+          </div>
+          <div className="mb-8">
+            <h1 className="text-4xl md:text-4xl font-bold gradient-text mb-4">
+              Checkout seguro
+            </h1>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Lock size={16} />
+              <span>
+                Tus datos están protegidos con cifrado SSL de 256 bits
+              </span>
+            </div>
+          </div>
+          <div className="mb-8">
+            <div className="flex items-center justify-center space-x-8">
+              <div
+                className={`flex items-center gap-2 ${
+                  currentStep >= 1 ? "text-primary" : "text-gray-400"
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    currentStep >= 1 ? "bg-primary text-white" : "bg-gray-200"
+                  }`}
+                >
+                  {currentStep > 1 ? <Check size={16} /> : <User size={16} />}
+                </div>
+                <span className="font-medium">Datos personales</span>
+              </div>
+              <div
+                className={`w-16 h-0.5 ${
+                  currentStep >= 2 ? "bg-primary" : "bg-gray-200"
+                }`}
+              ></div>
+              <div
+                className={`flex items-center gap-2 ${
+                  currentStep >= 2 ? "text-primary" : "text-gray-400"
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    currentStep >= 2 ? "bg-primary text-white" : "bg-gray-200"
+                  }`}
+                >
+                  {currentStep > 2 ? <Check size={16} /> : <Truck size={16} />}
+                </div>
+                <span className="font-medium">Envío</span>
+              </div>
+              <div
+                className={`w-16 h-0.5 ${
+                  currentStep >= 3 ? "bg-primary" : "bg-gray-200"
+                }`}
+              ></div>
+              <div
+                className={`flex items-center gap-2 ${
+                  currentStep >= 3 ? "text-primary" : "text-gray-400"
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    currentStep >= 3 ? "bg-primary text-white" : "bg-gray-200"
+                  }`}
+                >
+                  {currentStep > 3 ? (
+                    <Check size={16} />
+                  ) : (
+                    <CreditCard size={16} />
+                  )}
+                </div>
+                <span className="font-medium">Pago</span>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              {currentStep === 1 && (
+                <div className="bg-white rounded-3xl p-8 shadow-lg">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    Datos personales
+                  </h2>
+                  <form
+                    onSubmit={handlePersonalDataSubmit}
+                    className="space-y-6"
+                  >
+                    {/* CSRF Token - Hidden field */}
+                    <input
+                      type="hidden"
+                      name={getCSRFField().name}
+                      value={getCSRFField().value}
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nombres *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={shippingInfo.firstName}
+                        onChange={(e) =>
+                          setShippingInfo({
+                            ...shippingInfo,
+                            firstName: e.target.value,
+                          })
+                        }
+                        className="w-full uppercase placeholder:normal-case px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        placeholder="Ingresa tus nombres"
+                      />
+                      {validationErrors.firstName && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {validationErrors.firstName}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Primer Apellido *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={shippingInfo.firstLastName}
+                          onChange={(e) =>
+                            setShippingInfo({
+                              ...shippingInfo,
+                              firstLastName: e.target.value,
+                            })
+                          }
+                          className="w-full uppercase placeholder:normal-case px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                          placeholder="Ingresa tu primer apellido"
+                        />
+                        {validationErrors.firstLastName && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {validationErrors.firstLastName}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Segundo Apellido *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={shippingInfo.secondLastName}
+                          onChange={(e) =>
+                            setShippingInfo({
+                              ...shippingInfo,
+                              secondLastName: e.target.value,
+                            })
+                          }
+                          className="w-full uppercase placeholder:normal-case px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                          placeholder="Ingresa tu segundo apellido"
+                        />
+                        {validationErrors.secondLastName && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {validationErrors.secondLastName}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        DNI, RUC, Cedula *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={shippingInfo.company}
+                        onChange={(e) =>
+                          setShippingInfo({
+                            ...shippingInfo,
+                            company: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        placeholder="Ingresa tu DNI, RUC o Cedula"
+                      />
+                      {validationErrors.company && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {validationErrors.company}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={shippingInfo.email}
+                        onChange={(e) =>
+                          setShippingInfo({
+                            ...shippingInfo,
+                            email: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        placeholder="Ingresa tu email"
+                      />
+                      {validationErrors.email && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {validationErrors.email}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Teléfono *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={shippingInfo.phone}
+                        onChange={(e) =>
+                          setShippingInfo({
+                            ...shippingInfo,
+                            phone: e.target.value,
+                          })
+                        }
+                        className="w-full uppercase px-4 placeholder:normal-case py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        placeholder="Ingresa tu teléfono"
+                      />
+                      {validationErrors.phone && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {validationErrors.phone}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      className={`w-full py-4 rounded-2xl font-semibold transition-all duration-300 ${
+                        shippingInfo.firstName &&
+                        shippingInfo.firstLastName &&
+                        shippingInfo.secondLastName &&
+                        shippingInfo.email &&
+                        shippingInfo.phone
+                          ? "bg-primary text-white hover:scale-105"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                      disabled={
+                        !shippingInfo.firstName ||
+                        !shippingInfo.firstLastName ||
+                        !shippingInfo.secondLastName ||
+                        !shippingInfo.email ||
+                        !shippingInfo.phone
+                      }
+                    >
+                      Continuar a envío
+                    </button>
+                  </form>
+                </div>
+              )}
+              {currentStep === 2 && (
+                <div className="bg-white rounded-3xl p-8 shadow-lg">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <Truck size={24} />
+                    Información de envío
+                  </h2>
+                  <form onSubmit={handleShippingSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dirección *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={shippingInfo.address}
+                        onChange={(e) =>
+                          setShippingInfo({
+                            ...shippingInfo,
+                            address: e.target.value,
+                          })
+                        }
+                        className="w-full uppercase placeholder:normal-case px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        placeholder="Ingresa tu dirección"
+                      />
+                      {validationErrors.address && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {validationErrors.address}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Departamento, piso, etc. (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={shippingInfo.apartment}
+                        onChange={(e) =>
+                          setShippingInfo({
+                            ...shippingInfo,
+                            apartment: e.target.value,
+                          })
+                        }
+                        className="w-full uppercase placeholder:normal-case px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        placeholder="Ingresa tu dirección"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          País *
+                        </label>
+                        <input
+                          type="text"
+                          value="Perú"
+                          disabled
+                          className="w-full px-4 py-3 border border-gray-300 rounded-2xl bg-gray-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Provincia *
+                        </label>
+                        <select
+                          required
+                          value={shippingInfo.state}
+                          onChange={(e) => {
+                            const newState = e.target.value;
+                            setShippingInfo((prev) => ({
+                              ...prev,
+                              state: newState,
+                              city: "", // Limpiar distrito al cambiar provincia
+                              zipCode: "",
+                            }));
+                            setShippingMethod(0); // Resetear método de envío al cambiar provincia
+                          }}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        >
+                          <option value="">Selecciona una provincia</option>
+                          {PROVINCIAS_PERU.map((prov) => (
+                            <option key={prov.value} value={prov.value}>
+                              {prov.label}
+                            </option>
+                          ))}
+                        </select>
+                        {validationErrors.state && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {validationErrors.state}
+                          </p>
+                        )}
+                      </div>
+                      {shippingInfo.state === "PE:LMA" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Distrito *
+                          </label>
+                          <select
+                            required
+                            value={shippingInfo.city}
+                            onChange={(e) => {
+                              const distrito = e.target.value;
+                              const codigoPostal =
+                                CODIGOS_POSTALES_LIMA[distrito] || "";
+                              setShippingInfo({
+                                ...shippingInfo,
+                                city: distrito,
+                                zipCode: codigoPostal,
+                              });
+                              setShippingMethod(0); // Resetear método de envío al cambiar distrito
+                            }}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                          >
+                            <option value="">Selecciona un distrito</option>
+                            {DISTRITOS_LIMA.map((distrito) => (
+                              <option key={distrito} value={distrito}>
+                                {distrito}
+                              </option>
+                            ))}
+                          </select>
+                          {validationErrors.city && (
+                            <p className="text-red-500 text-xs mt-1">
+                              {validationErrors.city}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {shippingInfo.state &&
+                        shippingInfo.state !== "PE:LMA" && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Distrito *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={shippingInfo.city}
+                              onChange={(e) =>
+                                setShippingInfo({
+                                  ...shippingInfo,
+                                  city: e.target.value,
+                                })
+                              }
+                              className="w-full  px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                              placeholder="Ingresa tu distrito"
+                            />
+                            {validationErrors.city && (
+                              <p className="text-red-500 text-xs mt-1">
+                                {validationErrors.city}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Código postal (opcional){" "}
+                          {shippingInfo.state === "PE:LMA" ? "*" : ""}
+                        </label>
+                        <input
+                          type="text"
+                          required={shippingInfo.state === "PE:LMA"}
+                          value={shippingInfo.zipCode}
+                          onChange={(e) =>
+                            setShippingInfo({
+                              ...shippingInfo,
+                              zipCode: e.target.value,
+                            })
+                          }
+                          readOnly={shippingInfo.state === "PE:LMA"}
+                          className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all ${
+                            shippingInfo.state === "PE:LMA"
+                              ? "bg-gray-100 cursor-not-allowed"
+                              : ""
+                          }`}
+                          placeholder="Ingresa tu código postal"
+                        />
+                        {validationErrors.zipCode && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {validationErrors.zipCode}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {/* UI de métodos de envío mejorada */}
+                    <div className="mt-8">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Método de envío
+                      </h3>
+                      {shippingInfo.state &&
+                      (shippingInfo.state !== "PE:LMA" ||
+                        (shippingInfo.state === "PE:LMA" &&
+                          shippingInfo.city)) ? (
+                        !shippingZonesLoaded || isLoadingShipping ? (
+                          <ShippingMethodsSkeleton />
+                        ) : shippingMethods.length === 0 ? (
+                          <div className="text-gray-500">
+                            No hay métodos de envío disponibles.
+                          </div>
+                        ) : !shippingMethods.some(
+                            (m) => m.id === shippingMethod
+                          ) ? (
+                          <div className="text-gray-500">
+                            Selecciona un método de envío para continuar.
+                          </div>
+                        ) : (
+                          shippingMethods.map((method) => {
+                            const isOnlyOne = shippingMethods.length === 1;
+                            const isSelected = shippingMethod === method.id;
+                            return (
+                              <label
+                                key={method.id}
+                                className={`flex items-center p-4 border-2 rounded-2xl mb-3 cursor-pointer transition-colors
+                                  ${
+                                    isOnlyOne
+                                      ? "border-primary ring-2 ring-primary/40"
+                                      : isSelected
+                                      ? "border-primary ring-2 ring-primary/40 bg-[#f6fffc]"
+                                      : "border-gray-200 hover:border-primary"
+                                  }
+                                `}
+                              >
+                                {!isOnlyOne && (
+                                  <input
+                                    type="radio"
+                                    name="shipping"
+                                    value={method.id}
+                                    checked={isSelected}
+                                    onChange={(e) =>
+                                      setShippingMethod(Number(e.target.value))
+                                    }
+                                    className="text-primary focus:ring-primary "
+                                  />
+                                )}
+                                <div
+                                  className={`flex-1 ml-3  ${
+                                    isOnlyOne ? "" : ""
+                                  }`}
+                                >
+                                  <div className="flex justify-between">
+                                    <span className="font-medium">
+                                      {method.title || method.method_title}
+                                    </span>
+                                    <span className="font-bold text-primary">
+                                      {method.settings?.cost?.value !==
+                                      undefined
+                                        ? method.settings.cost.value === "0.00"
+                                          ? "Gratis"
+                                          : `S/. ${method.settings.cost.value}`
+                                        : "-"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </label>
+                            );
+                          })
+                        )
+                      ) : (
+                        <div className="text-gray-500">
+                          Selecciona provincia y distrito para ver métodos de
+                          envío...
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(1)}
+                        className="flex-1 py-3 border-2 border-gray-200 text-gray-700 rounded-2xl font-semibold hover:border-primary hover:text-primary transition-colors"
+                      >
+                        Volver a datos personales
+                      </button>
+                      <button
+                        type="submit"
+                        className={`flex-1 py-4 rounded-2xl font-semibold transition-all duration-300 ${
+                          shippingInfo.address &&
+                          shippingInfo.state &&
+                          ((shippingInfo.state === "PE:LMA" &&
+                            shippingInfo.city &&
+                            shippingInfo.zipCode) ||
+                            (shippingInfo.state !== "PE:LMA" &&
+                              shippingInfo.city)) &&
+                          shippingMethod &&
+                          shippingMethods.some((m) => m.id === shippingMethod)
+                            ? "bg-primary text-white hover:scale-105"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        }`}
+                        disabled={
+                          !shippingInfo.address ||
+                          !shippingInfo.state ||
+                          (shippingInfo.state === "PE:LMA" &&
+                            (!shippingInfo.city || !shippingInfo.zipCode)) ||
+                          (shippingInfo.state !== "PE:LMA" &&
+                            !shippingInfo.city) ||
+                          !shippingMethod ||
+                          !shippingMethods.some((m) => m.id === shippingMethod)
+                        }
+                      >
+                        Continuar a pago
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+              {currentStep === 3 && (
+                <div className="bg-white rounded-3xl p-8 shadow-lg">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    Selecciona método de pago
+                  </h2>
+                  <form onSubmit={handlePaymentSubmit} className="space-y-6">
+                    <div className="space-y-3">
+                      {paymentMethods.length > 0 ? (
+                        paymentMethods.map((method) => {
+                          // Debug log para ver qué métodos llegan
+                          const isMercadoPago =
+                            method.id.includes("mercadopago") ||
+                            method.id.includes("mp") ||
+                            method.title
+                              ?.toLowerCase()
+                              .includes("mercado pago") ||
+                            method.method_title
+                              ?.toLowerCase()
+                              .includes("mercado pago");
+
+                          console.log("Método de pago:", {
+                            id: method.id,
+                            title: method.title,
+                            method_title: method.method_title,
+                            description: method.description,
+                            isMercadoPago: isMercadoPago,
+                          });
+
+                          return (
+                            <label
+                              key={method.id}
+                              className="flex items-center p-4 border-2 border-gray-200 rounded-2xl cursor-pointer hover:border-primary transition-colors"
+                            >
+                              <input
+                                type="radio"
+                                name="payment"
+                                value={method.id}
+                                checked={selectedPayment === method.id}
+                                onChange={() => setSelectedPayment(method.id)}
+                                className="text-primary focus:ring-primary"
+                              />
+                              <div className="ml-3 flex-1">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center gap-3">
+                                    {/* Logo de Mercado Pago */}
+                                    {isMercadoPago && (
+                                      <div className="w-12 h-8 relative">
+                                        <Image
+                                          src="/mercado-pago.svg"
+                                          alt="Mercado Pago"
+                                          fill
+                                          className="object-contain"
+                                        />
+                                      </div>
+                                    )}
+                                    <span className="font-medium">
+                                      {method.title || method.method_title}
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {method.description}
+                                </p>
+
+                                {/* Métodos de pago de Mercado Pago */}
+                                {isMercadoPago && (
+                                  <div className="mt-3 pt-3 border-t border-gray-100">
+                                    <p className="text-xs text-gray-500 mb-2">
+                                      Métodos de pago disponibles:
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {/* Yape */}
+                                      <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg">
+                                        <div className="w-4 h-4 relative">
+                                          <Image
+                                            src="/logo-yape.svg"
+                                            alt="Yape"
+                                            fill
+                                            className="object-contain"
+                                          />
+                                        </div>
+                                        <span className="text-xs text-green-700 font-medium">
+                                          Yape
+                                        </span>
+                                      </div>
+
+                                      {/* PagoEfectivo */}
+                                      <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg">
+                                        <div className="w-4 h-4 relative">
+                                          <Image
+                                            src="/pago-efectivo.svg"
+                                            alt="PagoEfectivo"
+                                            fill
+                                            className="object-contain"
+                                          />
+                                        </div>
+                                        <span className="text-xs text-blue-700 font-medium">
+                                          PagoEfectivo
+                                        </span>
+                                      </div>
+
+                                      {/* Tarjetas */}
+                                      <div className="flex items-center gap-1 bg-purple-50 px-2 py-1 rounded-lg">
+                                        <div className="w-4 h-4 bg-purple-100 rounded flex items-center justify-center">
+                                          <span className="text-xs text-purple-700 font-bold">
+                                            💳
+                                          </span>
+                                        </div>
+                                        <span className="text-xs text-purple-700 font-medium">
+                                          Tarjetas
+                                        </span>
+                                      </div>
+
+                                      {/* Transferencia */}
+                                      <div className="flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg">
+                                        <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
+                                          <span className="text-xs text-orange-700 font-bold">
+                                            🏦
+                                          </span>
+                                        </div>
+                                        <span className="text-xs text-orange-700 font-medium">
+                                          Transferencia
+                                        </span>
+                                      </div>
+
+                                      {/* Billeteras */}
+                                      <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg">
+                                        <div className="w-4 h-4 bg-yellow-100 rounded flex items-center justify-center">
+                                          <span className="text-xs text-yellow-700 font-bold">
+                                            📱
+                                          </span>
+                                        </div>
+                                        <span className="text-xs text-yellow-700 font-medium">
+                                          Billeteras
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })
+                      ) : (
+                        <div className="text-gray-500">
+                          Cargando métodos de pago...
+                        </div>
+                      )}
+                    </div>
+                    {/* Si el método seleccionado es tarjeta, aquí irían los campos de tarjeta. Por ahora solo transferencia bancaria, así que no mostramos nada extra */}
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(2)}
+                        className="flex-1 py-3 border-2 border-gray-200 text-gray-700 rounded-2xl font-semibold hover:border-primary hover:text-primary transition-colors"
+                      >
+                        Volver a envío
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isProcessing}
+                        className="flex-1 py-4 bg-primary text-white rounded-2xl font-semibold hover:scale-105 transition-transform duration-300 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
+                      >
+                        {isProcessing ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            Procesando...
+                          </>
+                        ) : (
+                          <>Finalizar pedido</>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                  {orderError && (
+                    <div className="text-red-600 text-sm mb-4">
+                      {orderError}
+                    </div>
+                  )}
+                  {orderSuccess && (
+                    <div className="text-green-600 text-sm mb-4">
+                      {orderSuccess}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-3xl p-6 shadow-lg sticky top-24">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">
+                  Resumen del pedido
+                </h2>
+                <div className="space-y-4 mb-6">
+                  {cart.map((item) => (
+                    <div
+                      key={
+                        item.slug +
+                        JSON.stringify(item.selectedAttributes || {})
+                      }
+                      className="flex items-center gap-4 mb-4"
+                    >
+                      <div className="w-16 h-16 flex-shrink-0">
+                        <img
+                          src={
+                            typeof item.image === "string"
+                              ? item.image
+                              : item.image?.sourceUrl || "/logo-belm-v2.png"
+                          }
+                          alt={item.name}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 text-base">
+                          {item.name}
+                        </h3>
+                        {/* Mostrar atributos seleccionados */}
+                        {item.selectedAttributes &&
+                          Object.keys(item.selectedAttributes).length > 0 && (
+                            <div className="text-xs text-gray-600 mt-1 flex flex-wrap gap-2">
+                              {Object.entries(item.selectedAttributes).map(
+                                ([attrId, value]) => (
+                                  <span
+                                    key={attrId}
+                                    className="bg-gray-100 rounded px-2 py-0.5"
+                                  >
+                                    {(() => {
+                                      const attr = item.attributes?.find(
+                                        (a) => String(a.id) === String(attrId)
+                                      );
+                                      return attr
+                                        ? `${attr.name}: ${value}`
+                                        : value;
+                                    })()}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          )}
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-primary">
+                          S/. {parseFloat(item.price) * item.quantity}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          S/. {item.price} c/u
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-4 mb-6 border-t pt-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-medium">
+                      S/. {subtotal.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Envío</span>
+                    <span className="font-medium">
+                      {envioSeleccionado
+                        ? costoEnvio === 0
+                          ? "Gratis"
+                          : `S/. ${costoEnvio.toFixed(2)}`
+                        : "-"}
+                    </span>
+                  </div>
+                  <div className="border-t pt-3">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span className="gradient-text">
+                        S/. {total.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Lock size={12} />
+                    <span>Pago seguro con cifrado SSL de 256 bits</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check size={12} />
+                    <span>Tus datos de pago están protegidos</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

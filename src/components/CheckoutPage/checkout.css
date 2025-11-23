@@ -1,0 +1,177 @@
+/* Estilos básicos para el modal de Izipay */
+
+/* Estilos para el modal */
+.izipay-modal {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Estilos para el contenedor del formulario */
+#izipay-embedded-form {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Estilos para el loading spinner */
+.izipay-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 2px dashed #cbd5e1;
+}
+
+.izipay-loading .spinner {
+  border: 3px solid #e2e8f0;
+  border-top: 3px solid #e64442;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Estilos para mensajes de estado */
+.izipay-status {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.izipay-status.success {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+/* Botón de pago */
+.kr-embedded .kr-payment-button,
+.kr-embedded button[type="submit"],
+.kr-embedded input[type="submit"] {
+  text-align: center !important;
+  background-color: #e64442 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+.kr-embedded .kr-payment-button:hover {
+  background-color: #d13533 !important;
+}
+
+.izipay-status.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.izipay-status.info {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+/* Estilos adicionales para mejorar la apariencia del modal */
+.izipay-modal .bg-\[\#E64442\] {
+  background: linear-gradient(135deg, #e64442 0%, #d63384 100%);
+  box-shadow: 0 4px 6px -1px rgba(230, 68, 66, 0.3);
+}
+
+.izipay-modal .bg-\[\#f75956\] {
+  background: linear-gradient(135deg, #f75956 0%, #e64442 100%);
+  transition: all 0.2s ease;
+}
+
+.izipay-modal .bg-\[\#f75956\]:hover {
+  background: linear-gradient(135deg, #e64442 0%, #d63384 100%);
+  transform: scale(1.05);
+}
+
+/* Estilos para el contenido del modal */
+
+/* Estilos para los bordes y sombras */
+.izipay-modal .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Estilos para el backdrop */
+.izipay-modal + .fixed {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Estilos para el scroll del modal */
+.izipay-modal .overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.izipay-modal .overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.izipay-modal .overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.izipay-modal .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.izipay-modal .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Estilos para el botón de cerrar */
+.izipay-modal button[onClick*="confirmar"] {
+  transition: all 0.2s ease;
+}
+
+.izipay-modal button[onClick*="confirmar"]:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1);
+}
+
+/* Estilos para el mensaje de seguridad */
+.izipay-modal .bg-blue-50 {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+}
+
+/* Estilos para el footer del modal */
+.izipay-modal .bg-orange-50 {
+  background: linear-gradient(135deg, #fffbeb 0%, #fed7aa 100%);
+  border: 1px solid #fdba74;
+}
+
+.kr-embedded {
+  width: 100% !important;
+}

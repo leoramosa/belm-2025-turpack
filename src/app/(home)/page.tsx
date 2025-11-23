@@ -1,0 +1,132 @@
+import HomePage from "@/components/HomePage/HomePage";
+import {
+  HeroBannerService,
+  HeroBannerSlide,
+} from "@/services/admin/heroBannerService";
+import {
+  FeaturedCategoriesService,
+  FeaturedCategorySlide,
+} from "@/services/admin/featuredCategoriesService";
+import {
+  fetchProducts,
+  fetchBestSellerProducts,
+  fetchNewProducts,
+  fetchSaleProducts,
+} from "@/services/products";
+import { IProduct, ProductVariation } from "@/types/product";
+import { DynamicShowcase } from "@/interface/IDynamicShowcase";
+import { loadDynamicProductShowcases } from "@/lib/dynamicShowcases";
+import type { Metadata } from "next";
+
+// Metadata específica para la página Home
+export const metadata: Metadata = {
+  title: "Inicio",
+  description:
+    "En BELM, creemos que la belleza es más que un simple producto, es un acto de amor propio y una forma de brillar con autenticidad. Nos especializamos en la cosmética coreana y marcas globales reconocidas, ofreciéndote una selección cuidadosamente de productos de skincare, maquillaje y accesorios para que descubras tu mejor versión.",
+  keywords: [
+    "inicio",
+    "productos premium",
+    "tienda online",
+    "envío gratis",
+    "Perú",
+    "calidad",
+  ],
+  openGraph: {
+    title: "BELM: Skincare | Maquillaje | Accesorios",
+    description:
+      "En BELM, creemos que la belleza es más que un simple producto, es un acto de amor propio y una forma de brillar con autenticidad. Nos especializamos en la cosmética coreana y marcas globales reconocidas, ofreciéndote una selección cuidadosamente de productos de skincare, maquillaje y accesorios para que descubras tu mejor versión.",
+    url: "https://belm.pe",
+    images: [
+      {
+        url: "/og-home.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Belm - Página de Inicio",
+      },
+    ],
+  },
+  twitter: {
+    title: "BELM: Skincare | Maquillaje | Accesorios",
+    description: "Bienvenido a Belm, tu tienda online de productos premium.",
+    images: ["/og-home.jpg"],
+  },
+  alternates: {
+    canonical: "https://belm.pe",
+  },
+};
+
+// Revalidar la página cada 10 minutos para mejor performance
+export const revalidate = 600;
+
+export default async function Home() {
+  // Cargar TODOS los datos en el servidor para máxima performance
+  let bannerData: HeroBannerSlide[] | null = null;
+  let featuredCategoriesData: FeaturedCategorySlide[] | null = null;
+  let newProducts: IProduct[] = [];
+  let bestSellerProducts: IProduct[] = [];
+  let saleProducts: IProduct[] = [];
+  let showcaseProducts: IProduct[] = [];
+  let dynamicShowcases: DynamicShowcase[] = [];
+
+  try {
+    // Cargar datos en paralelo
+    const [banners, featuredCategories, dynamicShowcasesData] =
+      await Promise.allSettled([
+        HeroBannerService.getEnabledBanners(),
+        FeaturedCategoriesService.getEnabledFeaturedCategories(),
+        // Cargar dynamic showcases
+        loadDynamicProductShowcases(),
+      ]);
+
+    // Variable para showcase (se usará más abajo)
+    let allProductsData: PromiseSettledResult<IProduct[]> | null = null;
+
+    // Procesar resultados básicos
+    bannerData = banners.status === "fulfilled" ? banners.value : null;
+    featuredCategoriesData =
+      featuredCategories.status === "fulfilled"
+        ? featuredCategories.value
+        : null;
+    dynamicShowcases =
+      dynamicShowcasesData.status === "fulfilled"
+        ? dynamicShowcasesData.value
+        : [];
+
+    // Procesar productos usando las funciones auxiliares del servicio
+    try {
+      [newProducts, bestSellerProducts, saleProducts] = await Promise.all([
+        fetchNewProducts(9, false),
+        fetchBestSellerProducts(9, false),
+        fetchSaleProducts(9, false),
+      ]);
+
+      // Productos para showcase: obtener algunos productos para showcase
+      const showcaseData = await fetchProducts({
+        perPage: 6,
+        includeOutOfStock: false,
+        fetchAll: false,
+      });
+      showcaseProducts = showcaseData;
+    } catch {
+      // Si falla, continuar con datos vacíos
+      newProducts = [];
+      bestSellerProducts = [];
+      saleProducts = [];
+      showcaseProducts = [];
+    }
+  } catch {
+    // Continuar con datos vacíos, los componentes manejarán el fallback
+  }
+
+  return (
+    <HomePage
+      initialBannerData={bannerData || undefined}
+      initialFeaturedCategoriesData={featuredCategoriesData || undefined}
+      initialNewProducts={newProducts}
+      initialBestSellerProducts={bestSellerProducts}
+      initialSaleProducts={saleProducts}
+      initialShowcaseProducts={showcaseProducts}
+      initialDynamicShowcases={dynamicShowcases}
+    />
+  );
+}
