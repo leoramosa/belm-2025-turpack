@@ -10,7 +10,7 @@ interface CategoryMenuProps {
   categories: IProductCategoryNode[];
 }
 
-export function CategoryMenu({ categories }: CategoryMenuProps) {
+export function Category({ categories }: CategoryMenuProps) {
   const setCategories = useCategoryStore((state) => state.setCategories);
   const storedCategories = useSelectCategories();
   const [activeId, setActiveId] = useState<number | null>(null);

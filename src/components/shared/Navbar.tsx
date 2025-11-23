@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo, useRef } from "react";
 import WishlistCount from "./WishlistCount";
 import MegaMenuServer from "./MegaMenu/MegaMenuServer";
-import { useSelectCategories } from "@/store/categoryStore";
+import { useSelectCategories, useCategoryStore } from "@/store/categoryStore";
 // import { useAuth } from "@/hooks/useAuth"; // Ocultado temporalmente para uso futuro
 import "./Navbar/navbar.css";
 
@@ -42,8 +42,22 @@ export default function Navbar({ categories: propCategories }: NavbarProps) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Obtener setCategories del store
+  const setCategoriesInStore = useCategoryStore((state) => state.setCategories);
+
   // Usar store de categorías si está disponible, sino usar props
   const storeCategories = useSelectCategories();
+
+  // Guardar categorías en el store cuando se reciben como props
+  useEffect(() => {
+    if (
+      propCategories &&
+      propCategories.length > 0 &&
+      storeCategories.length === 0
+    ) {
+      setCategoriesInStore(propCategories);
+    }
+  }, [propCategories, storeCategories.length, setCategoriesInStore]);
 
   const categories = useMemo(() => {
     // Si hay categorías en el store, usarlas; sino usar props

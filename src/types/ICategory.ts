@@ -11,6 +11,7 @@ export interface IProductCategoryNode {
   description: string;
   parentId: number | null;
   count: number;
+  menuOrder?: number;
   image?: {
     id: number;
     src: string;

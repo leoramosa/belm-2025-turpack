@@ -38,10 +38,6 @@ export async function ProductGrid({
         <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400">
           No pudimos cargar los productos
         </h2>
-        <p className="max-w-xl text-balance text-sm text-zinc-600 dark:text-zinc-400">
-          Verifica que tu API de WordPress esté accesible y que la variable
-          `NEXT_PUBLIC_WORDPRESS_API_URL` esté configurada correctamente.
-        </p>
       </section>
     );
   }

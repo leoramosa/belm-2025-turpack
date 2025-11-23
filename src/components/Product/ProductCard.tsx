@@ -80,11 +80,24 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
       return null;
     }
 
-    for (const productCategory of product.categories) {
-      const root = findRootCategory(productCategory.slug, allCategories);
-      if (root) {
-        return root;
+    // Si el store tiene categorías, buscar la categoría padre
+    if (allCategories && allCategories.length > 0) {
+      for (const productCategory of product.categories) {
+        const root = findRootCategory(productCategory.slug, allCategories);
+        if (root) {
+          return root;
+        }
       }
+    }
+
+    // Si el store no tiene categorías o no encontró la raíz, usar la primera categoría del producto
+    // Esto asegura que siempre se muestre un badge si el producto tiene categorías
+    if (product.categories.length > 0) {
+      return {
+        id: product.categories[0].id,
+        name: product.categories[0].name,
+        slug: product.categories[0].slug,
+      };
     }
 
     return null;

@@ -355,9 +355,6 @@ export function ProductGridClient({ title, products }: ProductGridClientProps) {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8 lg:py-12">
       <header className="mb-8 flex flex-col gap-2 text-left">
-        <span className="text-sm font-medium uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-          Catálogo
-        </span>
         <h2 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
           {title}
         </h2>

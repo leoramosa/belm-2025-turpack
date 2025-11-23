@@ -29,32 +29,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const filteredProducts = filterProductsByCategory(products, category);
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-zinc-50 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-900">
-      <section className="border-b border-zinc-200 ">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-12">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
-              Categoría
-            </p>
-            <h1 className="text-4xl font-bold text-zinc-900 dark:text-zinc-100">
-              {category.name}
-            </h1>
-            {category.description ? (
-              <div
-                className="max-w-3xl text-sm text-zinc-600 dark:text-zinc-400"
-                dangerouslySetInnerHTML={{ __html: category.description }}
-              />
-            ) : null}
-          </div>
-          <div className="flex flex-wrap gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-            <span>Productos disponibles: {filteredProducts.length}</span>
-            {category.count ? (
-              <span>Publicado en tienda: {category.count}</span>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
+    <div className="min-h-screen ">
       {/* Mostrar subcategorías si existen */}
       {category.children && category.children.length > 0 && (
         <CategorySubcategories

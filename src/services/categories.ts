@@ -1,7 +1,7 @@
 import "server-only";
 
 import {
-  ProductCategoryNode,
+  IProductCategoryNode,
   WordpressCategoryResponse,
 } from "@/types/ICategory";
 import {
@@ -18,13 +18,13 @@ const WORDPRESS_WC_CONSUMER_SECRET = getWordpressConsumerSecret();
 const CATEGORY_PAGE_SIZE = 100;
 const CATEGORY_NAMESPACE = "/wp-json/wc/v3/products/categories";
 
-interface CategoryNodeAccumulator extends ProductCategoryNode {
+interface CategoryNodeAccumulator extends IProductCategoryNode {
   menuOrder: number;
   children: CategoryNodeAccumulator[];
 }
 
 export async function fetchProductCategoriesTree(): Promise<
-  ProductCategoryNode[]
+  IProductCategoryNode[]
 > {
   const categories = await fetchAllCategories();
   if (!categories.length) return [];
@@ -56,6 +56,7 @@ export async function fetchProductCategoriesTree(): Promise<
     }
   }
 
+  // Ordenar por ID (orden de creación) en lugar de menuOrder
   sortCategoryTree(roots);
   return roots.map(compactCategoryNode);
 }
@@ -123,7 +124,7 @@ function buildCategoryEndpoint(page: number): string {
 
 function compactCategoryNode(
   node: CategoryNodeAccumulator
-): ProductCategoryNode {
+): IProductCategoryNode {
   return {
     id: node.id,
     name: node.name,
@@ -131,17 +132,16 @@ function compactCategoryNode(
     description: node.description,
     parentId: node.parentId,
     count: node.count,
+    menuOrder: node.menuOrder,
     image: node.image ?? null,
     children: node.children.map(compactCategoryNode),
   };
 }
 
 function sortCategoryTree(nodes: CategoryNodeAccumulator[]) {
+  // Ordenar por ID (orden de creación) - el ID más bajo fue creado primero
   nodes.sort((a, b) => {
-    if (a.menuOrder !== b.menuOrder) {
-      return a.menuOrder - b.menuOrder;
-    }
-    return a.name.localeCompare(b.name, "es");
+    return a.id - b.id;
   });
 
   nodes.forEach((node) => sortCategoryTree(node.children));

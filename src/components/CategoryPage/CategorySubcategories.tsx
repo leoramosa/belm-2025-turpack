@@ -32,8 +32,14 @@ export default function CategorySubcategories({
     return null;
   }
 
-  // Determinar qué categorías mostrar
-  const categoriesToShow = selectedCategory?.children || subcategories;
+  // Determinar qué categorías mostrar y ordenarlas por ID (orden de creación)
+  const categoriesToShowRaw = selectedCategory?.children || subcategories;
+
+  // Ordenar categorías por ID (orden de creación) - el ID más bajo fue creado primero
+  const categoriesToShow = [...categoriesToShowRaw].sort((a, b) => {
+    return a.id - b.id;
+  });
+
   const currentTitle = selectedCategory
     ? selectedCategory.name
     : parentCategoryName || "Subcategorías";
@@ -103,7 +109,7 @@ export default function CategorySubcategories({
   };
 
   return (
-    <section className="py-12 bg-white">
+    <section className="max-w-7xl mx-auto px-4 py-10">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Título centrado */}
         <div className="text-center mb-8">
