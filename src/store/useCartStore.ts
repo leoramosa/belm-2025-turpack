@@ -1,11 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { IProduct } from "@/interface/IProduct";
+import { IProduct } from "@/types/product";
 import { Coupon, CouponDiscount } from "@/services/coupons";
 
 export interface CartItem extends IProduct {
   quantity: number;
   selectedAttributes?: { [key: number]: string };
+  price: string; // Precio calculado al agregar al carrito para compatibilidad
+  image?: { sourceUrl?: string } | string; // Para compatibilidad con diferentes formatos de imagen
 }
 
 interface CartState {
@@ -60,10 +62,24 @@ export const useCartStore = create<CartState>()(
             ),
           });
         } else {
+          // Calcular el precio a partir de pricing
+          const price = product.pricing?.price?.toString() || "0";
+          // Agregar compatibilidad con imagen
+          const image =
+            product.images && product.images.length > 0
+              ? product.images[0]
+              : undefined;
+
           set({
             cart: [
               ...get().cart,
-              { ...product, quantity: 1, selectedAttributes },
+              {
+                ...product,
+                quantity: 1,
+                selectedAttributes,
+                price,
+                image: image ? { sourceUrl: image.src } : undefined,
+              },
             ],
           });
         }
@@ -146,7 +162,10 @@ export const useCartStore = create<CartState>()(
       getSubtotal: () => {
         const cart = get().cart;
         return cart.reduce((total, item) => {
-          const price = parseFloat(item.price) || 0;
+          // Usar price si existe, sino usar pricing.price
+          const price = item.price
+            ? parseFloat(item.price)
+            : item.pricing?.price || 0;
           return total + price * item.quantity;
         }, 0);
       },

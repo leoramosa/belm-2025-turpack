@@ -109,19 +109,60 @@ export default function RecentlyViewedProducts({
                   </h3>
                 </Link>
 
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-primary text-sm">
-                    S/ {(product.pricing.price ?? 0).toFixed(2)}
-                  </span>
-                  {product.pricing.regularPrice &&
-                    product.pricing.salePrice &&
-                    product.pricing.regularPrice >
-                      product.pricing.salePrice && (
-                      <span className="text-xs text-gray-500 line-through">
-                        S/ {product.pricing.regularPrice.toFixed(2)}
-                      </span>
-                    )}
-                </div>
+                {(() => {
+                  // Determinar precio a mostrar (similar a ProductCard)
+                  const isVariableProduct =
+                    product.variations && product.variations.length > 0;
+                  const firstVariation =
+                    isVariableProduct && product.variations?.[0]
+                      ? product.variations[0]
+                      : null;
+
+                  let displayPrice: number | null = null;
+                  let displayRegularPrice: number | null = null;
+
+                  if (isVariableProduct && firstVariation) {
+                    // Producto variable: usar precio de la primera variación
+                    if (
+                      firstVariation.salePrice !== null &&
+                      firstVariation.regularPrice !== null
+                    ) {
+                      displayPrice = firstVariation.salePrice;
+                      displayRegularPrice = firstVariation.regularPrice;
+                    } else if (firstVariation.price !== null) {
+                      displayPrice = firstVariation.price;
+                      displayRegularPrice = firstVariation.regularPrice;
+                    }
+                  } else if (product.pricing) {
+                    // Producto simple: usar pricing del producto
+                    displayPrice = product.pricing.price;
+                    displayRegularPrice = product.pricing.regularPrice;
+                  }
+
+                  const hasDiscount =
+                    displayRegularPrice !== null &&
+                    displayPrice !== null &&
+                    displayRegularPrice > displayPrice;
+
+                  return (
+                    <div className="flex items-center justify-between mb-3">
+                      {displayPrice !== null ? (
+                        <span className="font-bold text-primary text-sm">
+                          S/ {displayPrice.toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="font-bold text-primary text-xs">
+                          Precio no disponible
+                        </span>
+                      )}
+                      {hasDiscount && displayRegularPrice !== null && (
+                        <span className="text-xs text-gray-500 line-through">
+                          S/ {displayRegularPrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Add to Cart Button */}
                 <button

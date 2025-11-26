@@ -29,10 +29,12 @@ export default function CartPage() {
   };
 
   // Adaptar estructura del carrito si es necesario
-  const total = cart.reduce(
-    (acc, item) => acc + parseFloat(item.price) * item.quantity,
-    0
-  );
+  const total = cart.reduce((acc, item) => {
+    const price = item.price
+      ? parseFloat(item.price)
+      : item.pricing?.price || 0;
+    return acc + price * item.quantity;
+  }, 0);
   const totalQuantity = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
@@ -101,21 +103,24 @@ export default function CartPage() {
                         }
                         className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl"
                       >
-                        <div className="w-20 h-20 flex-shrink-0">
+                        <div className="w-20 h-20 shrink-0">
                           <img
                             src={
                               (item.variations &&
                                 item.selectedAttributes &&
-                                item.variations.find((v) =>
+                                item.variations.find((v: any) =>
                                   v.attributes.every(
-                                    (a) =>
+                                    (a: any) =>
                                       item.selectedAttributes?.[a.id] ===
                                       a.option
                                   )
                                 )?.image?.src) ||
                               (typeof item.image === "string"
                                 ? item.image
-                                : item.image?.sourceUrl || "/logo-belm-v2.png")
+                                : (item.image as any)?.sourceUrl) ||
+                              (item.images && item.images.length > 0
+                                ? item.images[0].src
+                                : "/logo-belm-v2.png")
                             }
                             alt={item.name}
                             className="w-full h-full object-cover rounded-xl"
@@ -137,7 +142,8 @@ export default function CartPage() {
                                     >
                                       {(() => {
                                         const attr = item.attributes?.find(
-                                          (a) => String(a.id) === String(attrId)
+                                          (a: any) =>
+                                            String(a.id) === String(attrId)
                                         );
                                         return attr
                                           ? `${attr.name}: ${value}`
@@ -155,7 +161,7 @@ export default function CartPage() {
                                 onClick={() =>
                                   decrementQuantity(
                                     item.slug,
-                                    item.selectedAttributes
+                                    item.selectedAttributes || {}
                                   )
                                 }
                                 className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
@@ -169,7 +175,7 @@ export default function CartPage() {
                                 onClick={() =>
                                   incrementQuantity(
                                     item.slug,
-                                    item.selectedAttributes
+                                    item.selectedAttributes || {}
                                   )
                                 }
                                 className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
@@ -179,16 +185,31 @@ export default function CartPage() {
                             </div>
                             <div className="text-right">
                               <div className="font-bold text-primary">
-                                S/. {parseFloat(item.price) * item.quantity}
+                                S/.{" "}
+                                {(
+                                  (item.price
+                                    ? parseFloat(item.price)
+                                    : item.pricing?.price || 0) * item.quantity
+                                ).toFixed(2)}
                               </div>
                               <div className="text-sm text-gray-500">
-                                S/. {item.price} c/u
+                                S/.{" "}
+                                {(item.price
+                                  ? parseFloat(item.price)
+                                  : item.pricing?.price || 0
+                                ).toFixed(2)}{" "}
+                                c/u
                               </div>
                             </div>
                           </div>
                         </div>
                         <button
-                          onClick={() => removeFromCart(item.slug)}
+                          onClick={() =>
+                            removeFromCart(
+                              item.slug,
+                              item.selectedAttributes || {}
+                            )
+                          }
                           // disabled={isLoading}
                           className="p-2 hover:bg-red-100 rounded-full transition-colors disabled:opacity-50"
                         >

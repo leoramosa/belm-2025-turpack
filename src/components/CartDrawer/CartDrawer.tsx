@@ -5,7 +5,6 @@ import type { CartItem } from "@/store/useCartStore";
 import { useUIStore } from "@/store/useUIStore";
 import { X, ShoppingBag, Trash2, Plus, Minus } from "lucide-react";
 import Image from "next/image";
-import { formatPrice } from "@/utils/formatPrice"; // Usa tu formateador "S/."
 import { useRouter } from "next/navigation";
 
 export default function CartDrawer() {
@@ -16,7 +15,12 @@ export default function CartDrawer() {
 
   // Suma total
   const getTotal = () =>
-    cart.reduce((acc, item) => acc + parseFloat(item.price) * item.quantity, 0);
+    cart.reduce((acc, item) => {
+      const price = item.price
+        ? parseFloat(item.price)
+        : item.pricing?.price || 0;
+      return acc + price * item.quantity;
+    }, 0);
 
   // Handler para cambiar cantidad
   const handleQuantity = (item: CartItem, delta: number) => {
@@ -87,20 +91,23 @@ export default function CartDrawer() {
                     }
                     className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl"
                   >
-                    <div className="w-16 h-16 relative flex-shrink-0">
+                    <div className="w-16 h-16 relative shrink-0">
                       <Image
                         src={
                           (item.variations &&
                             item.selectedAttributes &&
-                            item.variations.find((v) =>
+                            item.variations.find((v: any) =>
                               v.attributes.every(
-                                (a) =>
+                                (a: any) =>
                                   item.selectedAttributes?.[a.id] === a.option
                               )
                             )?.image?.src) ||
                           (typeof item.image === "string"
                             ? item.image
-                            : item.image?.sourceUrl || "/logo-belm-v2.png")
+                            : (item.image as any)?.sourceUrl) ||
+                          (item.images && item.images.length > 0
+                            ? item.images[0].src
+                            : "/logo-belm-v2.png")
                         }
                         alt={item.name}
                         fill
@@ -123,7 +130,8 @@ export default function CartDrawer() {
                                 >
                                   {(() => {
                                     const attr = item.attributes?.find(
-                                      (a) => String(a.id) === String(attrId)
+                                      (a: any) =>
+                                        String(a.id) === String(attrId)
                                     );
                                     return attr
                                       ? `${attr.name}: ${value}`
@@ -136,9 +144,12 @@ export default function CartDrawer() {
                         )}
                       <div className="flex items-center justify-between mt-2">
                         <span className="font-bold text-primary">
-                          {formatPrice(
-                            (parseFloat(item.price) * item.quantity).toFixed(2)
-                          )}
+                          S/.{" "}
+                          {(
+                            (item.price
+                              ? parseFloat(item.price)
+                              : item.pricing?.price || 0) * item.quantity
+                          ).toFixed(2)}
                         </span>
                         <div className="flex items-center gap-2">
                           <button
@@ -186,7 +197,7 @@ export default function CartDrawer() {
               <div className="flex justify-between text-lg font-bold mb-4">
                 <span>Total:</span>
                 <span className="text-primary">
-                  {formatPrice(getTotal().toFixed(2))}
+                  S/. {getTotal().toFixed(2)}
                 </span>
               </div>
               <button

@@ -1,6 +1,100 @@
 import { NextRequest, NextResponse } from "next/server";
 import CryptoJS from "crypto-js";
 
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const customerId = searchParams.get("customer");
+    const email = searchParams.get("email");
+
+    const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
+    const consumerKey = process.env.WC_CONSUMER_KEY;
+    const consumerSecret = process.env.WC_CONSUMER_SECRET;
+
+    if (!apiUrl || !consumerKey || !consumerSecret) {
+      return NextResponse.json(
+        { error: "Credenciales de WordPress no configuradas" },
+        { status: 500 }
+      );
+    }
+
+    // Crear header de Basic Auth
+    const credentials = `${consumerKey}:${consumerSecret}`;
+    const encoded = Buffer.from(credentials).toString("base64");
+    const authHeader = `Basic ${encoded}`;
+
+    let ordersByCustomer: any[] = [];
+    let ordersByEmail: any[] = [];
+
+    // Intentar obtener órdenes por customerId primero
+    if (customerId) {
+      try {
+        const byIdUrl = `${apiUrl}/wp-json/wc/v3/orders?customer=${customerId}`;
+        const byIdRes = await fetch(byIdUrl, {
+          method: "GET",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+        });
+        if (byIdRes.ok) {
+          const data = await byIdRes.json();
+          ordersByCustomer = Array.isArray(data) ? data : [];
+        }
+      } catch {
+        // Error silencioso
+      }
+    }
+
+    // Intentar obtener órdenes por email
+    if (email) {
+      try {
+        const byEmailUrl = `${apiUrl}/wp-json/wc/v3/orders?billing_email=${encodeURIComponent(
+          email
+        )}&per_page=100`;
+        const byEmailRes = await fetch(byEmailUrl, {
+          method: "GET",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+        });
+        if (byEmailRes.ok) {
+          const data = await byEmailRes.json();
+          ordersByEmail = Array.isArray(data) ? data : [];
+        }
+      } catch {
+        // Error silencioso
+      }
+    }
+
+    // Filtrar pedidos por email - si el email coincide, es válido (incluso si customer_id es 0)
+    const validOrdersByEmail = ordersByEmail.filter((order) => {
+      const emailMatches = order.billing?.email === email;
+      return emailMatches;
+    });
+
+    // Combinar y eliminar duplicados por id
+    const allOrders = [...ordersByCustomer, ...validOrdersByEmail].filter(
+      (order, index, self) => index === self.findIndex((o) => o.id === order.id)
+    );
+
+    return NextResponse.json(allOrders, {
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return NextResponse.json(
+      { error: "No se pudieron obtener las órdenes" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const orderPayload = await request.json();

@@ -2,49 +2,34 @@
 
 import { IOrder } from "@/interface/IOrder";
 
-// Helper para obtener credenciales del cliente (usando variables de entorno públicas)
-const getClientWordpressConfig = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
-  const consumerKey = process.env.NEXT_PUBLIC_WORDPRESS_WC_CONSUMER_KEY;
-  const consumerSecret = process.env.NEXT_PUBLIC_WORDPRESS_WC_CONSUMER_SECRET;
-
-  if (!apiUrl || !consumerKey || !consumerSecret) {
-    throw new Error(
-      "Las credenciales de WordPress no están configuradas para el cliente"
-    );
-  }
-
-  // Crear header de Basic Auth
-  const credentials = `${consumerKey}:${consumerSecret}`;
-  const encoded = btoa(credentials);
-  const authHeader = `Basic ${encoded}`;
-
-  return { apiUrl, authHeader };
-};
-
 export const fetchOrdersByCustomerId = async (
   customerId: number
 ): Promise<IOrder[]> => {
   try {
-    const { apiUrl, authHeader } = getClientWordpressConfig();
-    const url = `${apiUrl}/wp-json/wc/v3/orders?customer=${customerId}`;
+    // Usar la ruta API en lugar de llamar directamente a WordPress
+    const url = `/api/orders?customer=${customerId}`;
 
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: authHeader,
         "Content-Type": "application/json",
       },
       cache: "no-store",
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `Error del servidor: ${response.status}`
+      );
     }
 
     const orders = await response.json();
     return Array.isArray(orders) ? orders : [];
-  } catch {
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
     throw new Error("No se pudieron obtener las órdenes del usuario.");
   }
 };
@@ -55,45 +40,48 @@ export const fetchOrderById = async (
   customerEmail?: string
 ): Promise<IOrder> => {
   try {
-    const { apiUrl, authHeader } = getClientWordpressConfig();
-    const url = `${apiUrl}/wp-json/wc/v3/orders/${orderId}`;
+    // Usar la ruta API en lugar de llamar directamente a WordPress
+    const url = `/api/orders/${orderId}`;
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    // Agregar headers de validación si se proporcionan
+    if (customerId) {
+      headers["x-customer-id"] = customerId.toString();
+    }
+    if (customerEmail) {
+      headers["x-customer-email"] = customerEmail;
+    }
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        Authorization: authHeader,
-        "Content-Type": "application/json",
-      },
+      headers,
       cache: "no-store",
     });
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: "Error desconocido",
+      }));
+
       if (response.status === 403 || response.status === 404) {
-        throw new Error("No tienes permisos para ver esta orden.");
+        throw new Error(
+          errorData.error ||
+            "No se encontró la orden o no tienes permisos para verla"
+        );
       }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(
+        errorData.error || `Error del servidor: ${response.status}`
+      );
     }
 
     const order = await response.json();
-
-    // Validación de propiedad de la orden (igual que en la ruta API)
-    if (customerId || customerEmail) {
-      const orderCustomerId = order.customer_id;
-      const orderEmail = order.billing?.email;
-
-      const isOwner =
-        (customerId && orderCustomerId === parseInt(customerId.toString())) ||
-        (customerEmail && orderEmail === customerEmail);
-
-      if (!isOwner) {
-        throw new Error("No tienes permisos para ver esta orden.");
-      }
-    }
-
     return order;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("permisos")) {
-      throw error; // Re-lanzar error de permisos
+    if (error instanceof Error) {
+      throw error; // Re-lanzar error con mensaje específico
     }
     throw new Error("No se pudo obtener el detalle de la orden.");
   }
@@ -147,62 +135,26 @@ export const fetchOrdersForUser = async (
   email: string
 ): Promise<IOrder[]> => {
   try {
-    const { apiUrl, authHeader } = getClientWordpressConfig();
+    // Usar la ruta API en lugar de llamar directamente a WordPress
+    const url = `/api/orders?customer=${customerId}&email=${encodeURIComponent(
+      email
+    )}`;
 
-    // Intentar obtener órdenes por customerId primero
-    let ordersByCustomer: IOrder[] = [];
-    try {
-      const byIdUrl = `${apiUrl}/wp-json/wc/v3/orders?customer=${customerId}`;
-      const byIdRes = await fetch(byIdUrl, {
-        method: "GET",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      });
-      if (byIdRes.ok) {
-        const data = await byIdRes.json();
-        ordersByCustomer = Array.isArray(data) ? data : [];
-      }
-    } catch {
-      // Error silencioso
-    }
-
-    // Intentar obtener órdenes por email
-    let ordersByEmail: IOrder[] = [];
-    try {
-      const byEmailUrl = `${apiUrl}/wp-json/wc/v3/orders?billing_email=${encodeURIComponent(
-        email
-      )}&per_page=100`;
-      const byEmailRes = await fetch(byEmailUrl, {
-        method: "GET",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      });
-      if (byEmailRes.ok) {
-        const data = await byEmailRes.json();
-        ordersByEmail = Array.isArray(data) ? data : [];
-      }
-    } catch {
-      // Error silencioso
-    }
-
-    // Filtrar pedidos por email - si el email coincide, es válido (incluso si customer_id es 0)
-    const validOrdersByEmail = ordersByEmail.filter((order) => {
-      const emailMatches = order.billing?.email === email;
-      return emailMatches;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
     });
 
-    // Combinar y eliminar duplicados por id
-    const allOrders = [...ordersByCustomer, ...validOrdersByEmail].filter(
-      (order, index, self) => index === self.findIndex((o) => o.id === order.id)
-    );
+    if (!response.ok) {
+      // En caso de error, devolver array vacío en lugar de lanzar excepción
+      return [];
+    }
 
-    return allOrders;
+    const orders = await response.json();
+    return Array.isArray(orders) ? orders : [];
   } catch {
     // En caso de error, devolver array vacío en lugar de lanzar excepción
     return [];
@@ -214,67 +166,9 @@ export const fetchOrdersCountForUser = async (
   email: string
 ): Promise<number> => {
   try {
-    const { apiUrl, authHeader } = getClientWordpressConfig();
-
-    // Intentar obtener órdenes por customerId primero
-    let ordersByCustomer: IOrder[] = [];
-    try {
-      const byIdUrl = `${apiUrl}/wp-json/wc/v3/orders?customer=${customerId}`;
-      const byIdRes = await fetch(byIdUrl, {
-        method: "GET",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      });
-      if (byIdRes.ok) {
-        const data = await byIdRes.json();
-        ordersByCustomer = Array.isArray(data) ? data : [];
-      }
-    } catch {
-      // Error silencioso
-    }
-
-    // Intentar obtener órdenes por email
-    let ordersByEmail: IOrder[] = [];
-    try {
-      const byEmailUrl = `${apiUrl}/wp-json/wc/v3/orders?billing_email=${encodeURIComponent(
-        email
-      )}&per_page=100`;
-      const byEmailRes = await fetch(byEmailUrl, {
-        method: "GET",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      });
-      if (byEmailRes.ok) {
-        const data = await byEmailRes.json();
-        ordersByEmail = Array.isArray(data) ? data : [];
-      }
-    } catch {
-      // Error silencioso
-    }
-
-    // Filtrar pedidos por email - si el email coincide, es válido (incluso si customer_id es 0)
-    const validOrdersByEmail = ordersByEmail.filter((order) => {
-      const emailMatches = order.billing?.email === email;
-      return emailMatches;
-    });
-
-    // Si no hay órdenes de ninguna fuente, devolver 0
-    if (ordersByCustomer.length === 0 && validOrdersByEmail.length === 0) {
-      return 0;
-    }
-
-    // Combinar y eliminar duplicados por id
-    const allOrders = [...ordersByCustomer, ...validOrdersByEmail].filter(
-      (order, index, self) => index === self.findIndex((o) => o.id === order.id)
-    );
-
-    return allOrders.length;
+    // Usar fetchOrdersForUser y obtener la longitud
+    const orders = await fetchOrdersForUser(customerId, email);
+    return orders.length;
   } catch {
     // En caso de error, devolver 0 en lugar de lanzar excepción
     return 0;

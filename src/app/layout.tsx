@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-
+import { Toaster } from "sonner";
 import "./globals.css";
 import { fetchProductCategoriesTree } from "@/services/categories";
 import Navbar from "@/components/shared/Navbar";
+import CartDrawer from "@/components/CartDrawer/CartDrawer";
+import Footer from "@/components/shared/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,10 +37,11 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="">
-          <Navbar categories={categories} />
-          <main>{children}</main>
-        </div>
+        <Navbar categories={categories} />
+        <main>{children}</main>
+        <CartDrawer />
+        <Footer />
+        <Toaster position="top-right" richColors closeButton duration={4000} />
       </body>
     </html>
   );

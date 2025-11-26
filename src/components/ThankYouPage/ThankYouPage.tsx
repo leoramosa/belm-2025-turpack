@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FiCheck as Check } from "react-icons/fi";
 import { useCartStore } from "@/store/useCartStore";
@@ -63,13 +63,18 @@ export default function ThankYouPage({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
   const [cancelAttempted, setCancelAttempted] = useState(false);
+  const fetchingRef = useRef(false); // Para evitar múltiples llamadas simultáneas
+  const lastFetchedKeyRef = useRef<string>(""); // Para rastrear la última orden buscada
 
+  // Efecto para limpiar carrito
   useEffect(() => {
-    // Solo limpiar carrito si es success y hay orderId
     if (status === "success" && orderId && orderId !== "null") {
       clearCart();
     }
-    // Si la orden es pending y el status es failure, cancelar la orden automáticamente (solo una vez)
+  }, [status, orderId, clearCart]);
+
+  // Efecto para cancelar orden si es necesario
+  useEffect(() => {
     if (
       order &&
       status === "failure" &&
@@ -79,7 +84,10 @@ export default function ThankYouPage({
       setCancelAttempted(true);
       fetch(`/api/cancel-order?id=${order.id}`, { method: "POST" });
     }
-    // Si no hay orderId y es failure o pending, redirigir al carrito tras 3 segundos
+  }, [order, status, cancelAttempted]);
+
+  // Efecto para redirigir si no hay orderId
+  useEffect(() => {
     if (
       (status === "failure" || status === "pending") &&
       (!orderId || orderId === "null")
@@ -89,41 +97,94 @@ export default function ThankYouPage({
       }, 7000);
       return () => clearTimeout(timeout);
     }
-    // Buscar la orden con máximo 2 reintentos y 1s de espera
+  }, [status, orderId, router]);
+
+  // Efecto principal para obtener la orden (solo una vez por orderId/status)
+  useEffect(() => {
+    // Crear una clave única basada en orderId y status
+    const fetchKey = `${orderId}-${status}`;
+
+    // Si ya se buscó esta combinación, no buscar de nuevo
+    if (lastFetchedKeyRef.current === fetchKey) {
+      return;
+    }
+
+    // Si no hay orderId válido o el status no es válido, no buscar
+    if (
+      !orderId ||
+      orderId === "null" ||
+      !["success", "failure", "pending"].includes(status || "")
+    ) {
+      if (!orderId || orderId === "null") {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Si ya hay una llamada en progreso, no iniciar otra
+    if (fetchingRef.current) {
+      return;
+    }
+
     let retries = 0;
+    let isCancelled = false;
+
     async function fetchOrderWithRetry() {
+      if (isCancelled || fetchingRef.current) return;
+
+      fetchingRef.current = true;
+
       if (!orderId || orderId === "null") {
         setOrder(null);
         setLoading(false);
+        fetchingRef.current = false;
+        lastFetchedKeyRef.current = fetchKey;
         return;
       }
+
       try {
         const numericOrderId = Number(orderId);
         if (!isNaN(numericOrderId)) {
           const data = await fetchOrderById(numericOrderId);
-          setOrder(data as OrderType);
-          setLoading(false);
+          if (!isCancelled) {
+            setOrder(data as OrderType);
+            setLoading(false);
+            lastFetchedKeyRef.current = fetchKey;
+          }
+          fetchingRef.current = false;
           return;
         }
         throw new Error("orderId no es un número válido");
       } catch (error) {
+        if (isCancelled) {
+          fetchingRef.current = false;
+          return;
+        }
         console.error("Error fetching order:", error);
         if (retries < 1) {
           retries++;
-          setTimeout(fetchOrderWithRetry, 1000);
+          fetchingRef.current = false;
+          setTimeout(() => {
+            if (!isCancelled) {
+              fetchOrderWithRetry();
+            }
+          }, 1000);
         } else {
           setOrder(null);
           setLoading(false);
+          fetchingRef.current = false;
+          lastFetchedKeyRef.current = fetchKey;
         }
       }
     }
-    // Buscar la orden si el status es success, failure o pending
-    if (["success", "failure", "pending"].includes(status || "")) {
-      fetchOrderWithRetry();
-    } else {
-      setLoading(false);
-    }
-  }, [orderId, status, router, order, cancelAttempted]); // Removido clearCart de dependencias
+
+    fetchOrderWithRetry();
+
+    return () => {
+      isCancelled = true;
+      fetchingRef.current = false;
+    };
+  }, [orderId, status]); // Removido 'order' y 'router' de dependencias
 
   useEffect(() => {
     const isTransferPeru = order?.payment_method === "transfer-peru";

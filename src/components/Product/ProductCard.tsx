@@ -111,27 +111,54 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
         (option: ProductAttributeOption) => option.name.trim().length
       )
     : [];
-  const maxVisibleColors = 6;
+  const maxVisibleColors = 3;
   const visibleColors = colorOptions.slice(0, maxVisibleColors);
   const remainingColors = colorOptions.length - visibleColors.length;
 
-  const hasDiscount =
-    pricing.regularPrice &&
-    pricing.price &&
-    pricing.regularPrice > pricing.price;
-
-  const formattedPrice = formatPrice(pricing.price, pricing.currency);
-  const formattedRegularPrice = formatPrice(
-    pricing.regularPrice,
-    pricing.currency
-  );
-
   const isVariableProduct = product.variations && product.variations.length > 0;
+
+  // Para productos variables, usar la primera variación para mostrar precio y descuento
+  const firstVariation =
+    isVariableProduct && product.variations?.[0] ? product.variations[0] : null;
+
+  // Determinar el precio y precio regular a mostrar
+  let displayPrice: number | null = null;
+  let displayRegularPrice: number | null = null;
+  let currency = pricing.currency;
+
+  if (isVariableProduct && firstVariation) {
+    // Producto variable: usar precio de la primera variación
+    // Si tiene salePrice y regularPrice, usar esos
+    if (
+      firstVariation.salePrice !== null &&
+      firstVariation.regularPrice !== null
+    ) {
+      displayPrice = firstVariation.salePrice;
+      displayRegularPrice = firstVariation.regularPrice;
+    } else if (firstVariation.price !== null) {
+      // Si solo tiene price, usarlo como precio actual
+      displayPrice = firstVariation.price;
+      displayRegularPrice = firstVariation.regularPrice;
+    }
+  } else {
+    // Producto simple: usar pricing del producto
+    displayPrice = pricing.price;
+    displayRegularPrice = pricing.regularPrice;
+  }
+
+  // Determinar si hay descuento
+  const hasDiscount =
+    displayRegularPrice !== null &&
+    displayPrice !== null &&
+    displayRegularPrice > displayPrice;
+
+  const formattedPrice = formatPrice(displayPrice, currency);
+  const formattedRegularPrice = formatPrice(displayRegularPrice, currency);
 
   // Vista horizontal (lista)
   if (viewMode === "list") {
     return (
-      <div className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-md transition hover:shadow-lg md:flex-row">
+      <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col md:flex-row gap-6 transition hover:shadow-lg">
         {/* Image Section */}
         <div className="relative h-48 w-full overflow-hidden rounded-t-2xl md:h-auto md:w-56 md:rounded-l-2xl md:rounded-tr-none">
           {primaryImage ? (
@@ -292,7 +319,7 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
 
         {/* Colors */}
         {visibleColors.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-3">
             <span className="text-xs text-zinc-500">Colores:</span>
             <div className="flex items-center gap-1.5">
               {visibleColors.map((option: ProductAttributeOption) => {

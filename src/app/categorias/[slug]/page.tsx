@@ -42,6 +42,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         <ProductGridClient
           title={`Productos en ${category.name}`}
           products={filteredProducts}
+          disableAutoCategoryFilter={true}
         />
       ) : (
         <section className="mx-auto flex w-full max-w-5xl flex-col items-center gap-4 px-4 py-20 text-center">

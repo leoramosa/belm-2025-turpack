@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@lyracom/embedded-form-glue": "^1.4.4",
+    "axios": "^1.13.2",
     "crypto": "^1.0.1",
     "crypto-js": "^4.2.0",
     "lucide-react": "^0.554.0",

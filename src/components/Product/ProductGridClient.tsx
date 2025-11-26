@@ -9,6 +9,7 @@ import {
   ProductFilter,
   ProductFilters,
 } from "@/components/Product/ProductFilter";
+import { ProductPagination } from "@/components/Product/ProductPagination";
 import { IProduct } from "@/types/product";
 import {
   useSelectProducts,
@@ -22,62 +23,8 @@ import { IProductCategoryNode } from "@/types/ICategory";
 interface ProductGridClientProps {
   title: string;
   products: IProduct[];
-}
-
-function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-
-  return (
-    <div className="mt-12 flex items-center justify-center gap-2">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
-          currentPage === 1
-            ? "cursor-not-allowed border-zinc-300 bg-zinc-100 text-zinc-400"
-            : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
-        }`}
-      >
-        Anterior
-      </button>
-
-      {pages.map((page) => (
-        <button
-          key={page}
-          onClick={() => onPageChange(page)}
-          className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
-            currentPage === page
-              ? "border-primary bg-primary text-white"
-              : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
-          }`}
-        >
-          {page}
-        </button>
-      ))}
-
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
-          currentPage === totalPages
-            ? "cursor-not-allowed border-zinc-300 bg-zinc-100 text-zinc-400"
-            : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
-        }`}
-      >
-        Siguiente
-      </button>
-    </div>
-  );
+  disableAutoCategoryFilter?: boolean; // Para desactivar el filtro automático de categoría cuando los productos ya vienen filtrados
+  initialSearchQuery?: string; // Término de búsqueda inicial desde la URL
 }
 
 type SortOption = "name" | "price-asc" | "price-desc" | "newest";
@@ -158,13 +105,19 @@ function getCategoryHierarchy(
   return { category: null, subcategory: null, subSubcategory: null };
 }
 
-export function ProductGridClient({ title, products }: ProductGridClientProps) {
+export function ProductGridClient({
+  title,
+  products,
+  disableAutoCategoryFilter = false,
+  initialSearchQuery = "",
+}: ProductGridClientProps) {
   const pathname = usePathname();
   const setProducts = useProductStore(
     (state: ProductState) => state.setProducts
   );
   const productList = useSelectProducts();
   const allCategories = useSelectCategories();
+  // Estado de paginación - resetear cuando cambian los filtros importantes
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     if (typeof window !== "undefined") {
@@ -174,7 +127,7 @@ export function ProductGridClient({ title, products }: ProductGridClientProps) {
   });
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortBy, setSortBy] = useState<SortOption>("name");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
 
   // Detectar si estamos en una página de categoría y actualizar filtros
   const categorySlugFromPath = useMemo(() => {
@@ -196,32 +149,30 @@ export function ProductGridClient({ title, products }: ProductGridClientProps) {
     selectedTags: [],
   });
 
-  // Sincronizar filtros con la URL cuando cambia la ruta
-  useEffect(() => {
-    if (categorySlugFromPath) {
-      const hierarchy = getCategoryHierarchy(
-        categorySlugFromPath,
-        allCategories
-      );
-      setFilters((prev) => ({
-        ...prev,
-        category: hierarchy.category,
-        subcategory: hierarchy.subcategory,
-        subSubcategory: hierarchy.subSubcategory,
-      }));
-    } else {
-      setFilters((prev) => ({
-        ...prev,
-        category: null,
-        subcategory: null,
-        subSubcategory: null,
-      }));
-    }
-  }, [categorySlugFromPath, allCategories]);
+  // NOTA: La sincronización de filtros de categoría con la URL ahora se maneja
+  // completamente en ProductFilter para evitar conflictos. ProductFilter tiene
+  // prioridad sobre la sincronización de categorías desde la URL.
+  // Este efecto ya no maneja filtros de categoría cuando disableAutoCategoryFilter está activo.
 
   useEffect(() => {
     setProducts(products);
   }, [products, setProducts]);
+
+  // Sincronizar searchQuery cuando cambia initialSearchQuery (desde URL)
+  useEffect(() => {
+    if (initialSearchQuery && initialSearchQuery !== searchQuery) {
+      setSearchQuery(initialSearchQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSearchQuery]);
+
+  // Sincronizar searchQuery cuando cambia initialSearchQuery (desde URL)
+  useEffect(() => {
+    if (initialSearchQuery !== searchQuery) {
+      setSearchQuery(initialSearchQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSearchQuery]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -338,6 +289,24 @@ export function ProductGridClient({ title, products }: ProductGridClientProps) {
     return sorted;
   }, [productList, filters, searchQuery, sortBy]);
 
+  // Resetear a página 1 cuando cambian los filtros importantes o los productos filtrados
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    filters.category,
+    filters.subcategory,
+    filters.subSubcategory,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.inStockOnly,
+    filters.selectedColors,
+    filters.selectedTags,
+    filters.search,
+    searchQuery,
+    sortBy,
+    filteredProducts.length, // Resetear cuando cambia el número de productos filtrados
+  ]);
+
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -346,115 +315,103 @@ export function ProductGridClient({ title, products }: ProductGridClientProps) {
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [totalPages, currentPage]);
-
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8 lg:py-12">
-      <header className="mb-8 flex flex-col gap-2 text-left">
-        <h2 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
-          {title}
-        </h2>
-      </header>
+      <div className="">
+        {/* Search Bar */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1 w-full">
+            <svg
+              className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white rounded-2xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-300"
+            />
+          </div>
+          {/* View Toggle */}
+          <div className="relative flex rounded-full bg-white p-1 shadow-sm border border-gray-200">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`relative z-10 flex items-center justify-center rounded-tl-full rounded-bl-full px-4 py-2.5 transition-all duration-300 ${
+                viewMode === "grid"
+                  ? "bg-primary text-white "
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              aria-label="Vista de cuadrícula"
+            >
+              <IoGridOutline className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`relative z-10 flex items-center justify-center rounded-tr-full rounded-br-full px-4 py-2.5 transition-all duration-300 ${
+                viewMode === "list"
+                  ? "bg-primary text-white shadow-md"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              aria-label="Vista de lista"
+            >
+              <IoListOutline className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="px-3 py-2 sm:px-4 sm:py-3 bg-white rounded-2xl border border-gray-200 focus:border-primary outline-none text-sm sm:text-base w-[120px] sm:w-[140px] md:w-[160px] lg:w-auto overflow-hidden text-ellipsis whitespace-nowrap"
+              >
+                <option value="name">Ordenar por nombre</option>
+                <option value="price-asc">Precio: menor a mayor</option>
+                <option value="price-desc">Precio: mayor a menor</option>
+                <option value="newest">Más recientes</option>
+              </select>
+              <svg
+                className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="flex flex-col gap-8 lg:flex-row">
         {/* Sidebar - Filters */}
         <ProductFilter
-          products={productList}
+          products={products}
           filters={filters}
           onFiltersChange={setFilters}
+          disableAutoCategoryFilter={disableAutoCategoryFilter}
         />
 
         {/* Main Content - Product Grid */}
         <div className="flex-1">
           {/* Top Bar - Search, View Toggle, Sort */}
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Search Bar */}
-            <div className="flex-1">
-              <div className="relative">
-                <svg
-                  className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Buscar productos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-300 bg-white py-2 pl-10 pr-4 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </div>
-
-            {/* View Toggle and Sort */}
-            <div className="flex items-center gap-2">
-              {/* View Toggle */}
-              <div className="flex rounded-lg border border-zinc-300 bg-white">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("grid")}
-                  className={`p-2 transition ${
-                    viewMode === "grid"
-                      ? "bg-primary text-white"
-                      : "text-zinc-600 hover:bg-zinc-50"
-                  }`}
-                  aria-label="Vista de cuadrícula"
-                >
-                  <IoGridOutline className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("list")}
-                  className={`p-2 transition ${
-                    viewMode === "list"
-                      ? "bg-primary text-white"
-                      : "text-zinc-600 hover:bg-zinc-50"
-                  }`}
-                  aria-label="Vista de lista"
-                >
-                  <IoListOutline className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Sort Dropdown */}
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="appearance-none rounded-lg border border-zinc-300 bg-white px-4 py-2 pr-8 text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="name">Ordenar por nombre</option>
-                  <option value="price-asc">Precio: menor a mayor</option>
-                  <option value="price-desc">Precio: mayor a menor</option>
-                  <option value="newest">Más recientes</option>
-                </select>
-                <svg
-                  className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
 
           {/* Products Grid/List */}
           {viewMode === "grid" ? (
@@ -474,7 +431,7 @@ export function ProductGridClient({ title, products }: ProductGridClientProps) {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {paginatedProducts.length > 0 ? (
                 paginatedProducts.map((product: IProduct) => (
                   <ProductCard
@@ -491,10 +448,13 @@ export function ProductGridClient({ title, products }: ProductGridClientProps) {
             </div>
           )}
 
-          <Pagination
+          <ProductPagination
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={productList.length}
+            filteredItems={filteredProducts.length}
           />
         </div>
       </div>
