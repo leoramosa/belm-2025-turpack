@@ -4,10 +4,23 @@ import { PersistOptions } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import type { WooProfile } from "@/components/MyAccountProfilePage";
 
+export interface AuthUser {
+  user_email?: string;
+  email?: string;
+  user_login?: string;
+  user_display_name?: string;
+  nicename?: string;
+  displayName?: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  id?: number;
+}
+
 export interface UserState {
-  user: WooProfile | null;
+  user: AuthUser | null;
   token: string | null;
-  setUser: (user: WooProfile | null, token?: string) => void;
+  setUser: (user: AuthUser | null, token?: string) => void;
   logout: () => void;
   profile: WooProfile | null;
   setProfile: (profile: WooProfile) => void;
@@ -24,7 +37,7 @@ export const useUserStore = create<UserState>(
     (set, get) => ({
       user: null,
       token: null,
-      setUser: (user: WooProfile | null, token?: string) =>
+      setUser: (user: AuthUser | null, token?: string) =>
         set({ user, token: token ?? null }),
       logout: () => set({ user: null, token: null, profile: null }),
       profile: null,
