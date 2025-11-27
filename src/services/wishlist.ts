@@ -1,20 +1,5 @@
-"use client";
-
 import { IProduct } from "@/types/product";
 import { useUserStore } from "@/store/userStore";
-
-// Obtener URL base del backend desde variables de entorno públicas
-function getWordpressApiUrl(): string {
-  if (typeof window === "undefined") {
-    return "";
-  }
-  // Intentar diferentes nombres de variables de entorno
-  return (
-    process.env.NEXT_PUBLIC_WORDPRESS_API_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    ""
-  );
-}
 
 function getAuthToken() {
   // Primero intentar obtener del store de Zustand
@@ -45,25 +30,8 @@ function getAuthHeaders(): Record<string, string> {
 export class WishlistService {
   static async getUserWishlist(): Promise<IProduct[]> {
     try {
-      const apiUrl = getWordpressApiUrl();
-      if (!apiUrl) {
-        console.error("WordPress API URL no está configurado");
-        return [];
-      }
-
-      const token = getAuthToken();
-      if (!token) {
-        console.warn(
-          "No hay token de autenticación, no se puede obtener wishlist"
-        );
-        return [];
-      }
-
-      const endpoint = `${apiUrl}/wp-json/belm/v1/wishlist`;
-      const response = await fetch(endpoint, {
-        method: "GET",
+      const response = await fetch("/api/wishlist", {
         headers: getAuthHeaders(),
-        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -85,18 +53,10 @@ export class WishlistService {
 
   static async saveUserWishlist(products: IProduct[]): Promise<boolean> {
     try {
-      const apiUrl = getWordpressApiUrl();
-      if (!apiUrl) {
-        console.error("WordPress API URL no está configurado");
-        return false;
-      }
-
-      const endpoint = `${apiUrl}/wp-json/belm/v1/wishlist`;
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/wishlist", {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ items: products }),
-        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -115,31 +75,10 @@ export class WishlistService {
     product: IProduct
   ): Promise<{ success: boolean; added: boolean; message: string }> {
     try {
-      const apiUrl = getWordpressApiUrl();
-      if (!apiUrl) {
-        console.error("WordPress API URL no está configurado");
-        return {
-          success: false,
-          added: false,
-          message: "API URL no configurada",
-        };
-      }
-
-      const token = getAuthToken();
-      if (!token) {
-        return {
-          success: false,
-          added: false,
-          message: "Usuario no autenticado",
-        };
-      }
-
-      const endpoint = `${apiUrl}/wp-json/belm/v1/wishlist/add`;
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/wishlist/add", {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ product_id: product.id }),
-        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -169,26 +108,10 @@ export class WishlistService {
 
   static async removeFromWishlist(productId: string): Promise<boolean> {
     try {
-      const apiUrl = getWordpressApiUrl();
-      if (!apiUrl) {
-        console.error("WordPress API URL no está configurado");
-        return false;
-      }
-
-      const token = getAuthToken();
-      if (!token) {
-        console.warn(
-          "No hay token de autenticación, no se puede remover de wishlist"
-        );
-        return false;
-      }
-
-      const endpoint = `${apiUrl}/wp-json/belm/v1/wishlist/remove`;
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/wishlist/remove", {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ product_id: productId }),
-        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -205,25 +128,9 @@ export class WishlistService {
 
   static async clearWishlist(): Promise<boolean> {
     try {
-      const apiUrl = getWordpressApiUrl();
-      if (!apiUrl) {
-        console.error("WordPress API URL no está configurado");
-        return false;
-      }
-
-      const token = getAuthToken();
-      if (!token) {
-        console.warn(
-          "No hay token de autenticación, no se puede limpiar wishlist"
-        );
-        return false;
-      }
-
-      const endpoint = `${apiUrl}/wp-json/belm/v1/wishlist/clear`;
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/wishlist/clear", {
         method: "POST",
         headers: getAuthHeaders(),
-        cache: "no-store",
       });
 
       if (!response.ok) {

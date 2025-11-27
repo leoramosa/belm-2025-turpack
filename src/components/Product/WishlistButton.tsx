@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FiHeart, FiUser } from "react-icons/fi";
 import { IProduct } from "@/types/product";
 import { useWishlistStore } from "@/store/useWishlistStore";
@@ -20,8 +20,23 @@ export default function WishlistButton({
   showText = false,
   className = "",
 }: WishlistButtonProps) {
-  // Suscribirse reactivamente a items del store para que el componente se actualice
-  const items = useWishlistStore((state) => state.items);
+  // Normalizar ID del producto una vez usando useMemo para evitar recálculos
+  const productId = useMemo(() => {
+    return typeof product.id === "string"
+      ? parseInt(product.id, 10)
+      : product.id;
+  }, [product.id]);
+
+  // Selector personalizado que calcula isInWishlist reactivamente
+  // Esto se actualiza automáticamente cuando items cambia
+  const inWishlist = useWishlistStore((state) => {
+    return state.items.some((item) => {
+      const itemId =
+        typeof item.id === "string" ? parseInt(item.id, 10) : item.id;
+      return itemId === productId;
+    });
+  });
+
   const { addToWishlist, removeFromWishlist } = useWishlistStore();
   const { isAuthenticated } = useAuth();
   const [isAnimating, setIsAnimating] = useState(false);
@@ -33,9 +48,8 @@ export default function WishlistButton({
 
   if (!isMounted) return null;
 
-  // Calcular inWishlist basándose en items del store (reactivo)
-  const inWishlist =
-    isAuthenticated && items.some((item) => item.id === product.id);
+  // Combinar autenticación con estado de wishlist
+  const isInWishlist = isAuthenticated && inWishlist;
 
   const sizeClasses = {
     sm: "w-8 h-8",
@@ -60,8 +74,8 @@ export default function WishlistButton({
       return;
     }
 
-    if (inWishlist) {
-      removeFromWishlist(product.id.toString());
+    if (isInWishlist) {
+      removeFromWishlist(product.id);
     } else {
       addToWishlist(product);
     }
@@ -77,7 +91,7 @@ export default function WishlistButton({
         relative flex items-center justify-center rounded-full border-2 transition-all duration-200
         transform hover:scale-105 active:scale-95
         ${
-          inWishlist
+          isInWishlist
             ? "bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600"
             : "bg-white border-gray-300 text-gray-600 hover:border-red-400 hover:text-red-500"
         }
@@ -87,7 +101,7 @@ export default function WishlistButton({
     >
       {/* Icono de corazón con animación */}
       <div className="relative">
-        {inWishlist ? (
+        {isInWishlist ? (
           <FiHeart
             key="filled"
             className={`${iconSizes[size]} fill-current transition-all duration-200 transform scale-100`}
@@ -110,7 +124,7 @@ export default function WishlistButton({
       {/* Texto opcional */}
       {showText && (
         <span className="ml-2 text-sm font-medium">
-          {inWishlist ? "En lista" : "Agregar"}
+          {isInWishlist ? "En lista" : "Agregar"}
         </span>
       )}
 

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/userStore";
 import { useOrdersStore } from "@/store/useOrdersStore";
@@ -10,6 +10,8 @@ export const useAuth = () => {
   const { user, profile, logout, setProfile, token } = useUserStore();
   const { clearOrders } = useOrdersStore();
   const { clearWishlist, loadFromBackend } = useWishlistStore();
+  const hasLoadedWishlistRef = useRef(false);
+  const previousAuthStateRef = useRef(false);
 
   // Verificar si el usuario está autenticado
   // Después del login solo tenemos user y token, profile se carga después
@@ -110,14 +112,28 @@ export const useAuth = () => {
   // Verificar autenticación en cada render
   useEffect(() => {
     if (!isAuthenticated) {
-      // Limpiar datos sensibles si no está autenticado
+      // Solo limpiar datos sensibles (órdenes) cuando se pierde la sesión
       clearOrders();
-      clearWishlist();
-    } else {
-      // Si está autenticado, cargar wishlist del backend (forzar carga)
-      loadFromBackend(true);
+      // Resetear el flag cuando se desautentica
+      if (previousAuthStateRef.current) {
+        hasLoadedWishlistRef.current = false;
+      }
+      previousAuthStateRef.current = false;
+      return;
     }
-  }, [isAuthenticated]); // Removido clearOrders y clearWishlist de dependencias
+
+    // Solo cargar wishlist del backend cuando el usuario se autentica por primera vez
+    // No recargar en cada render para evitar sobrescribir cambios locales
+    const justAuthenticated = !previousAuthStateRef.current && isAuthenticated;
+    previousAuthStateRef.current = true;
+
+    if (justAuthenticated && !hasLoadedWishlistRef.current) {
+      // Usuario recién autenticado: sincronizar wishlist desde el backend
+      loadFromBackend(true).then(() => {
+        hasLoadedWishlistRef.current = true;
+      });
+    }
+  }, [isAuthenticated, clearOrders]);
 
   return {
     user,

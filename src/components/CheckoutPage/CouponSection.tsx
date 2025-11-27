@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useCartStore } from "@/store/useCartStore";
-import { CouponService } from "@/services/coupons";
+import {
+  CouponService,
+  type CartItem as CouponCartItem,
+} from "@/services/coupons";
 import { FiTag, FiX, FiCheck, FiLoader } from "react-icons/fi";
 
 interface CouponSectionProps {
@@ -49,8 +52,8 @@ export default function CouponSection({ className = "" }: CouponSectionProps) {
 
         try {
           // Convertir cart items al formato esperado por el servicio
-          const cartItems = cart.map((item) => ({
-            id: item.id,
+          const cartItems: CouponCartItem[] = cart.map((item) => ({
+            id: String(item.id),
             name: item.name,
             price: item.price,
             quantity: item.quantity,
@@ -119,8 +122,8 @@ export default function CouponSection({ className = "" }: CouponSectionProps) {
 
     try {
       // Convertir cart items al formato esperado por el servicio
-      const cartItems = cart.map((item) => ({
-        id: item.id,
+      const cartItems: CouponCartItem[] = cart.map((item) => ({
+        id: String(item.id),
         name: item.name,
         price: item.price,
         quantity: item.quantity,

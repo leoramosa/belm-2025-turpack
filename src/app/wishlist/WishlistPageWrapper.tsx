@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { FiHeart, FiTrash2, FiShoppingCart } from "react-icons/fi";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,60 +8,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { IProduct } from "@/types/product";
 
-function formatPrice(
-  value: number | string | null,
-  currency: string = "PEN"
-): string {
-  if (value === null || value === undefined) return "S/ 0.00";
-  const numValue = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(numValue)) return "S/ 0.00";
-  if (!currency) return `S/ ${numValue.toFixed(2)}`;
-  try {
-    return new Intl.NumberFormat("es-PE", {
-      style: "currency",
-      currency,
-    }).format(numValue);
-  } catch {
-    return `S/ ${numValue.toFixed(2)}`;
-  }
-}
-
 export default function WishlistPageWrapper() {
-  const {
-    items,
-    removeFromWishlist,
-    clearWishlist,
-    getWishlistCount,
-    loadFromBackend,
-  } = useWishlistStore();
+  const { items, removeFromWishlist, clearWishlist, getWishlistCount } =
+    useWishlistStore();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCartStore();
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Cargar wishlist del backend cuando el componente se monte y el usuario esté autenticado
-  useEffect(() => {
-    const loadWishlist = async () => {
-      if (isAuthenticated) {
-        setIsLoading(true);
-        try {
-          console.log("Cargando wishlist en WishlistPageWrapper...");
-          await loadFromBackend(true); // Forzar carga del backend
-          console.log("Wishlist cargada en WishlistPageWrapper");
-        } catch (error) {
-          console.error(
-            "Error cargando wishlist en WishlistPageWrapper:",
-            error
-          );
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        setIsLoading(false);
-      }
-    };
-
-    loadWishlist();
-  }, [isAuthenticated, loadFromBackend]);
 
   const handleAddToCart = (product: IProduct) => {
     addToCart(product);
@@ -72,7 +23,7 @@ export default function WishlistPageWrapper() {
     return product.attributes && product.attributes.length > 0;
   };
 
-  const handleRemoveFromWishlist = (productId: number) => {
+  const handleRemoveFromWishlist = (productId: string | number) => {
     removeFromWishlist(String(productId));
   };
 
@@ -121,24 +72,6 @@ export default function WishlistPageWrapper() {
             >
               Iniciar sesión
             </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Mostrar loading mientras se carga la wishlist
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="mb-8 animate-fade-in">
-              <FiHeart className="w-24 h-24 text-gray-300 mx-auto mb-4 animate-pulse" />
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                Cargando tu lista de deseos...
-              </h1>
-            </div>
           </div>
         </div>
       </div>
@@ -238,6 +171,7 @@ export default function WishlistPageWrapper() {
                     }
                     fill
                     className="object-cover hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   />
                 </Link>
 
@@ -261,19 +195,20 @@ export default function WishlistPageWrapper() {
                 {/* Price */}
                 <div className="flex items-center justify-between mb-4">
                   <span className="font-bold text-lg text-gray-900">
-                    {formatPrice(
-                      product.pricing?.price || 0,
-                      product.pricing?.currency || "PEN"
-                    )}
+                    S/.{" "}
+                    {(
+                      product.pricing?.price ||
+                      product.pricing?.salePrice ||
+                      0
+                    ).toFixed(2)}
                   </span>
                   {product.pricing?.regularPrice &&
                     product.pricing.regularPrice >
-                      (product.pricing?.price || 0) && (
+                      (product.pricing?.price ||
+                        product.pricing?.salePrice ||
+                        0) && (
                       <span className="text-sm text-gray-500 line-through">
-                        {formatPrice(
-                          product.pricing.regularPrice,
-                          product.pricing?.currency || "PEN"
-                        )}
+                        S/. {product.pricing.regularPrice.toFixed(2)}
                       </span>
                     )}
                 </div>
