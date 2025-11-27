@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import ProductDetail from "@/components/Product/ProductDetail";
 import { fetchProductBySlug, fetchProducts } from "@/services/products";
+import type { IProduct } from "@/types/product";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -17,7 +18,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   // Cargar recomendaciones de la misma categoría principal
-  let recommendations = [];
+  let recommendations: IProduct[] = [];
   try {
     const mainCategory = product.categories?.[0];
     if (mainCategory) {
