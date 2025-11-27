@@ -5,6 +5,7 @@ import { WishlistSyncService } from "@/services/wishlistSync";
 
 interface WishlistState {
   items: IProduct[];
+  lastLocalChange: number | null; // Timestamp del último cambio local
   addToWishlist: (product: IProduct) => void;
   removeFromWishlist: (productId: string | number) => void;
   clearWishlist: () => void;
@@ -35,6 +36,7 @@ export const useWishlistStore = create<WishlistState>()(
   persist(
     (set, get) => ({
       items: [],
+      lastLocalChange: null,
       addToWishlist: (product) => {
         const normalizedId = normalizeProductId(product.id);
         const existing = get().items.find(
@@ -43,11 +45,24 @@ export const useWishlistStore = create<WishlistState>()(
         if (!existing) {
           set({
             items: [...get().items, product],
+            lastLocalChange: Date.now(),
           });
 
           // Sincronizar con backend en segundo plano con debounce
           setTimeout(() => {
-            WishlistSyncService.syncAddToBackend(product);
+            WishlistSyncService.syncAddToBackend(product).finally(() => {
+              // Marcar que la sincronización terminó después de un pequeño delay
+              // para asegurar que el backend procesó el cambio
+              setTimeout(() => {
+                const state = get();
+                if (
+                  state.lastLocalChange &&
+                  Date.now() - state.lastLocalChange > 2000
+                ) {
+                  set({ lastLocalChange: null });
+                }
+              }, 500);
+            });
           }, 100);
         }
       },
@@ -57,22 +72,58 @@ export const useWishlistStore = create<WishlistState>()(
           items: get().items.filter(
             (item) => normalizeProductId(item.id) !== normalizedId
           ),
+          lastLocalChange: Date.now(),
         });
 
         // Sincronizar con backend en segundo plano con debounce
         setTimeout(() => {
-          WishlistSyncService.syncRemoveFromBackend(String(productId));
+          WishlistSyncService.syncRemoveFromBackend(String(productId)).finally(
+            () => {
+              // Marcar que la sincronización terminó después de un pequeño delay
+              // para asegurar que el backend procesó el cambio
+              setTimeout(() => {
+                const state = get();
+                if (
+                  state.lastLocalChange &&
+                  Date.now() - state.lastLocalChange > 2000
+                ) {
+                  set({ lastLocalChange: null });
+                }
+              }, 500);
+            }
+          );
         }, 100);
       },
       clearWishlist: () => {
-        set({ items: [] });
+        set({ items: [], lastLocalChange: Date.now() });
 
         // Sincronizar con backend en segundo plano
-        WishlistSyncService.clearBackend();
+        WishlistSyncService.clearBackend().finally(() => {
+          setTimeout(() => {
+            const state = get();
+            if (
+              state.lastLocalChange &&
+              Date.now() - state.lastLocalChange > 2000
+            ) {
+              set({ lastLocalChange: null });
+            }
+          }, 500);
+        });
       },
       loadFromBackend: async (force: boolean = false) => {
         try {
-          const currentItems = get().items;
+          const state = get();
+          const currentItems = state.items;
+          const lastLocalChange = state.lastLocalChange;
+
+          // Si hay cambios locales recientes (menos de 3 segundos), no recargar del backend
+          // para evitar sobrescribir cambios que aún se están sincronizando
+          if (lastLocalChange && Date.now() - lastLocalChange < 3000) {
+            console.log(
+              "Cambios locales recientes detectados, omitiendo recarga del backend"
+            );
+            return;
+          }
 
           // Si no es forzado y ya hay items, no recargar (evitar sobrescribir datos locales)
           if (!force && currentItems.length > 0) {
@@ -126,6 +177,10 @@ export const useWishlistStore = create<WishlistState>()(
     }),
     {
       name: "wishlist-storage",
+      partialize: (state) => ({
+        items: state.items,
+        // No persistir lastLocalChange, es un timestamp temporal
+      }),
     }
   )
 );

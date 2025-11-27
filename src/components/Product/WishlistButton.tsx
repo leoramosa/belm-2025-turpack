@@ -29,11 +29,13 @@ export default function WishlistButton({
 
   // Selector personalizado que calcula isInWishlist reactivamente
   // Esto se actualiza automáticamente cuando items cambia
+  // El selector se recalcula cuando items cambia gracias a la suscripción de Zustand
   const inWishlist = useWishlistStore((state) => {
+    const normalizedProductId = productId;
     return state.items.some((item) => {
       const itemId =
         typeof item.id === "string" ? parseInt(item.id, 10) : item.id;
-      return itemId === productId;
+      return itemId === normalizedProductId;
     });
   });
 
@@ -74,7 +76,16 @@ export default function WishlistButton({
       return;
     }
 
-    if (isInWishlist) {
+    // Leer el estado actual del store en el momento del clic
+    // para evitar problemas de timing con el render
+    const currentState = useWishlistStore.getState();
+    const currentlyInWishlist = currentState.items.some((item) => {
+      const itemId =
+        typeof item.id === "string" ? parseInt(item.id, 10) : item.id;
+      return itemId === productId;
+    });
+
+    if (currentlyInWishlist) {
       removeFromWishlist(product.id);
     } else {
       addToWishlist(product);

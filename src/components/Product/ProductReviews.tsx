@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   IProductReviewsResponse,
   ICreateProductReview,
+  IProductReview,
 } from "@/interface/IProductReview";
 import { Star, Calendar, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -56,8 +57,7 @@ function ReviewForm({
   onReviewAdded,
 }: {
   productId: number;
-  productName: string;
-  onReviewAdded: () => void;
+  onReviewAdded: (newReview?: IProductReview) => void;
 }) {
   const [formData, setFormData] = useState<ICreateProductReview>({
     product_id: productId,
@@ -86,6 +86,8 @@ function ReviewForm({
         throw new Error(errorData.error || "Error al crear el review");
       }
 
+      const responseData = await response.json();
+
       toast.success("¡Review enviado! Será revisado antes de publicarse.");
       setFormData({
         product_id: productId,
@@ -94,7 +96,9 @@ function ReviewForm({
         review: "",
         rating: 5,
       });
-      onReviewAdded();
+
+      // Pasar el review creado para agregarlo inmediatamente a la lista
+      onReviewAdded(responseData.review);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Error al enviar el review"
@@ -233,9 +237,32 @@ export default function ProductReviews({
     loadReviews(currentPage);
   }, [productId, currentPage, loadReviews]);
 
-  const handleReviewAdded = () => {
+  const handleReviewAdded = (newReview?: IProductReview) => {
     setShowReviewForm(false);
-    loadReviews(currentPage);
+
+    // Si se pasó un review nuevo, agregarlo inmediatamente a la lista
+    if (newReview) {
+      if (reviewsData) {
+        // Si ya hay reviews, agregar el nuevo al inicio
+        const updatedReviews = [newReview, ...reviewsData.reviews];
+        setReviewsData({
+          ...reviewsData,
+          reviews: updatedReviews,
+          total: reviewsData.total + 1,
+        });
+      } else {
+        // Si no hay reviews aún, crear la estructura inicial
+        setReviewsData({
+          reviews: [newReview],
+          total: 1,
+          totalPages: 1,
+          currentPage: 1,
+        });
+      }
+    } else {
+      // Si no hay review nuevo, recargar desde el backend
+      loadReviews(currentPage);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -308,11 +335,7 @@ export default function ProductReviews({
       {/* Formulario de review */}
       {showReviewForm && (
         <div className="opacity-100 transform translate-y-0 transition-all duration-500 ease-out">
-          <ReviewForm
-            productId={productId}
-            productName={productName}
-            onReviewAdded={handleReviewAdded}
-          />
+          <ReviewForm productId={productId} onReviewAdded={handleReviewAdded} />
         </div>
       )}
 
