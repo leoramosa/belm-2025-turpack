@@ -3,6 +3,7 @@
 import { useCartStore } from "@/store/useCartStore";
 import type { CartItem } from "@/store/useCartStore";
 import { useUIStore } from "@/store/useUIStore";
+import { getItemImageSrc } from "@/utils/cart";
 import { X, ShoppingBag, Trash2, Plus, Minus } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -93,22 +94,7 @@ export default function CartDrawer() {
                   >
                     <div className="w-16 h-16 relative shrink-0">
                       <Image
-                        src={
-                          (item.variations &&
-                            item.selectedAttributes &&
-                            item.variations.find((v: any) =>
-                              v.attributes.every(
-                                (a: any) =>
-                                  item.selectedAttributes?.[a.id] === a.option
-                              )
-                            )?.image?.src) ||
-                          (typeof item.image === "string"
-                            ? item.image
-                            : (item.image as any)?.sourceUrl) ||
-                          (item.images && item.images.length > 0
-                            ? item.images[0].src
-                            : "/logo-belm-v2.png")
-                        }
+                        src={getItemImageSrc(item)}
                         alt={item.name}
                         fill
                         className="rounded-xl object-cover"
@@ -130,8 +116,8 @@ export default function CartDrawer() {
                                 >
                                   {(() => {
                                     const attr = item.attributes?.find(
-                                      (a: any) =>
-                                        String(a.id) === String(attrId)
+                                      (attribute) =>
+                                        String(attribute.id) === String(attrId)
                                     );
                                     return attr
                                       ? `${attr.name}: ${value}`

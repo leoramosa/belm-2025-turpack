@@ -220,7 +220,7 @@ function getCategoryHierarchy(
   }
 
   // Buscar el padre
-  let current: IProductCategoryNode | null = category;
+  const current: IProductCategoryNode | null = category;
   const categoryMap = new Map<number, IProductCategoryNode>();
 
   function buildMap(nodes: IProductCategoryNode[]) {

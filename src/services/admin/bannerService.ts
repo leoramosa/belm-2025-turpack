@@ -20,6 +20,36 @@ interface MediaItem {
   date: string;
 }
 
+type BannerApiResponse = {
+  id: number;
+  title?: string | { rendered?: string };
+  source_url?: string;
+  banner_url?: string;
+  alt_text?: string;
+  is_enabled?: boolean;
+  discount_code?: string;
+  order?: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+type BannerDetailsResponse = {
+  is_enabled?: boolean;
+  banner_url?: string;
+  discount_code?: string;
+  order?: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+type BannerImageResponse = {
+  id: number;
+  title?: string;
+  source_url: string;
+  alt_text?: string;
+  created_at?: string;
+};
+
 const WORDPRESS_API_URL = getWordpressApiUrl();
 const WORDPRESS_WC_CONSUMER_KEY = getWordpressConsumerKey();
 const WORDPRESS_WC_CONSUMER_SECRET = getWordpressConsumerSecret();
@@ -43,10 +73,10 @@ export class BannerService {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
-      const banners = await response.json();
+      const banners = (await response.json()) as BannerApiResponse[];
 
       // Transformar la respuesta del backend al formato AdminBanner
-      return banners.map((banner: any) => ({
+      return banners.map((banner) => ({
         id: banner.id.toString(),
         mediaItem: {
           id: banner.id,
@@ -99,9 +129,9 @@ export class BannerService {
         },
       });
 
-      let bannerData: any = {};
+      let bannerData: BannerDetailsResponse | null = null;
       if (bannerResponse.ok) {
-        bannerData = await bannerResponse.json();
+        bannerData = (await bannerResponse.json()) as BannerDetailsResponse;
       }
 
       return {
@@ -120,10 +150,10 @@ export class BannerService {
               : mediaItem.title?.rendered) ||
             `Banner ${id}`,
         },
-        isEnabled: bannerData.is_enabled ?? true,
-        url: bannerData.banner_url || "",
-        discountCode: bannerData.discount_code || "",
-        order: bannerData.order || parseInt(id) || 0,
+        isEnabled: bannerData?.is_enabled ?? true,
+        url: bannerData?.banner_url || "",
+        discountCode: bannerData?.discount_code || "",
+        order: bannerData?.order ?? (parseInt(id, 10) || 0),
         createdAt: mediaItem.date || new Date().toISOString(),
         updatedAt: mediaItem.modified || new Date().toISOString(),
       };
@@ -349,10 +379,10 @@ export class BannerService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const bannerItems = await response.json();
+      const bannerItems = (await response.json()) as BannerImageResponse[];
 
       // Transformar al formato MediaItem
-      return bannerItems.map((item: any) => ({
+      return bannerItems.map((item) => ({
         id: item.id,
         title: {
           rendered: item.title || `Banner ${item.id}`,

@@ -124,7 +124,7 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
   // Determinar el precio y precio regular a mostrar
   let displayPrice: number | null = null;
   let displayRegularPrice: number | null = null;
-  let currency = pricing.currency;
+  const currency = pricing.currency;
 
   if (isVariableProduct && firstVariation) {
     // Producto variable: usar precio de la primera variación

@@ -27,10 +27,8 @@ export default function CategorySubcategories({
   const [canGoNext, setCanGoNext] = useState(true);
   const [currentSlidesPerView, setCurrentSlidesPerView] = useState(2);
 
-  // Si no hay subcategorías, no mostrar nada
-  if (!subcategories || subcategories.length === 0) {
-    return null;
-  }
+  const hasSubcategories =
+    Array.isArray(subcategories) && subcategories.length > 0;
 
   // Determinar qué categorías mostrar y ordenarlas por ID (orden de creación)
   const categoriesToShowRaw = selectedCategory?.children || subcategories;
@@ -43,9 +41,6 @@ export default function CategorySubcategories({
   const currentTitle = selectedCategory
     ? selectedCategory.name
     : parentCategoryName || "Subcategorías";
-
-  // Calcular si se deben habilitar las flechas
-  const shouldEnableArrows = categoriesToShow.length > currentSlidesPerView;
 
   // Actualizar slidesPerView según el tamaño de pantalla
   useEffect(() => {
@@ -66,6 +61,14 @@ export default function CategorySubcategories({
     window.addEventListener("resize", updateSlidesPerView);
     return () => window.removeEventListener("resize", updateSlidesPerView);
   }, []);
+
+  // Si no hay subcategorías, no mostrar nada
+  if (!hasSubcategories) {
+    return null;
+  }
+
+  // Calcular si se deben habilitar las flechas
+  const shouldEnableArrows = categoriesToShow.length > currentSlidesPerView;
 
   const updateNavigationState = (swiper: SwiperType) => {
     setCanGoPrev(swiper.isBeginning === false);

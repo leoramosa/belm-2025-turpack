@@ -1,6 +1,8 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useCartStore } from "@/store/useCartStore";
+import { getItemImageSrc } from "@/utils/cart";
 import {
   FiArrowLeft as ArrowLeft,
   FiX as X,
@@ -38,7 +40,7 @@ export default function CartPage() {
   const totalQuantity = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-white">
       <div className="pt-10 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 ">
           {/* Header */}
@@ -103,27 +105,13 @@ export default function CartPage() {
                         }
                         className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl"
                       >
-                        <div className="w-20 h-20 shrink-0">
-                          <img
-                            src={
-                              (item.variations &&
-                                item.selectedAttributes &&
-                                item.variations.find((v: any) =>
-                                  v.attributes.every(
-                                    (a: any) =>
-                                      item.selectedAttributes?.[a.id] ===
-                                      a.option
-                                  )
-                                )?.image?.src) ||
-                              (typeof item.image === "string"
-                                ? item.image
-                                : (item.image as any)?.sourceUrl) ||
-                              (item.images && item.images.length > 0
-                                ? item.images[0].src
-                                : "/logo-belm-v2.png")
-                            }
+                        <div className="w-20 h-20 shrink-0 relative">
+                          <Image
+                            src={getItemImageSrc(item)}
                             alt={item.name}
-                            className="w-full h-full object-cover rounded-xl"
+                            fill
+                            sizes="80px"
+                            className="object-cover rounded-xl"
                           />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -142,8 +130,9 @@ export default function CartPage() {
                                     >
                                       {(() => {
                                         const attr = item.attributes?.find(
-                                          (a: any) =>
-                                            String(a.id) === String(attrId)
+                                          (attribute) =>
+                                            String(attribute.id) ===
+                                            String(attrId)
                                         );
                                         return attr
                                           ? `${attr.name}: ${value}`

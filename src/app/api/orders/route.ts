@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import CryptoJS from "crypto-js";
 
+interface WooCommerceOrder {
+  id: number;
+  billing?: {
+    email?: string | null;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+type OrderPayload = Record<string, unknown>;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -23,8 +34,8 @@ export async function GET(request: NextRequest) {
     const encoded = Buffer.from(credentials).toString("base64");
     const authHeader = `Basic ${encoded}`;
 
-    let ordersByCustomer: any[] = [];
-    let ordersByEmail: any[] = [];
+    let ordersByCustomer: WooCommerceOrder[] = [];
+    let ordersByEmail: WooCommerceOrder[] = [];
 
     // Intentar obtener órdenes por customerId primero
     if (customerId) {
@@ -39,8 +50,10 @@ export async function GET(request: NextRequest) {
           cache: "no-store",
         });
         if (byIdRes.ok) {
-          const data = await byIdRes.json();
-          ordersByCustomer = Array.isArray(data) ? data : [];
+          const data: unknown = await byIdRes.json();
+          ordersByCustomer = Array.isArray(data)
+            ? (data as WooCommerceOrder[])
+            : [];
         }
       } catch {
         // Error silencioso
@@ -62,8 +75,10 @@ export async function GET(request: NextRequest) {
           cache: "no-store",
         });
         if (byEmailRes.ok) {
-          const data = await byEmailRes.json();
-          ordersByEmail = Array.isArray(data) ? data : [];
+          const data: unknown = await byEmailRes.json();
+          ordersByEmail = Array.isArray(data)
+            ? (data as WooCommerceOrder[])
+            : [];
         }
       } catch {
         // Error silencioso
@@ -71,10 +86,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Filtrar pedidos por email - si el email coincide, es válido (incluso si customer_id es 0)
-    const validOrdersByEmail = ordersByEmail.filter((order) => {
-      const emailMatches = order.billing?.email === email;
-      return emailMatches;
-    });
+    const validOrdersByEmail = ordersByEmail.filter(
+      (order) => order.billing?.email === email
+    );
 
     // Combinar y eliminar duplicados por id
     const allOrders = [...ordersByCustomer, ...validOrdersByEmail].filter(
@@ -95,9 +109,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const normalizeParams = (input: Record<string, string | number>) =>
+  Object.entries(input).reduce<Record<string, string>>(
+    (accumulator, [key, value]) => {
+      accumulator[key] = String(value);
+      return accumulator;
+    },
+    {}
+  );
+
 export async function POST(request: NextRequest) {
   try {
-    const orderPayload = await request.json();
+    const orderPayload = (await request.json()) as OrderPayload;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     const consumerKey = process.env.WC_CONSUMER_KEY;
@@ -118,21 +141,22 @@ export async function POST(request: NextRequest) {
     ) => {
       const nonce = Math.random().toString(36).substring(2);
       const timestamp = Math.floor(Date.now() / 1000);
-      const oauthParams: Record<string, string | number> = {
+      const oauthParams = normalizeParams({
         oauth_consumer_key: consumerKey,
         oauth_nonce: nonce,
         oauth_signature_method: "HMAC-SHA1",
         oauth_timestamp: timestamp,
         oauth_version: "1.0",
+      });
+      const allParams = {
+        ...oauthParams,
+        ...normalizeParams(params),
       };
-      const allParams = { ...oauthParams, ...params };
       const paramString = Object.keys(allParams)
         .sort()
         .map(
           (key) =>
-            `${encodeURIComponent(key)}=${encodeURIComponent(
-              allParams[key] as string
-            )}`
+            `${encodeURIComponent(key)}=${encodeURIComponent(allParams[key])}`
         )
         .join("&");
       const baseUrl = url.split("?")[0];
@@ -143,16 +167,17 @@ export async function POST(request: NextRequest) {
       const signature = CryptoJS.HmacSHA1(baseString, signingKey).toString(
         CryptoJS.enc.Base64
       );
-      return { ...oauthParams, oauth_signature: encodeURIComponent(signature) };
+      return {
+        ...oauthParams,
+        oauth_signature: encodeURIComponent(signature),
+      };
     };
 
     const url = `${apiUrl}/wp-json/wc/v3/orders`;
     const oauthParams = generateOAuthSignature(url, "POST");
 
     // Construir URL con parámetros OAuth
-    const queryString = new URLSearchParams(
-      oauthParams as Record<string, string>
-    ).toString();
+    const queryString = new URLSearchParams(oauthParams).toString();
     const fullUrl = `${url}?${queryString}`;
 
     const response = await fetch(fullUrl, {

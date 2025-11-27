@@ -65,7 +65,7 @@ function getCategoryHierarchy(
   }
 
   // Buscar el padre
-  let current: IProductCategoryNode | null = category;
+  const current: IProductCategoryNode | null = category;
   const categoryMap = new Map<number, IProductCategoryNode>();
 
   function buildMap(nodes: IProductCategoryNode[]) {
@@ -184,7 +184,7 @@ export function ProductGridClient({
   }, []);
 
   const filteredProducts = useMemo(() => {
-    let filtered = productList.filter((product) => {
+    const filtered = productList.filter((product) => {
       // Search filter (from sidebar)
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
