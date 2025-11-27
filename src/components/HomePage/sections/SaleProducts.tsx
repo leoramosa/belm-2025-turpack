@@ -23,19 +23,12 @@ const SaleProducts = ({ products: initialProducts }: SaleProductsProps) => {
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
   const [canGoPrev, setCanGoPrev] = useState(false);
   const [canGoNext, setCanGoNext] = useState(true);
-  // Si recibimos productos como prop, usarlos directamente
+  // Si recibimos productos como prop, ordenarlos y usarlos
   useEffect(() => {
     if (initialProducts) {
-      setProducts(initialProducts);
-      setLoading(false);
-    }
-  }, [initialProducts]);
-
-  // Solo cargar si no tenemos productos iniciales
-  useEffect(() => {
-    // Los productos ya vienen desde el servidor en initialProducts
-    if (initialProducts) {
-      setProducts(initialProducts);
+      // Ordenar productos por ID ascendente (cambiar de desc a asc)
+      const sortedProducts = [...initialProducts].sort((a, b) => a.id - b.id);
+      setProducts(sortedProducts);
       setLoading(false);
     } else {
       // Si no hay productos iniciales, no mostrar nada

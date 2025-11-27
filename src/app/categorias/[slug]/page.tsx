@@ -30,22 +30,38 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   return (
     <div className="min-h-screen ">
-      {/* Mostrar subcategorías si existen */}
-      {category.children && category.children.length > 0 && (
+      {/* Mostrar subcategorías si existen - CategorySubcategories maneja el título */}
+      {category.children && category.children.length > 0 ? (
         <CategorySubcategories
+          key={`subcategories-${category.id}`}
           subcategories={category.children}
           parentCategoryName={category.name}
         />
+      ) : (
+        /* Si no hay subcategorías, mostrar el título aquí */
+        <div className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold mb-2 text-primary text-center pt-10">
+            {category.name}
+          </h1>
+          {category.description && (
+            <p className="text-gray-600 text-lg text-center">
+              {category.description.replace(/<[^>]*>/g, " ").trim()}
+            </p>
+          )}
+        </div>
       )}
 
       {filteredProducts.length ? (
         <ProductGridClient
-          title={`Productos en ${category.name}`}
+          key={`products-${category.id}`}
           products={filteredProducts}
           disableAutoCategoryFilter={true}
         />
       ) : (
-        <section className="mx-auto flex w-full max-w-5xl flex-col items-center gap-4 px-4 py-20 text-center">
+        <section
+          key={`empty-${category.id}`}
+          className="mx-auto flex w-full max-w-5xl flex-col items-center gap-4 px-4 py-20 text-center"
+        >
           <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
             No hay productos en esta categoría
           </h2>

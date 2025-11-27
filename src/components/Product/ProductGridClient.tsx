@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { IoGridOutline, IoListOutline } from "react-icons/io5";
 
@@ -21,13 +21,21 @@ import { isColorAttribute, extractColorValue } from "@/utils/productAttributes";
 import { IProductCategoryNode } from "@/types/ICategory";
 
 interface ProductGridClientProps {
-  title: string;
+  title?: string; // Hacer opcional porque si hay customHeader, no se usa
   products: IProduct[];
   disableAutoCategoryFilter?: boolean; // Para desactivar el filtro automático de categoría cuando los productos ya vienen filtrados
   initialSearchQuery?: string; // Término de búsqueda inicial desde la URL
+  customHeader?: React.ReactNode; // Header personalizado opcional
+  defaultSortBy?: SortOption; // Ordenamiento por defecto
 }
 
-type SortOption = "name" | "price-asc" | "price-desc" | "newest";
+type SortOption =
+  | "name"
+  | "price-asc"
+  | "price-desc"
+  | "newest"
+  | "popularity"
+  | "sale";
 type ViewMode = "grid" | "list";
 
 function findCategoryInTree(
@@ -110,6 +118,8 @@ export function ProductGridClient({
   products,
   disableAutoCategoryFilter = false,
   initialSearchQuery = "",
+  customHeader,
+  defaultSortBy = "name",
 }: ProductGridClientProps) {
   const pathname = usePathname();
   const setProducts = useProductStore(
@@ -126,7 +136,7 @@ export function ProductGridClient({
     return 9;
   });
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [sortBy, setSortBy] = useState<SortOption>("name");
+  const [sortBy, setSortBy] = useState<SortOption>(defaultSortBy);
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
 
   // Detectar si estamos en una página de categoría y actualizar filtros
@@ -155,7 +165,11 @@ export function ProductGridClient({
   // Este efecto ya no maneja filtros de categoría cuando disableAutoCategoryFilter está activo.
 
   useEffect(() => {
-    setProducts(products);
+    // Limpiar y actualizar el store con los productos recibidos, preservando el orden
+    // Esto asegura que no haya productos residuales de otras páginas
+    if (products && products.length > 0) {
+      setProducts(products);
+    }
   }, [products, setProducts]);
 
   // Sincronizar searchQuery cuando cambia initialSearchQuery (desde URL)
@@ -184,7 +198,10 @@ export function ProductGridClient({
   }, []);
 
   const filteredProducts = useMemo(() => {
-    const filtered = productList.filter((product) => {
+    // Usar productList del store (que se actualiza con los productos recibidos)
+    // pero si está vacío, usar los productos recibidos directamente
+    const sourceProducts = productList.length > 0 ? productList : products;
+    const filtered = sourceProducts.filter((product) => {
       // Search filter (from sidebar)
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
@@ -251,14 +268,27 @@ export function ProductGridClient({
         if (!hasSelectedColor) return false;
       }
 
-      // Tags filter (using category names as tags for now)
+      // Tags filter - soporta tags reales (IProductTag) y nombres de categorías como fallback
       if (filters.selectedTags.length > 0) {
-        const productCategoryNames = product.categories.map((cat) =>
-          cat.name.toLowerCase()
-        );
-        const hasSelectedTag = filters.selectedTags.some((tag) =>
-          productCategoryNames.includes(tag.toLowerCase())
-        );
+        // Primero intentar con tags reales del producto
+        let hasSelectedTag = false;
+        if (product.tags && product.tags.length > 0) {
+          const productTagSlugs = product.tags.map((tag) =>
+            tag.slug.toLowerCase()
+          );
+          hasSelectedTag = filters.selectedTags.some((tag) =>
+            productTagSlugs.includes(tag.toLowerCase())
+          );
+        }
+        // Si no hay tags reales o no coinciden, usar nombres de categorías como fallback
+        if (!hasSelectedTag) {
+          const productCategoryNames = product.categories.map((cat) =>
+            cat.name.toLowerCase()
+          );
+          hasSelectedTag = filters.selectedTags.some((tag) =>
+            productCategoryNames.includes(tag.toLowerCase())
+          );
+        }
         if (!hasSelectedTag) return false;
       }
 
@@ -280,14 +310,24 @@ export function ProductGridClient({
           const priceB2 = b.pricing.price ?? 0;
           return priceB2 - priceA2;
         case "newest":
-          return b.id - a.id;
+          // Mantener el orden original del servidor (ya viene ordenado por fecha)
+          // No reordenar para preservar el orden que viene del backend
+          return 0;
+        case "popularity":
+          // Mantener el orden original del servidor (ya viene ordenado por popularidad)
+          // No reordenar para preservar el orden que viene del backend
+          return 0;
+        case "sale":
+          // Mantener el orden original del servidor (productos en oferta ya filtrados)
+          // No reordenar para preservar el orden que viene del backend
+          return 0;
         default:
           return 0;
       }
     });
 
     return sorted;
-  }, [productList, filters, searchQuery, sortBy]);
+  }, [productList, products, filters, searchQuery, sortBy]);
 
   // Resetear a página 1 cuando cambian los filtros importantes o los productos filtrados
   useEffect(() => {
@@ -317,6 +357,20 @@ export function ProductGridClient({
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8 lg:py-12">
+      {/* Mostrar customHeader si existe, sino mostrar título por defecto */}
+      {/* IMPORTANTE: Si hay customHeader, NO mostrar el título por defecto */}
+      {customHeader && <>{customHeader}</>}
+      {!customHeader && title && (
+        <div className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold mb-2 text-primary text-center pt-10">
+            {title}
+          </h1>
+          <p className="text-gray-600 text-lg text-center">
+            Descubre nuestra selección de productos con los mejores atributos y
+            precios.
+          </p>
+        </div>
+      )}
       <div className="">
         {/* Search Bar */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -382,6 +436,8 @@ export function ProductGridClient({
                 <option value="price-asc">Precio: menor a mayor</option>
                 <option value="price-desc">Precio: mayor a menor</option>
                 <option value="newest">Más recientes</option>
+                <option value="popularity">Más vendidos</option>
+                <option value="sale">Ofertas</option>
               </select>
               <svg
                 className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600"

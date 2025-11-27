@@ -59,6 +59,21 @@ export interface ProductPricing {
   currency: string;
 }
 
+export interface IProductTag {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface IProductAttributeGlobal {
+  id: number;
+  name: string;
+  slug: string;
+  visible: boolean;
+  variation: boolean;
+  options: string[];
+}
+
 export interface IProduct {
   id: number;
   slug: string;
@@ -74,6 +89,7 @@ export interface IProduct {
   categories: IProductCategory[];
   attributes: ProductAttribute[];
   variations: ProductVariation[];
+  tags?: IProductTag[];
 }
 
 export interface WordpressProductResponse {

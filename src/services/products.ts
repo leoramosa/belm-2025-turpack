@@ -188,6 +188,25 @@ export async function fetchNewProducts(
 }
 
 /**
+ * Obtiene TODOS los productos nuevos ordenados por fecha (más recientes primero)
+ * Similar a fetchNewProducts pero sin límite de cantidad
+ */
+export async function fetchAllNewProducts(
+  includeOutOfStock: boolean = true
+): Promise<IProduct[]> {
+  const products = await fetchProducts({
+    fetchAll: true,
+    includeOutOfStock,
+    orderby: "date",
+    order: "desc",
+  });
+
+  // Asegurar ordenamiento por ID descendente como respaldo
+  // Los IDs más altos generalmente corresponden a productos más recientes
+  return products.sort((a, b) => b.id - a.id);
+}
+
+/**
  * Obtiene productos en oferta (con descuento)
  */
 export async function fetchSaleProducts(
@@ -198,6 +217,8 @@ export async function fetchSaleProducts(
   const allProducts = await fetchProducts({
     perPage: limit * 3,
     includeOutOfStock,
+    orderby: "date",
+    order: "asc",
     fetchAll: false,
     page: 1,
   });
