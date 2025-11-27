@@ -110,7 +110,7 @@ const ProductShowcase = ({ products = [] }: ProductShowcaseProps) => {
               <h3 className="text-2xl font-bold text-gray-900"></h3>
 
               <a
-                href="/categoria/moda-y-accesorios"
+                href="/categorias/moda-y-accesorios"
                 className="flex items-center text-primary hover:text-purple-700 font-medium transition-colors group"
               >
                 VER MÁS

@@ -331,7 +331,9 @@ const DynamicProductShowcase: React.FC<DynamicProductShowcaseProps> = ({
                     Descubre nuestra selección premium
                   </p>
                 </div>
-                <Link href={`/categoria/${categoryData?.slug || categorySlug}`}>
+                <Link
+                  href={`/categorias/${categoryData?.slug || categorySlug}`}
+                >
                   <button className="absolute bottom-6 right-6 text-xs md:text-sm lg:hidden  text-primary bg-white flex items-center  justify-center xl:w-auto rounded-lg border border-primary  px-3 py-3 ">
                     Ver Más
                     <svg
@@ -360,7 +362,7 @@ const DynamicProductShowcase: React.FC<DynamicProductShowcaseProps> = ({
               </h3>
 
               <Link
-                href={`/categoria/${categoryData?.slug || categorySlug}`}
+                href={`/categorias/${categoryData?.slug || categorySlug}`}
                 className=" items-center hidden lg:flex w-full lg:w-auto text-center font-medium transition-colors animate-fade-in-right animation-delay-400"
               >
                 <button className="transition-colors cursor-pointer duration-300 flex items-center w-full justify-center xl:w-auto rounded-2xl bg-primary px-4 py-3 border border-primary text-white hover:bg-primary-dark hover:text-white hover:border hover:border-primary">
