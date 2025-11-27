@@ -1,7 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-
 const BenefitsSection = () => {
   const benefits = [
     {
@@ -58,28 +56,6 @@ const BenefitsSection = () => {
     },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut" as const,
-      },
-    },
-  };
-
   return (
     <section className="py-20 bg-gradient-to-br from-emerald-50 to-teal-50 relative overflow-hidden">
       {/* Background Pattern */}
@@ -95,61 +71,38 @@ const BenefitsSection = () => {
       />
       <div className="container mx-auto px-4 lg:px-8 relative z-10">
         {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            viewport={{ once: true }}
-            className="text-4xl lg:text-5xl font-bold text-emerald-900 mb-4"
+        <div className="text-center mb-16 animate-fade-in">
+          <h2
+            className="text-4xl lg:text-5xl font-bold text-emerald-900 mb-4 animate-slide-in-up"
+            style={{ animationDelay: "0.2s" }}
           >
             ¿Por qué elegirnos?
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            viewport={{ once: true }}
-            className="text-lg text-emerald-700"
+          </h2>
+          <p
+            className="text-lg text-emerald-700 animate-slide-in-up"
+            style={{ animationDelay: "0.4s" }}
           >
             Beneficios exclusivos para ti
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
         {/* Glassmorphism Benefit Cards */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           {benefits.map((benefit, idx) => (
-            <motion.div
+            <div
               key={benefit.id}
-              variants={itemVariants}
-              whileHover={{
-                scale: 1.06,
-                boxShadow: "0 8px 32px 0 rgba(31,38,135,0.18)",
+              className="relative rounded-2xl p-8 flex flex-col items-center bg-white/30 backdrop-blur-xl border border-white/30 ring-1 ring-white/40 shadow-xl transition-all duration-300 group overflow-hidden hover:scale-105 hover:shadow-2xl animate-fade-in-up"
+              style={{
+                boxShadow: "0 4px 24px 0 rgba(31,38,135,0.10)",
+                animationDelay: `${idx * 200}ms`,
               }}
-              className="relative rounded-2xl p-8 flex flex-col items-center bg-white/30 backdrop-blur-xl border border-white/30 ring-1 ring-white/40 shadow-xl transition-all duration-300 group overflow-hidden"
-              style={{ boxShadow: "0 4px 24px 0 rgba(31,38,135,0.10)" }}
             >
               {/* Animated Icon */}
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                whileInView={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 * idx }}
-                viewport={{ once: true }}
-                className="mb-4 text-4xl drop-shadow-lg text-emerald-700"
+              <div
+                className="mb-4 text-4xl drop-shadow-lg text-emerald-700 animate-scale-in"
+                style={{ animationDelay: `${idx * 200 + 100}ms` }}
               >
                 {benefit.icon}
-              </motion.div>
+              </div>
               <h3 className="text-xl font-bold text-emerald-900 mb-2 drop-shadow-sm text-center">
                 {benefit.title}
               </h3>
@@ -160,9 +113,9 @@ const BenefitsSection = () => {
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent rounded-2xl" />
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
