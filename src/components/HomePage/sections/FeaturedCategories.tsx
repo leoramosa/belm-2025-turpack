@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { FeaturedCategorySlide } from "@/services/admin/featuredCategoriesService";
 import { toast } from "sonner";
@@ -89,6 +90,8 @@ const getDefaultCategories = (): CategoryItem[] => [
 ];
 
 const FeaturedCategories = ({ initialData }: FeaturedCategoriesProps) => {
+  const router = useRouter();
+
   // Si tenemos datos iniciales, usarlos directamente sin estado de loading
   const [categories, setCategories] = useState<CategoryItem[]>(() => {
     if (initialData && initialData.length > 0) {
@@ -180,10 +183,15 @@ const FeaturedCategories = ({ initialData }: FeaturedCategoriesProps) => {
     return category.image;
   };
 
-  // Función para manejar clic en categoría
-  const handleCategoryClick = async (category: CategoryItem) => {
-    // Si tiene código de descuento, copiarlo y mostrar notificación
+  // Función para manejar clic en categoría (solo para código de descuento)
+  const handleCategoryClick = async (
+    e: React.MouseEvent,
+    category: CategoryItem
+  ) => {
+    // Solo manejar si tiene código de descuento
     if (category.discountCode) {
+      e.preventDefault();
+      e.stopPropagation();
       try {
         await navigator.clipboard.writeText(category.discountCode);
         toast.success("Código de cupón copiado", {
@@ -204,12 +212,12 @@ const FeaturedCategories = ({ initialData }: FeaturedCategoriesProps) => {
           duration: 3000,
         });
       }
+      // Navegar después de copiar el código
+      if (category.href && category.href !== "#") {
+        router.push(category.href);
+      }
     }
-
-    // Si tiene URL personalizada, redirigir
-    if (category.href && category.href !== "#") {
-      window.open(category.href, "noopener,noreferrer");
-    }
+    // Si no tiene código de descuento, el Link de Next.js manejará la navegación normalmente
   };
 
   // Animaciones removidas - ahora usando Tailwind CSS
@@ -297,7 +305,6 @@ const FeaturedCategories = ({ initialData }: FeaturedCategoriesProps) => {
                     backgroundSize: "cover",
                     backgroundPosition: "center top",
                   }}
-                  onClick={() => handleCategoryClick(cat)}
                 >
                   <div className="p-10 flex flex-col justify-center items-center w-full">
                     {/* Glassmorphism Overlay */}
@@ -308,12 +315,23 @@ const FeaturedCategories = ({ initialData }: FeaturedCategoriesProps) => {
                       </h3>
                     </div>
 
-                    {/* Link Overlay - solo si no tiene código de descuento */}
-                    {!cat.discountCode && (
-                      <Link href={cat.href} className="absolute inset-0 z-20">
+                    {/* Link Overlay - usar Link de Next.js para navegación normal en la misma ventana */}
+                    {cat.href && cat.href !== "#" ? (
+                      <Link
+                        href={cat.href}
+                        className="absolute inset-0 z-20"
+                        onClick={(e) => {
+                          // Si tiene código de descuento, manejar el clic aquí
+                          if (cat.discountCode) {
+                            e.preventDefault();
+                            handleCategoryClick(e, cat);
+                          }
+                          // Si no tiene código de descuento, dejar que Link maneje la navegación normalmente
+                        }}
+                      >
                         <span className="sr-only">Ver {cat.name}</span>
                       </Link>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </SwiperSlide>
