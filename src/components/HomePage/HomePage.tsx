@@ -4,7 +4,6 @@ import { DynamicProductShowcases } from "./sections/DynamicProductShowcase";
 import NewProducts from "./sections/NewProducts";
 import BestSeller from "./sections/BestSeller";
 import SaleProducts from "./sections/SaleProducts";
-import ProductShowcase from "./sections/ProductShowcase";
 import { HeroBannerSlide } from "@/services/admin/heroBannerService";
 import { FeaturedCategorySlide } from "@/services/admin/featuredCategoriesService";
 import { IProduct } from "@/types/product";
