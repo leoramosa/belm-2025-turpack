@@ -1,4 +1,4 @@
-import { IProduct } from "@/types/product";
+import { IProduct, WordpressProductAttribute } from "@/types/product";
 import { useUserStore } from "@/store/userStore";
 
 function getAuthToken() {
@@ -125,7 +125,7 @@ export class WishlistSyncService {
 
       // Mapear atributos básicos (sin enriquecer términos, eso requiere server-side)
       const attributes =
-        product.attributes?.map((attr: any) => ({
+        product.attributes?.map((attr: WordpressProductAttribute) => ({
           id: attr.id || 0,
           name: attr.name || "",
           slug:
@@ -184,9 +184,14 @@ export class WishlistSyncService {
         const wishlist = data.wishlist || data.data?.wishlist || [];
 
         // Extraer solo los IDs de los productos
-        const productIds = wishlist
-          .map((item: any) => {
-            // El backend puede devolver el ID como string o number, o dentro de un objeto
+        // El backend puede devolver el ID como string o number, o dentro de un objeto
+        interface WishlistItem {
+          id?: string | number;
+          product_id?: string | number;
+        }
+
+        const productIds = (wishlist as WishlistItem[])
+          .map((item) => {
             const id = item.id || item.product_id;
             return id ? parseInt(String(id), 10) : null;
           })
