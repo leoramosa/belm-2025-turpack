@@ -4,10 +4,11 @@ import { fetchProductReviews, createProductReview } from "@/services/reviews";
 // GET - Obtener reviews de un producto específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = parseInt(params.id);
+    const { id } = await params;
+    const productId = parseInt(id);
     if (isNaN(productId)) {
       return NextResponse.json(
         { error: "ID de producto inválido" },
@@ -56,10 +57,11 @@ export async function GET(
 // POST - Crear un nuevo review para un producto
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = parseInt(params.id);
+    const { id } = await params;
+    const productId = parseInt(id);
     if (isNaN(productId)) {
       return NextResponse.json(
         { error: "ID de producto inválido" },
