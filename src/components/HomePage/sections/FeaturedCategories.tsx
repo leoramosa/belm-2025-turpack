@@ -38,7 +38,7 @@ const getDefaultCategories = (): CategoryItem[] => [
     subtitle: "Nourishes & softens",
     productInfo: "16 FL OZ / 473 ml",
     image: "/hair.jpg",
-    href: "/categoria/cabello",
+    href: "/categorias/cabello",
     order: 0,
   },
   {
@@ -47,7 +47,7 @@ const getDefaultCategories = (): CategoryItem[] => [
     subtitle: "Nourishes & softens",
     productInfo: "16 FL OZ / 473 ml",
     image: "/body.jpg",
-    href: "/categoria/cuidado-corporal",
+    href: "/categorias/cuidado-corporal",
     order: 1,
   },
   {
@@ -56,7 +56,7 @@ const getDefaultCategories = (): CategoryItem[] => [
     subtitle: "Cleanses & revitalizes",
     productInfo: "16 FL OZ / 473 ml",
     image: "/facial.jpg",
-    href: "/categoria/cuidado-facial",
+    href: "/categorias/cuidado-facial",
     order: 2,
   },
   {
@@ -65,7 +65,7 @@ const getDefaultCategories = (): CategoryItem[] => [
     subtitle: "Deep conditioning",
     productInfo: "8 FL OZ / 237 ml",
     image: "/fraga.jpg",
-    href: "/categoria/fragancias",
+    href: "/categorias/fragancias",
     order: 3,
   },
   {
@@ -74,7 +74,7 @@ const getDefaultCategories = (): CategoryItem[] => [
     subtitle: "Repairs & protects",
     productInfo: "4 FL OZ / 118 ml",
     image: "/make.jpg",
-    href: "/categoria/maquillaje",
+    href: "/categorias/maquillaje",
     order: 4,
   },
   {
@@ -83,7 +83,7 @@ const getDefaultCategories = (): CategoryItem[] => [
     subtitle: "Hydrates & nourishes",
     productInfo: "2 FL OZ / 59 ml",
     image: "/acce.jpg",
-    href: "/categoria/moda-y-accesorios",
+    href: "/categorias/moda-y-accesorios",
     order: 5,
   },
 ];
@@ -93,12 +93,12 @@ const FeaturedCategories = ({ initialData }: FeaturedCategoriesProps) => {
   const [categories, setCategories] = useState<CategoryItem[]>(() => {
     if (initialData && initialData.length > 0) {
       const hrefMap: Record<string, string> = {
-        Cabello: "/categoria/cabello",
-        "Cuidado Corporal": "/categoria/cuidado-corporal",
-        "Cuidado Facial": "/categoria/cuidado-facial",
-        Fragancias: "/categoria/fragancias",
-        Maquillaje: "/categoria/maquillaje",
-        "Moda y Accesorios": "/categoria/moda-y-accesorios",
+        Cabello: "/categorias/cabello",
+        "Cuidado Corporal": "/categorias/cuidado-corporal",
+        "Cuidado Facial": "/categorias/cuidado-facial",
+        Fragancias: "/categorias/fragancias",
+        Maquillaje: "/categorias/maquillaje",
+        "Moda y Accesorios": "/categorias/moda-y-accesorios",
       };
 
       return initialData.map((featured: FeaturedCategorySlide) => ({
@@ -146,12 +146,12 @@ const FeaturedCategories = ({ initialData }: FeaturedCategoriesProps) => {
 
     // Mapear categorías solo cuando cambia initialData
     const hrefMap: Record<string, string> = {
-      Cabello: "/categoria/cabello",
-      "Cuidado Corporal": "/categoria/cuidado-corporal",
-      "Cuidado Facial": "/categoria/cuidado-facial",
-      Fragancias: "/categoria/fragancias",
-      Maquillaje: "/categoria/maquillaje",
-      "Moda y Accesorios": "/categoria/moda-y-accesorios",
+      Cabello: "/categorias/cabello",
+      "Cuidado Corporal": "/categorias/cuidado-corporal",
+      "Cuidado Facial": "/categorias/cuidado-facial",
+      Fragancias: "/categorias/fragancias",
+      Maquillaje: "/categorias/maquillaje",
+      "Moda y Accesorios": "/categorias/moda-y-accesorios",
     };
 
     const mappedCategories = initialData.map(
