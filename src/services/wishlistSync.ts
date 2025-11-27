@@ -101,6 +101,7 @@ export class WishlistSyncService {
     try {
       const token = getAuthToken();
       if (!token) {
+        console.warn("No hay token, no se puede cargar wishlist del backend");
         return [];
       }
 
@@ -111,6 +112,8 @@ export class WishlistSyncService {
       }
 
       const endpoint = `${apiUrl}/wp-json/belm/v1/wishlist`;
+      console.log("Fetching wishlist from:", endpoint);
+
       const response = await fetch(endpoint, {
         method: "GET",
         headers: getAuthHeaders(),
@@ -119,10 +122,35 @@ export class WishlistSyncService {
 
       if (response.ok) {
         const data = await response.json();
-        const wishlist = data.wishlist || data.data?.wishlist || [];
-        return wishlist;
+        console.log("Respuesta del backend (raw):", data);
+
+        // Intentar diferentes estructuras de respuesta
+        const wishlist =
+          data.wishlist ||
+          data.data?.wishlist ||
+          data.data?.data?.wishlist ||
+          (Array.isArray(data) ? data : []) ||
+          [];
+
+        console.log("Wishlist parseada:", wishlist.length, "productos");
+
+        // Validar que sean productos válidos
+        if (Array.isArray(wishlist) && wishlist.length > 0) {
+          const validProducts = wishlist.filter(
+            (item: any) => item && item.id && item.name
+          );
+          console.log("Productos válidos:", validProducts.length);
+          return validProducts;
+        }
+
+        return [];
       } else {
-        console.warn("Error cargando wishlist del backend");
+        const errorText = await response.text();
+        console.warn(
+          "Error cargando wishlist del backend:",
+          response.status,
+          errorText
+        );
         return [];
       }
     } catch (error) {

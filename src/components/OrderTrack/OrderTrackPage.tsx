@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrdersStore } from "@/store/useOrdersStore";
 
-import { motion } from "framer-motion";
 import {
   Package,
   Calendar,
@@ -19,7 +18,6 @@ import {
   LogIn,
   UserPlus,
 } from "lucide-react";
-import { formatPrice } from "@/utils/formatPrice";
 
 interface OrderItem {
   id: number;
@@ -63,6 +61,21 @@ const statusMap: Record<
   },
 };
 
+function formatPrice(value: number | string | null, currency: string): string {
+  if (value === null || value === undefined) return "S/ 0.00";
+  const numValue = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(numValue)) return "S/ 0.00";
+  if (!currency) return `S/ ${numValue.toFixed(2)}`;
+  try {
+    return new Intl.NumberFormat("es-PE", {
+      style: "currency",
+      currency,
+    }).format(numValue);
+  } catch {
+    return `S/ ${numValue.toFixed(2)}`;
+  }
+}
+
 export default function OrderTrackPage() {
   const router = useRouter();
   const { currentOrder, loading, error, loadOrderById, clearError } =
@@ -103,31 +116,18 @@ export default function OrderTrackPage() {
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-bold text-gray-900 mb-4"
-          >
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Seguimiento de Pedidos
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-lg text-gray-600 max-w-2xl mx-auto"
-          >
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Rastrea el estado de tus pedidos ingresando tu número de orden y
             correo electrónico
-          </motion.p>
+          </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 items-start">
           {/* Formulario de seguimiento */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white rounded-3xl shadow-xl p-8"
-          >
+          <div className="bg-white rounded-3xl shadow-xl p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Package className="w-6 h-6 text-primary" />
@@ -182,22 +182,14 @@ export default function OrderTrackPage() {
             </form>
 
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-center"
-              >
+              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-center">
                 {error}
-              </motion.div>
+              </div>
             )}
 
             {/* Resultado del pedido */}
             {currentOrder && !loading && !error && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-8 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border border-green-200"
-              >
+              <div className="mt-8 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border border-green-200">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-green-100 rounded-lg">
                     <Shield className="w-5 h-5 text-green-600" />
@@ -251,17 +243,12 @@ export default function OrderTrackPage() {
                     Iniciar sesión
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )}
-          </motion.div>
+          </div>
 
           {/* Sección de beneficios */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-6"
-          >
+          <div className="space-y-6">
             {/* Tarjeta de beneficios */}
             <div className="bg-white rounded-3xl shadow-xl p-8">
               <div className="flex items-center gap-3 mb-6">
@@ -364,16 +351,12 @@ export default function OrderTrackPage() {
                 </li>
               </ul>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Resultado detallado de búsqueda */}
         {currentOrder && !loading && !error && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-8 bg-white rounded-3xl p-8 shadow-xl"
-          >
+          <div className="mt-8 bg-white rounded-3xl p-8 shadow-xl">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
               <div className="flex items-center gap-4 mb-4 lg:mb-0">
                 <div className="w-16 h-16 bg-gradient-to-r from-primary to-[#ED0AA2] rounded-full flex items-center justify-center">
@@ -486,7 +469,7 @@ export default function OrderTrackPage() {
                 </div>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
       </div>
     </div>

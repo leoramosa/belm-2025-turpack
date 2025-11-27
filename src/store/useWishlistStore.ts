@@ -6,11 +6,11 @@ import { WishlistSyncService } from "@/services/wishlistSync";
 interface WishlistState {
   items: IProduct[];
   addToWishlist: (product: IProduct) => void;
-  removeFromWishlist: (productId: string) => void;
+  removeFromWishlist: (productId: string | number) => void;
   clearWishlist: () => void;
-  loadFromBackend: () => Promise<void>;
+  loadFromBackend: (force?: boolean) => Promise<void>;
   getWishlistCount: () => number;
-  isInWishlist: (productId: string) => boolean;
+  isInWishlist: (productId: string | number) => boolean;
 }
 
 export const useWishlistStore = create<WishlistState>()(
@@ -30,14 +30,16 @@ export const useWishlistStore = create<WishlistState>()(
           }, 100);
         }
       },
-      removeFromWishlist: (productId) => {
+      removeFromWishlist: (productId: string | number) => {
+        const id =
+          typeof productId === "string" ? parseInt(productId, 10) : productId;
         set({
-          items: get().items.filter((item) => item.id !== productId),
+          items: get().items.filter((item) => item.id !== id),
         });
 
         // Sincronizar con backend en segundo plano con debounce
         setTimeout(() => {
-          WishlistSyncService.syncRemoveFromBackend(productId);
+          WishlistSyncService.syncRemoveFromBackend(String(productId));
         }, 100);
       },
       clearWishlist: () => {
@@ -46,16 +48,29 @@ export const useWishlistStore = create<WishlistState>()(
         // Sincronizar con backend en segundo plano
         WishlistSyncService.clearBackend();
       },
-      loadFromBackend: async () => {
+      loadFromBackend: async (force: boolean = false) => {
         try {
-          // Evitar llamadas duplicadas verificando si ya hay items
+          // Si no es forzado, evitar llamadas duplicadas verificando si ya hay items
           const currentItems = get().items;
-          if (currentItems.length > 0) {
+          if (!force && currentItems.length > 0) {
+            console.log("Wishlist ya tiene items, omitiendo carga del backend");
             return; // Ya hay items cargados, no hacer llamada duplicada
           }
 
+          console.log("Cargando wishlist del backend...");
           const backendItems = await WishlistSyncService.loadFromBackend();
-          set({ items: backendItems });
+          console.log(
+            "Wishlist cargada del backend:",
+            backendItems.length,
+            "productos"
+          );
+
+          if (backendItems && backendItems.length > 0) {
+            set({ items: backendItems });
+          } else if (force) {
+            // Si es forzado y no hay items, limpiar el store
+            set({ items: [] });
+          }
         } catch (error) {
           console.error("Error loading from backend:", error);
         }
@@ -63,9 +78,11 @@ export const useWishlistStore = create<WishlistState>()(
       getWishlistCount: () => {
         return get().items.length;
       },
-      isInWishlist: (productId) => {
+      isInWishlist: (productId: string | number) => {
         const items = get().items;
-        return items.some((item) => item.id === productId);
+        const id =
+          typeof productId === "string" ? parseInt(productId, 10) : productId;
+        return items.some((item) => item.id === id);
       },
     }),
     {

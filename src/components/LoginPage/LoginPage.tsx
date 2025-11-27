@@ -11,13 +11,17 @@ import { MdLock as Lock } from "react-icons/md";
 import { FiEye as Eye, FiEyeOff as EyeOff } from "react-icons/fi";
 import { useUserStore } from "@/store/userStore";
 import { useAuth } from "@/hooks/useAuth";
+import { useWishlistStore } from "@/store/useWishlistStore";
 import LoadingRedirect from "@/components/shared/LoadingRedirect";
+import { fetchUserAccountData } from "@/services/account";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setUser = useUserStore((s) => s.setUser);
-  const { isAuthenticated } = useAuth();
+  const setProfile = useUserStore((s) => s.setProfile);
+  const { isAuthenticated, loadUserProfile } = useAuth();
+  const { loadFromBackend } = useWishlistStore();
   // const { getCSRFField } = useCSRF();
   const [redirectTo, setRedirectTo] = useState("/my-account");
   const [formData, setFormData] = useState({
@@ -95,9 +99,36 @@ export default function LoginPage() {
         window.authToken = user.token;
       }
 
+      // Cargar perfil del usuario inmediatamente después del login
+      try {
+        const userEmail = user.user_email || formData.email;
+        if (userEmail) {
+          const profileData = await fetchUserAccountData(userEmail);
+          setProfile(profileData);
+        }
+      } catch (profileError) {
+        console.error("Error cargando perfil después del login:", profileError);
+        // No bloquear el login si falla cargar el perfil, se intentará después
+      }
+
+      // Cargar wishlist del backend después del login (forzar carga)
+      try {
+        await loadFromBackend(true);
+      } catch (wishlistError) {
+        console.error(
+          "Error cargando wishlist después del login:",
+          wishlistError
+        );
+        // No bloquear el login si falla cargar la wishlist
+      }
+
       // No redirigir aquí, el useEffect se encargará cuando isAuthenticated cambie
-    } catch {
-      setErrorMsg("Error en el login. Intenta de nuevo.");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error en el login. Intenta de nuevo.";
+      setErrorMsg(errorMessage);
     } finally {
       setIsLoading(false);
     }

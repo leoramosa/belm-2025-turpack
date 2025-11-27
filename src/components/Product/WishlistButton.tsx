@@ -20,8 +20,9 @@ export default function WishlistButton({
   showText = false,
   className = "",
 }: WishlistButtonProps) {
-  const { isInWishlist, addToWishlist, removeFromWishlist } =
-    useWishlistStore();
+  // Suscribirse reactivamente a items del store para que el componente se actualice
+  const items = useWishlistStore((state) => state.items);
+  const { addToWishlist, removeFromWishlist } = useWishlistStore();
   const { isAuthenticated } = useAuth();
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -32,7 +33,9 @@ export default function WishlistButton({
 
   if (!isMounted) return null;
 
-  const inWishlist = isAuthenticated && isInWishlist(product.id.toString());
+  // Calcular inWishlist basándose en items del store (reactivo)
+  const inWishlist =
+    isAuthenticated && items.some((item) => item.id === product.id);
 
   const sizeClasses = {
     sm: "w-8 h-8",

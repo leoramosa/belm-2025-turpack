@@ -1,14 +1,13 @@
 "use client";
 
 import { useWishlistStore } from "@/store/useWishlistStore";
+import { useAuth } from "@/hooks/useAuth";
 import { memo, useState, useEffect } from "react";
-// import { useAuth } from "@/hooks/useAuth"; // Ocultado temporalmente para uso futuro
 
 const WishlistCount = memo(function WishlistCount() {
   // Suscribirse a items para reactividad
   const items = useWishlistStore((state) => state.items);
-  // const { isAuthenticated } = useAuth(); // Ocultado temporalmente para uso futuro
-  const isAuthenticated = true; // Temporal: mostrar siempre hasta implementar useAuth
+  const { isAuthenticated } = useAuth();
 
   const count = items.length;
   const [isVisible, setIsVisible] = useState(false);

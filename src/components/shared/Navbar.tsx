@@ -19,7 +19,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import WishlistCount from "./WishlistCount";
 import MegaMenuServer from "./MegaMenu/MegaMenuServer";
 import { useSelectCategories, useCategoryStore } from "@/store/categoryStore";
-// import { useAuth } from "@/hooks/useAuth"; // Ocultado temporalmente para uso futuro
+import { useAuth } from "@/hooks/useAuth";
 import "./Navbar/navbar.css";
 
 interface NavbarProps {
@@ -31,8 +31,7 @@ export default function Navbar({ categories: propCategories }: NavbarProps) {
   const openCart = useUIStore((s) => s.openCart);
   const user = useUserStore((s: UserState) => s.user);
   const profile = useUserStore((s: UserState) => s.profile);
-  // const { isAuthenticated } = useAuth(); // Ocultado temporalmente para uso futuro
-  const isAuthenticated = false; // Temporal: desactivado hasta implementar useAuth
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [openMegaMenu, setOpenMegaMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -68,17 +67,15 @@ export default function Navbar({ categories: propCategories }: NavbarProps) {
     return result;
   }, [storeCategories, propCategories]);
 
-  // Función para obtener el nombre del usuario
+  // Función para obtener el nombre del usuario (solo nombre, sin apellido)
   const getUserDisplayName = () => {
-    // Prioridad: profile > user > email > default
-    if (profile?.first_name && profile?.last_name) {
-      return `${profile.first_name} ${profile.last_name}`;
-    }
+    // Prioridad: profile.first_name > user.displayName > user.nicename > email > default
     if (profile?.first_name) {
       return profile.first_name;
     }
     if (user?.displayName) {
-      return user.displayName;
+      // Si displayName tiene espacio, tomar solo la primera parte
+      return user.displayName.split(" ")[0];
     }
     if (user?.nicename) {
       return user.nicename;
@@ -295,12 +292,12 @@ export default function Navbar({ categories: propCategories }: NavbarProps) {
               {isAuthenticated && userDropdownOpen && (
                 <div className="absolute cursor-pointer left-0 top-full mt-1 w-auto min-w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-70">
                   {/* Información del usuario */}
-                  <div className="cursor-pointer px-3 py-2">
-                    <div className="cursor-pointer font-semibold text-gray-900 text-sm">
+                  <div className="px-3 py-2 border-b border-gray-200">
+                    <div className="font-semibold text-gray-900 text-sm">
                       {getUserDisplayName()}
                     </div>
-                    <div className="cursor-pointer text-gray-500 text-xs">
-                      {user?.user_email || user?.email}
+                    <div className="text-gray-500 text-xs">
+                      {profile?.email || user?.user_email || user?.email || ""}
                     </div>
                   </div>
 

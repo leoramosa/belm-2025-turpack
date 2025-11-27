@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { requestPasswordReset, resetPassword } from "@/services/auth";
-
-// Función de validación de email simple
-function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim());
-}
+import { validateAndSanitizeEmail } from "@/lib/validation";
 import {
   FiArrowLeft as ArrowLeft,
   FiLock as Lock,
@@ -59,19 +53,33 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      if (!validateEmail(email)) {
+      if (!validateAndSanitizeEmail(email)) {
         setError("Por favor, ingresa un email válido");
         setLoading(false);
         return;
       }
 
-      // Solicitar restablecimiento usando el servicio
-      await requestPasswordReset(email.trim());
+      // Llamar a la API interna para solicitar restablecimiento
+      const response = await fetch("/api/auth/lost-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_login: email.trim(),
+        }),
+      });
 
-      setMessage(
-        "Te hemos enviado un enlace de restablecimiento a tu email. Revisa tu bandeja de entrada y spam."
-      );
-      setEmail("");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      if (response) {
+        setMessage(
+          "Te hemos enviado un enlace de restablecimiento a tu email. Revisa tu bandeja de entrada y spam."
+        );
+        setEmail("");
+      }
     } catch (err: unknown) {
       console.error("Error al solicitar restablecimiento:", err);
       const errorMessage =
@@ -118,19 +126,31 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      // Restablecer contraseña usando el servicio
-      await resetPassword({
-        key: token!, // WordPress espera 'key' no 'token'
-        login: login!,
-        password: password.trim(),
+      // Llamar a la API interna para restablecer contraseña
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          key: token, // WordPress espera 'key' no 'token'
+          login: login,
+          password: password.trim(),
+        }),
       });
 
-      setMessage(
-        "Contraseña restablecida exitosamente. Redirigiendo al login..."
-      );
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      if (response) {
+        setMessage(
+          "Contraseña restablecida exitosamente. Redirigiendo al login..."
+        );
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      }
     } catch (err: unknown) {
       console.error("Error al restablecer contraseña:", err);
       const errorMessage =

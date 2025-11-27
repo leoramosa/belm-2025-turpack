@@ -1,5 +1,5 @@
-import { IProduct } from "./IProduct";
-import { ICategory } from "./ICategory";
+import { IProduct } from "@/types/product";
+import { IProductCategory } from "@/types/ICategory";
 
 export interface MediaItem {
   id: number;
@@ -17,5 +17,5 @@ export interface DynamicShowcase {
   categoryName: string;
   categorySlug: string;
   products: IProduct[];
-  categoryData: ICategory | null;
+  categoryData: IProductCategory | null;
 }

@@ -17,7 +17,21 @@ import {
   RefreshCcw,
   Package,
 } from "lucide-react";
-import { formatPrice } from "@/utils/formatPrice";
+
+function formatPrice(value: number | string | null, currency: string): string {
+  if (value === null || value === undefined) return "S/ 0.00";
+  const numValue = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(numValue)) return "S/ 0.00";
+  if (!currency) return `S/ ${numValue.toFixed(2)}`;
+  try {
+    return new Intl.NumberFormat("es-PE", {
+      style: "currency",
+      currency,
+    }).format(numValue);
+  } catch {
+    return `S/ ${numValue.toFixed(2)}`;
+  }
+}
 
 interface OrderDetailProps {
   orderId: string | number;
