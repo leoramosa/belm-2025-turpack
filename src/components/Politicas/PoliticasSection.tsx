@@ -8,7 +8,6 @@ import {
   fetchFeaturedPosts,
 } from "@/services/posts";
 import PoliticaCard from "./PoliticaCard";
-import { motion } from "framer-motion";
 import { Search, Filter, ArrowRight, FileText } from "lucide-react";
 
 export default function PoliticasSection() {
@@ -122,13 +121,7 @@ export default function PoliticasSection() {
     <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
       <div className="container mx-auto px-4 lg:px-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
+        <div className="text-center mb-12 animate-fade-in-up">
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             Políticas del Ecommerce
           </h2>
@@ -136,15 +129,12 @@ export default function PoliticasSection() {
             Información importante sobre nuestras políticas de privacidad,
             términos y condiciones
           </p>
-        </motion.div>
+        </div>
 
         {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          viewport={{ once: true }}
-          className="mb-8"
+        <div
+          className="mb-8 animate-fade-in-up"
+          style={{ animationDelay: "0.2s" }}
         >
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-white rounded-2xl p-6 shadow-lg">
             {/* Search */}
@@ -181,26 +171,21 @@ export default function PoliticasSection() {
             </div>
 
             {/* Filter Button */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <button
               onClick={handleFilter}
-              className="px-6 py-3 bg-primary hover:bg-secondary text-white font-medium rounded-xl transition-colors duration-200 flex items-center gap-2"
+              className="px-6 py-3 bg-primary hover:bg-secondary text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 hover:scale-105 active:scale-95"
             >
               Filtrar
               <ArrowRight className="w-4 h-4" />
-            </motion.button>
+            </button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Featured Posts */}
         {featuredPosts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            viewport={{ once: true }}
-            className="mb-12"
+          <div
+            className="mb-12 animate-fade-in-up"
+            style={{ animationDelay: "0.3s" }}
           >
             <h3 className="text-2xl font-bold text-gray-900 mb-6">
               Políticas Destacadas
@@ -214,16 +199,11 @@ export default function PoliticasSection() {
                 />
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* All Posts */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          viewport={{ once: true }}
-        >
+        <div className="animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
           <h3 className="text-2xl font-bold text-gray-900 mb-6">
             {searchTerm || selectedCategory
               ? "Resultados de búsqueda"
@@ -253,21 +233,19 @@ export default function PoliticasSection() {
               {/* Load More Button */}
               {hasMore && (
                 <div className="text-center">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                  <button
                     onClick={loadMorePosts}
-                    className="px-8 py-3 bg-secondary hover:bg-primary text-white font-medium rounded-xl transition-colors duration-200 flex items-center gap-2 mx-auto"
+                    className="px-8 py-3 bg-secondary hover:bg-primary text-white font-medium rounded-xl transition-all duration-200 flex items-center gap-2 mx-auto hover:scale-105 active:scale-95"
                   >
                     <FileText className="w-4 h-4" />
                     Cargar más políticas
                     <ArrowRight className="w-4 h-4" />
-                  </motion.button>
+                  </button>
                 </div>
               )}
             </>
           )}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

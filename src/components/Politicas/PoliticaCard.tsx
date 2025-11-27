@@ -3,7 +3,6 @@
 import { IPost } from "@/interface/IPost";
 import { formatDate, getExcerpt, stripHtml } from "@/services/posts";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Calendar, Clock, ArrowRight, FileText } from "lucide-react";
 
 interface PoliticaCardProps {
@@ -22,13 +21,8 @@ export default function PoliticaCard({
   const formattedDate = formatDate(post.date);
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      viewport={{ once: true }}
-      whileHover={{ y: -5 }}
-      className={`group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ${
+    <article
+      className={`group bg-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden animate-fade-in-up ${
         featured ? "lg:col-span-2" : ""
       }`}
     >
@@ -56,17 +50,13 @@ export default function PoliticaCard({
 
         {/* Read More Button */}
         <Link href={`/politicas/${post.slug}`}>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="inline-flex items-center gap-2 text-primary hover:text-secondary font-medium transition-colors duration-200 group/btn"
-          >
+          <button className="inline-flex items-center gap-2 text-primary hover:text-secondary font-medium transition-all duration-200 group/btn hover:scale-105 active:scale-95">
             <FileText className="w-4 h-4" />
             Leer política
             <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-          </motion.button>
+          </button>
         </Link>
       </div>
-    </motion.article>
+    </article>
   );
 }

@@ -2,7 +2,6 @@
 
 import { IPost } from "@/interface/IPost";
 import { stripHtml } from "@/services/posts";
-import { motion } from "framer-motion";
 // import PoliticaCard from "./PoliticaCard";
 // import Link from "next/link";
 // import { ArrowLeft, Calendar, Clock, FileText, Share2 } from "lucide-react";
@@ -24,12 +23,7 @@ PoliticaDetailProps) {
     <article className="py-20 bg-gradient-to-br from-gray-50 to-white">
       <div className="container mx-auto px-4 lg:px-8">
         {/* Breadcrumb */}
-        <motion.nav
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-8"
-        >
+        <nav className="mb-8 animate-fade-in">
           {/* <Link
             href="/politicas"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-primary transition-colors duration-200"
@@ -37,15 +31,13 @@ PoliticaDetailProps) {
             <ArrowLeft className="w-4 h-4" />
             Volver a Políticas
           </Link> */}
-        </motion.nav>
+        </nav>
 
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <motion.header
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mb-8"
+          <header
+            className="mb-8 animate-fade-in-up"
+            style={{ animationDelay: "0.1s" }}
           >
             {/* Categories */}
             {/*  {post.categories.length > 0 && (
@@ -107,28 +99,24 @@ PoliticaDetailProps) {
               <Share2 className="w-4 h-4" />
               Compartir
             </motion.button> */}
-          </motion.header>
+          </header>
 
           {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="prose prose-lg max-w-none mb-12 bg-white rounded-2xl shadow-lg p-8"
+          <div
+            className="prose prose-lg max-w-none mb-12 bg-white rounded-2xl shadow-lg p-8 animate-fade-in-up"
+            style={{ animationDelay: "0.2s" }}
           >
             <div
               dangerouslySetInnerHTML={{ __html: cleanContent }}
               className="text-gray-700 text-justify leading-relaxed [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:text-gray-900 [&>h1]:mb-8 [&>h1]:mt-12 [&>h1]:first:mt-0 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:text-gray-900 [&>h2]:mb-6 [&>h2]:mt-10 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:text-gray-900 [&>h3]:mb-4 [&>h3]:mt-8 [&>h4]:text-lg [&>h4]:font-semibold [&>h4]:text-gray-900 [&>h4]:mb-3 [&>h4]:mt-6 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-2 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-gray-600"
             />
-          </motion.div>
+          </div>
 
           {/* Related Posts */}
           {/* {relatedPosts.length > 0 && (
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="border-t border-gray-200 pt-12"
+            <section
+              className="border-t border-gray-200 pt-12 animate-fade-in-up"
+              style={{ animationDelay: "0.3s" }}
             >
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 Políticas relacionadas
