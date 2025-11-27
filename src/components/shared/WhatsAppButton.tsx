@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { FaWhatsapp } from "react-icons/fa";
 import { useState } from "react";
@@ -108,17 +107,13 @@ const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
   };
 
   return (
-    <motion.div
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay: 1, duration: 0.5 }}
-      className={`fixed bottom-6 right-6 z-[9999] ${className}`}
+    <div
+      className={`fixed bottom-6 right-6 z-[9999] animate-scale-in ${className}`}
+      style={{ animationDelay: "1s" }}
     >
-      <motion.button
+      <button
         onClick={handleWhatsAppClick}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-2xl hover:shadow-green-500/25 transition-all duration-300 relative focus:outline-none focus:ring-4 focus:ring-green-300"
+        className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-2xl hover:shadow-green-500/25 transition-all duration-300 relative focus:outline-none focus:ring-4 focus:ring-green-300 hover:scale-110 active:scale-95"
         aria-label="Contactar por WhatsApp"
         title="Contáctanos por WhatsApp"
       >
@@ -137,8 +132,8 @@ const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
           ¡Contáctanos por WhatsApp!
           <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-primary"></div>
         </div>
-      </motion.button>
-    </motion.div>
+      </button>
+    </div>
   );
 };
 
