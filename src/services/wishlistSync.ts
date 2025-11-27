@@ -137,7 +137,7 @@ export class WishlistSyncService {
         // Validar que sean productos válidos
         if (Array.isArray(wishlist) && wishlist.length > 0) {
           const validProducts = wishlist.filter(
-            (item: any) => item && item.id && item.name
+            (item: Partial<IProduct>) => item && item.id && item.name
           );
           console.log("Productos válidos:", validProducts.length);
           return validProducts;

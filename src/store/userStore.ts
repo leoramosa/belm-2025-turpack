@@ -5,9 +5,9 @@ import { persist } from "zustand/middleware";
 import type { WooProfile } from "@/components/MyAccountProfilePage";
 
 export interface UserState {
-  user: any;
+  user: WooProfile | null;
   token: string | null;
-  setUser: (user: any, token?: string) => void;
+  setUser: (user: WooProfile | null, token?: string) => void;
   logout: () => void;
   profile: WooProfile | null;
   setProfile: (profile: WooProfile) => void;
@@ -24,7 +24,7 @@ export const useUserStore = create<UserState>(
     (set, get) => ({
       user: null,
       token: null,
-      setUser: (user: any, token?: string) =>
+      setUser: (user: WooProfile | null, token?: string) =>
         set({ user, token: token ?? null }),
       logout: () => set({ user: null, token: null, profile: null }),
       profile: null,

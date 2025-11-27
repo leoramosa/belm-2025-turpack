@@ -79,7 +79,7 @@ export default async function Home() {
       ]);
 
     // Variable para showcase (se usará más abajo)
-    let allProductsData: PromiseSettledResult<IProduct[]> | null = null;
+    const allProductsData: PromiseSettledResult<IProduct[]> | null = null;
 
     // Procesar resultados básicos
     bannerData = banners.status === "fulfilled" ? banners.value : null;
