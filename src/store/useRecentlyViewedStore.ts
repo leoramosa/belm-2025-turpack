@@ -34,9 +34,13 @@ export const useRecentlyViewedStore = create<RecentlyViewedState>()(
       },
 
       removeProduct: (productId: string) => {
-        set((state) => ({
-          products: state.products.filter((p) => p.id !== productId),
-        }));
+        set((state) => {
+          // Convertir productId (string) a número para comparar con p.id (number)
+          const productIdNum = parseInt(productId, 10);
+          return {
+            products: state.products.filter((p) => p.id !== productIdNum),
+          };
+        });
       },
 
       clearAll: () => {
@@ -48,7 +52,9 @@ export const useRecentlyViewedStore = create<RecentlyViewedState>()(
       },
 
       hasProduct: (productId: string) => {
-        return get().products.some((p) => p.id === productId);
+        // Convertir productId (string) a número para comparar con p.id (number)
+        const productIdNum = parseInt(productId, 10);
+        return get().products.some((p) => p.id === productIdNum);
       },
     }),
     {
@@ -59,11 +65,9 @@ export const useRecentlyViewedStore = create<RecentlyViewedState>()(
           id: product.id,
           name: product.name,
           slug: product.slug,
-          price: product.price,
-          regular_price: product.regular_price,
-          sale_price: product.sale_price,
-          image: product.image,
-          short_description: product.short_description,
+          pricing: product.pricing,
+          images: product.images,
+          shortDescription: product.shortDescription,
         })),
       }),
     }
