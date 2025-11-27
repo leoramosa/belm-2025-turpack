@@ -235,7 +235,7 @@ const NewProducts = ({ products: initialProducts }: NewProductsProps) => {
                 <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
                   {/* Imagen del producto */}
                   <div className="relative aspect-square w-full flex-shrink-0">
-                    <Link href={`/product/${product.slug}`}>
+                    <Link href={`/productos/${product.slug}`}>
                       <Image
                         src={getProductImage()}
                         alt={product.name}
@@ -299,7 +299,7 @@ const NewProducts = ({ products: initialProducts }: NewProductsProps) => {
 
                   {/* Contenido - Usando flex para distribuir el espacio */}
                   <div className="p-4 flex flex-col flex-grow">
-                    <Link href={`/product/${product.slug}`}>
+                    <Link href={`/productos/${product.slug}`}>
                       <h3
                         className="font-semibold text-xs lg:text-lg text-gray-900  hover:text-primary transition-colors h-8 lg:h-12 overflow-hidden text-ellipsis"
                         style={{
@@ -329,7 +329,7 @@ const NewProducts = ({ products: initialProducts }: NewProductsProps) => {
 
                     {/* Botón - Se mantiene al final */}
                     <Link
-                      href={`/product/${product.slug}`}
+                      href={`/productos/${product.slug}`}
                       className="w-full bg-primary text-xs md:text-base text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors duration-300 text-center block mt-auto"
                     >
                       {isVariableProduct ? "Seleccionar" : "Ver Producto"}

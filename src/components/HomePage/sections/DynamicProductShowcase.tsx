@@ -417,7 +417,7 @@ const DynamicProductShowcase: React.FC<DynamicProductShowcaseProps> = ({
                   >
                     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
                       {/* Product Image - Aspect Ratio Cuadrado */}
-                      <Link href={`/product/${product.slug}`}>
+                      <Link href={`/productos/${product.slug}`}>
                         <div className="relative aspect-square w-full flex-shrink-0">
                           <Image
                             src={getProductImage(product)}
@@ -436,7 +436,7 @@ const DynamicProductShowcase: React.FC<DynamicProductShowcaseProps> = ({
                       </Link>
                       {/* Product Info */}
                       <div className="p-4 bg-white">
-                        <Link href={`/product/${product.slug}`}>
+                        <Link href={`/productos/${product.slug}`}>
                           <h4 className="text-xs lg:text-sm font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                             {product.name}
                           </h4>
@@ -515,7 +515,7 @@ const DynamicProductShowcase: React.FC<DynamicProductShowcaseProps> = ({
                           </button>
                         ) : (
                           <Link
-                            href={`/product/${product.slug}`}
+                            href={`/productos/${product.slug}`}
                             className="w-full py-2 px-4 bg-primary text-white rounded-xl font-medium hover:bg-primary-dark cursor-pointer transition-colors text-xs md:text-sm text-center block"
                           >
                             Ver detalle
