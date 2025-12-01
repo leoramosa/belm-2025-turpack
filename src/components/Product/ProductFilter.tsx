@@ -1052,5 +1052,5 @@ export function ProductFilter({
   }
 
   // Si es desktop, retornar con el wrapper
-  return <div className="hidden lg:block w-60 shrink-0">{filtersContent}</div>;
+  return <div className="hidden lg:block w-80 shrink-0">{filtersContent}</div>;
 }
