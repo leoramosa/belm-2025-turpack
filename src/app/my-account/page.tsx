@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     url: "https://belm.pe/my-account",
     images: [
       {
-        url: "/og-my-account.jpg",
+        url: "/belm-rs.jpg",
         width: 1200,
         height: 630,
         alt: "Mi Cuenta - Belm",

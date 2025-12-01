@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     url: "https://belm.pe/ofertas-especiales",
     images: [
       {
-        url: "/og-ofertas-especiales.jpg",
+        url: "/belm-rs.jpg",
         width: 1200,
         height: 630,
         alt: "Ofertas especiales - Belm",

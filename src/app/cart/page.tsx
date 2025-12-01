@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     url: "https://belm.pe/cart",
     images: [
       {
-        url: "/og-cart.jpg",
+        url: "/belm-rs.jpg",
         width: 1200,
         height: 630,
         alt: "Carrito de Compras - Belm",

@@ -20,7 +20,7 @@ import type { Metadata } from "next";
 
 // Metadata específica para la página Home
 export const metadata: Metadata = {
-  title: "Inicio",
+  title: "Home - BELM: Skincare | Maquillaje | Accesorios",
   description:
     "En BELM, creemos que la belleza es más que un simple producto, es un acto de amor propio y una forma de brillar con autenticidad. Nos especializamos en la cosmética coreana y marcas globales reconocidas, ofreciéndote una selección cuidadosamente de productos de skincare, maquillaje y accesorios para que descubras tu mejor versión.",
   keywords: [
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     url: "https://belm.pe",
     images: [
       {
-        url: "/og-home.jpg",
+        url: "/belm-rs.jpg",
         width: 1200,
         height: 630,
         alt: "Belm - Página de Inicio",
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   twitter: {
     title: "BELM: Skincare | Maquillaje | Accesorios",
     description: "Bienvenido a Belm, tu tienda online de productos premium.",
-    images: ["/og-home.jpg"],
+    images: ["/belm-rs.jpg"],
   },
   alternates: {
     canonical: "https://belm.pe",

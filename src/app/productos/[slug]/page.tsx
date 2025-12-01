@@ -61,31 +61,72 @@ export async function generateMetadata({
 
   if (!product) {
     return {
-      title: "Producto no encontrado",
+      title: "Producto no encontrado - Belm",
     };
   }
 
-  const title = `${product.name} | Tienda Store`;
+  const title = `${product.name} | Tienda Belm`;
   const description = extractPlainText(
     product.shortDescription || product.description
   );
-  const primaryImage = product.images[0];
+
+  // Obtener la imagen principal
+  const primaryImage = product.images?.[0];
+  const imageUrl = primaryImage?.src || "/belm-rs.jpg";
+
+  // Obtener precios
+  const price = product.pricing.salePrice ?? product.pricing.price ?? 0;
+  const regularPrice =
+    product.pricing.regularPrice ?? product.pricing.price ?? 0;
+  const hasDiscount =
+    product.pricing.salePrice !== null &&
+    product.pricing.salePrice > 0 &&
+    product.pricing.regularPrice !== null &&
+    product.pricing.regularPrice > 0 &&
+    product.pricing.salePrice < product.pricing.regularPrice;
 
   return {
     title,
     description,
-    openGraph: primaryImage
-      ? {
-          title,
-          description,
-          images: [
-            {
-              url: primaryImage.src,
-              alt: primaryImage.alt || product.name,
-            },
-          ],
-        }
-      : undefined,
+    keywords: [
+      product.name.toLowerCase(),
+      "producto premium",
+      "envío gratis",
+      "Perú",
+      ...(product.categories?.map((cat) => cat.name.toLowerCase()) || []),
+    ],
+    openGraph: {
+      title,
+      description,
+      url: `https://belm.pe/productos/${slug}`,
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: product.name,
+        },
+      ],
+      type: "website",
+      siteName: "Belm",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
+    alternates: {
+      canonical: `https://belm.pe/productos/${slug}`,
+    },
+    other: {
+      "product:price:amount": price.toString(),
+      "product:price:currency": "PEN",
+      ...(hasDiscount && {
+        "product:original_price:amount": regularPrice.toString(),
+        "product:original_price:currency": "PEN",
+      }),
+    },
   };
 }
 

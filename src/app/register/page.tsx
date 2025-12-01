@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     url: "https://belm.pe/register",
     images: [
       {
-        url: "/og-register.jpg",
+        url: "/belm-rs.jpg",
         width: 1200,
         height: 630,
         alt: "Crear Cuenta - Belm",

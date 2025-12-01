@@ -1,6 +1,40 @@
 import { ProductGridClient } from "@/components/Product/ProductGridClient";
 import { fetchProducts } from "@/services/products";
+import type { Metadata } from "next";
 import type { IProduct } from "@/types/product";
+
+// Metadata específica para la página Shop
+export const metadata: Metadata = {
+  title: "Tienda",
+  description:
+    "Descubre todos nuestros productos premium en la tienda de Belm. Filtra por categoría, precio y características. Envío gratis a todo el Perú.",
+  keywords: [
+    "tienda",
+    "productos",
+    "catalogo completo",
+    "productos premium",
+    "filtros",
+    "envío gratis",
+    "Perú",
+  ],
+  openGraph: {
+    title: "Tienda - Belm",
+    description:
+      "Descubre todos nuestros productos premium en la tienda de Belm. Filtra por categoría, precio y características.",
+    url: "https://belm.pe/shop",
+    images: [
+      {
+        url: "/belm-rs.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Tienda - Belm",
+      },
+    ],
+  },
+  alternates: {
+    canonical: "https://belm.pe/shop",
+  },
+};
 
 export default async function Shop() {
   let products: IProduct[] = [];

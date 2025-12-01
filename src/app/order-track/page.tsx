@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     url: "https://belm.pe/order-track",
     images: [
       {
-        url: "/og-order-track.jpg",
+        url: "/belm-rs.jpg",
         width: 1200,
         height: 630,
         alt: "Rastrear Pedido - Belm",

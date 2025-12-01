@@ -98,6 +98,38 @@ export async function generateMetadata({
   return {
     title,
     description,
+    keywords: [
+      category.name.toLowerCase(),
+      "productos",
+      "categoría",
+      "productos premium",
+      "envío gratis",
+      "Perú",
+    ],
+    openGraph: {
+      title,
+      description,
+      url: `https://belm.pe/categorias/${slug}`,
+      images: [
+        {
+          url: category.image?.src || "/belm-rs.jpg",
+          width: 1200,
+          height: 630,
+          alt: category.name,
+        },
+      ],
+      type: "website",
+      siteName: "Belm",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [category.image?.src || "/belm-rs.jpg"],
+    },
+    alternates: {
+      canonical: `https://belm.pe/categorias/${slug}`,
+    },
   };
 }
 

@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     url: "https://belm.pe/politicas",
     images: [
       {
-        url: "/og-politicas.jpg",
+        url: "/belm-rs.jpg",
         width: 1200,
         height: 630,
         alt: "Políticas y Términos - Belm",

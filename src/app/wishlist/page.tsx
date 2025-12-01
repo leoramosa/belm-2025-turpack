@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     url: "https://belm.pe/wishlist",
     images: [
       {
-        url: "/og-wishlist.jpg",
+        url: "/belm-rs.jpg",
         width: 1200,
         height: 630,
         alt: "Lista de Deseos - Belm",
