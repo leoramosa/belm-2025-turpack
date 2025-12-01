@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { IoGridOutline, IoListOutline } from "react-icons/io5";
 
 import { ProductCard } from "@/components/Product/ProductCard";
@@ -122,6 +122,7 @@ export function ProductGridClient({
   defaultSortBy = "name",
 }: ProductGridClientProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const setProducts = useProductStore(
     (state: ProductState) => state.setProducts
   );
@@ -365,10 +366,11 @@ export function ProductGridClient({
         </div>
       )}
       <div className="mb-6">
-        {/* Single Row: Search Bar, View Toggle, Ordenar */}
-        <div className="flex items-center gap-2 lg:gap-3 flex-wrap lg:flex-nowrap">
-          {/* Search Bar */}
-          <div className="relative flex-1 min-w-[200px]">
+        {/* Mobile: Search Bar en línea completa, controles abajo */}
+        {/* Desktop: Todo en una sola línea */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 lg:gap-3">
+          {/* Search Bar - Línea completa en mobile */}
+          <div className="relative w-full lg:flex-1">
             <svg
               className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400 pointer-events-none"
               fill="none"
@@ -391,96 +393,143 @@ export function ProductGridClient({
             />
           </div>
 
-          {/* Filters Button - Mobile Only */}
-          <button
-            type="button"
-            onClick={() => setIsFiltersOpen(true)}
-            className="lg:hidden flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-white rounded-2xl border border-primary/30 text-primary font-medium text-sm sm:text-base hover:bg-primary/10 transition-colors duration-200 shrink-0"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-            <span>Filtros</span>
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-
-          {/* View Toggle */}
-          <div className="relative flex rounded-full bg-white p-1 shadow-sm border border-gray-200 shrink-0">
+          {/* Controles - Segunda línea en mobile, misma línea en desktop */}
+          <div className="flex items-center gap-2 lg:gap-3 w-full lg:w-auto">
+            {/* Filters Button - Mobile Only */}
             <button
               type="button"
-              onClick={() => setViewMode("grid")}
-              className={`relative z-10 flex items-center justify-center rounded-tl-full rounded-bl-full px-4 py-2.5 transition-all duration-300 ${
-                viewMode === "grid"
-                  ? "bg-primary text-white"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-              aria-label="Vista de cuadrícula"
+              onClick={() => setIsFiltersOpen(true)}
+              className="lg:hidden flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-white rounded-2xl border border-primary/30 text-primary font-medium text-sm sm:text-base hover:bg-primary/10 transition-colors duration-200 shrink-0"
             >
-              <IoGridOutline className="h-5 w-5" />
+              <svg
+                width="20"
+                height="20"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M4 6h16M4 12h16M4 18h16"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle
+                  cx="6"
+                  cy="6"
+                  r="2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <circle
+                  cx="18"
+                  cy="12"
+                  r="2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <circle
+                  cx="6"
+                  cy="18"
+                  r="2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+              </svg>
+              <span>Filtros</span>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
             </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              className={`relative z-10 flex items-center justify-center rounded-tr-full rounded-br-full px-4 py-2.5 transition-all duration-300 ${
-                viewMode === "list"
-                  ? "bg-primary text-white shadow-md"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-              aria-label="Vista de lista"
-            >
-              <IoListOutline className="h-5 w-5" />
-            </button>
-          </div>
 
-          {/* Sort Dropdown */}
-          <div className="relative lg:min-w-[180px] shrink-0">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white rounded-2xl border border-gray-200 focus:border-primary outline-none text-sm sm:text-base overflow-hidden text-ellipsis whitespace-nowrap appearance-none pr-8"
-            >
-              <option value="name">Ordenar por nombre</option>
-              <option value="price-asc">Precio: menor a mayor</option>
-              <option value="price-desc">Precio: mayor a menor</option>
-              <option value="newest">Más recientes</option>
-              <option value="popularity">Más vendidos</option>
-              <option value="sale">Ofertas</option>
-            </select>
-            <svg
-              className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            {/* View Toggle */}
+            <div className="relative flex rounded-full bg-white lg:p-1 shadow-sm border border-gray-200 shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`relative z-10 flex items-center justify-center rounded-tl-full rounded-bl-full px-4 py-2.5 transition-all duration-300 ${
+                  viewMode === "grid"
+                    ? "bg-primary text-white"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+                aria-label="Vista de cuadrícula"
+              >
+                <IoGridOutline className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`relative z-10 flex items-center justify-center rounded-tr-full rounded-br-full px-4 py-2.5 transition-all duration-300 ${
+                  viewMode === "list"
+                    ? "bg-primary text-white shadow-md"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+                aria-label="Vista de lista"
+              >
+                <IoListOutline className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="relative flex-1 lg:flex-none lg:min-w-[180px] shrink-0">
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  const value = e.target.value as SortOption;
+
+                  // Redirigir a rutas específicas para ciertas opciones
+                  if (value === "sale") {
+                    router.push("/ofertas-especiales");
+                    return;
+                  }
+                  if (value === "popularity") {
+                    router.push("/lo-mas-vendido");
+                    return;
+                  }
+                  if (value === "newest") {
+                    router.push("/lo-mas-nuevo");
+                    return;
+                  }
+
+                  // Para otras opciones, solo cambiar el ordenamiento
+                  setSortBy(value);
+                }}
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-white rounded-2xl border border-gray-200 focus:border-primary outline-none text-sm sm:text-base overflow-hidden text-ellipsis whitespace-nowrap appearance-none pr-8"
+              >
+                <option value="name">Ordenar por nombre</option>
+                <option value="price-asc">Precio: menor a mayor</option>
+                <option value="price-desc">Precio: mayor a menor</option>
+                <option value="newest">Más recientes</option>
+                <option value="popularity">Más vendidos</option>
+                <option value="sale">Ofertas</option>
+              </select>
+              <svg
+                className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
           </div>
         </div>
         {/* Contador de productos */}
@@ -565,13 +614,88 @@ export function ProductGridClient({
           {viewMode === "grid" ? (
             <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {paginatedProducts.length > 0 ? (
-                paginatedProducts.map((product: IProduct) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    viewMode="grid"
-                  />
-                ))
+                paginatedProducts.map((product: IProduct) => {
+                  // Detectar si estamos en la ruta /lo-mas-nuevo, /lo-mas-vendido o /ofertas-especiales
+                  const isLoMasNuevoPage = pathname === "/lo-mas-nuevo";
+                  const isLoMasVendidoPage = pathname === "/lo-mas-vendido";
+                  const isOfertasEspecialesPage =
+                    pathname === "/ofertas-especiales";
+
+                  // Calcular porcentaje de descuento para /ofertas-especiales
+                  const calculateDiscountPercentage = () => {
+                    if (!isOfertasEspecialesPage) return undefined;
+
+                    const isVariableProduct =
+                      product.variations && product.variations.length > 0;
+
+                    // Obtener la primera variación para productos variables
+                    const getDefaultVariationForPricing = () => {
+                      if (
+                        !product.variations ||
+                        product.variations.length === 0
+                      )
+                        return null;
+                      return product.variations[0];
+                    };
+                    const defaultVariationForPricing =
+                      getDefaultVariationForPricing();
+
+                    // Determinar precios y descuento basado en primera variación o producto principal
+                    const currentRegularPrice =
+                      defaultVariationForPricing?.regularPrice ??
+                      product.pricing.regularPrice;
+                    const currentSalePrice =
+                      defaultVariationForPricing?.salePrice ??
+                      product.pricing.salePrice;
+
+                    const hasDiscount =
+                      currentSalePrice &&
+                      currentRegularPrice &&
+                      currentSalePrice !== currentRegularPrice;
+
+                    if (!hasDiscount) return undefined;
+
+                    const regular = currentRegularPrice ?? 0;
+                    const sale = currentSalePrice ?? 0;
+                    if (regular === 0) return undefined;
+
+                    return Math.round(((regular - sale) / regular) * 100);
+                  };
+
+                  const discountPercentage = calculateDiscountPercentage();
+
+                  return (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      viewMode="grid"
+                      customBadge={
+                        isLoMasNuevoPage
+                          ? {
+                              text: "NUEVO",
+                              className: "bg-green-500",
+                            }
+                          : isLoMasVendidoPage
+                          ? {
+                              text: "Más Vendido",
+                              className: "bg-yellow-500",
+                            }
+                          : isOfertasEspecialesPage
+                          ? {
+                              text: "Oferta",
+                              className: "bg-orange-500",
+                            }
+                          : undefined
+                      }
+                      discountPercentage={discountPercentage}
+                      showCategoryBadge={
+                        isLoMasNuevoPage ||
+                        isLoMasVendidoPage ||
+                        isOfertasEspecialesPage
+                      }
+                    />
+                  );
+                })
               ) : (
                 <div className="col-span-full py-12 text-center">
                   <p className="text-zinc-500">No se encontraron productos</p>
@@ -581,13 +705,88 @@ export function ProductGridClient({
           ) : (
             <div className="space-y-6">
               {paginatedProducts.length > 0 ? (
-                paginatedProducts.map((product: IProduct) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    viewMode="list"
-                  />
-                ))
+                paginatedProducts.map((product: IProduct) => {
+                  // Detectar si estamos en la ruta /lo-mas-nuevo, /lo-mas-vendido o /ofertas-especiales
+                  const isLoMasNuevoPage = pathname === "/lo-mas-nuevo";
+                  const isLoMasVendidoPage = pathname === "/lo-mas-vendido";
+                  const isOfertasEspecialesPage =
+                    pathname === "/ofertas-especiales";
+
+                  // Calcular porcentaje de descuento para /ofertas-especiales
+                  const calculateDiscountPercentage = () => {
+                    if (!isOfertasEspecialesPage) return undefined;
+
+                    const isVariableProduct =
+                      product.variations && product.variations.length > 0;
+
+                    // Obtener la primera variación para productos variables
+                    const getDefaultVariationForPricing = () => {
+                      if (
+                        !product.variations ||
+                        product.variations.length === 0
+                      )
+                        return null;
+                      return product.variations[0];
+                    };
+                    const defaultVariationForPricing =
+                      getDefaultVariationForPricing();
+
+                    // Determinar precios y descuento basado en primera variación o producto principal
+                    const currentRegularPrice =
+                      defaultVariationForPricing?.regularPrice ??
+                      product.pricing.regularPrice;
+                    const currentSalePrice =
+                      defaultVariationForPricing?.salePrice ??
+                      product.pricing.salePrice;
+
+                    const hasDiscount =
+                      currentSalePrice &&
+                      currentRegularPrice &&
+                      currentSalePrice !== currentRegularPrice;
+
+                    if (!hasDiscount) return undefined;
+
+                    const regular = currentRegularPrice ?? 0;
+                    const sale = currentSalePrice ?? 0;
+                    if (regular === 0) return undefined;
+
+                    return Math.round(((regular - sale) / regular) * 100);
+                  };
+
+                  const discountPercentage = calculateDiscountPercentage();
+
+                  return (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      viewMode="list"
+                      customBadge={
+                        isLoMasNuevoPage
+                          ? {
+                              text: "NUEVO",
+                              className: "bg-green-500",
+                            }
+                          : isLoMasVendidoPage
+                          ? {
+                              text: "Más Vendido",
+                              className: "bg-yellow-500",
+                            }
+                          : isOfertasEspecialesPage
+                          ? {
+                              text: "Oferta",
+                              className: "bg-orange-500",
+                            }
+                          : undefined
+                      }
+                      discountPercentage={discountPercentage}
+                      showCategoryBadge={
+                        isLoMasNuevoPage ||
+                        isLoMasVendidoPage ||
+                        isOfertasEspecialesPage
+                      }
+                    />
+                  );
+                })
               ) : (
                 <div className="py-12 text-center">
                   <p className="text-zinc-500">No se encontraron productos</p>

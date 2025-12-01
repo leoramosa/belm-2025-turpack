@@ -119,7 +119,7 @@ export async function loadDynamicProductShowcases(): Promise<
           allProducts,
           category
         );
-        const limitedProducts = categoryProducts.slice(0, 9);
+        const limitedProducts = categoryProducts.slice(0, 25);
         const categoryData = categoryNodeToIProductCategory(category);
 
         showcasesWithProducts.push({

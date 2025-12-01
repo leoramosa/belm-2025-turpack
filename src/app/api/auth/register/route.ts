@@ -77,8 +77,190 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Registration failed: ${response.status} - ${errorData}`);
+      let errorMessage =
+        "Error al crear la cuenta. Por favor, intenta nuevamente.";
+
+      try {
+        // Intentar parsear como JSON primero
+        let errorData: any;
+        try {
+          errorData = await response.json();
+        } catch {
+          // Si no es JSON, intentar como texto
+          const errorText = await response.text();
+          errorData = { message: errorText, error: errorText };
+        }
+
+        // Log para debug
+        console.log("🔍 Registration Error Response:", {
+          status: response.status,
+          errorData,
+          fullError: JSON.stringify(errorData),
+        });
+
+        // Obtener el texto del error de múltiples fuentes posibles
+        // WooCommerce puede devolver errores en diferentes formatos:
+        // 1. { code: "woocommerce_rest_customer_invalid_email", message: "...", data: { status: 400 } }
+        // 2. { message: "Email already exists" }
+        // 3. { error: "Email already exists" }
+        // 4. { data: { message: "..." } }
+        // 5. Array de errores: [{ code: "...", message: "..." }]
+
+        let errorText = "";
+
+        // Si es un array de errores (WooCommerce a veces devuelve arrays)
+        if (Array.isArray(errorData)) {
+          errorText = errorData
+            .map((err: any) => err.message || err.code || JSON.stringify(err))
+            .join(" ")
+            .toLowerCase();
+        }
+        // Si tiene una propiedad 'data' que es un array
+        else if (Array.isArray(errorData.data)) {
+          errorText = errorData.data
+            .map((err: any) => err.message || err.code || JSON.stringify(err))
+            .join(" ")
+            .toLowerCase();
+        }
+        // Formato estándar
+        else {
+          errorText = (
+            errorData.message ||
+            errorData.error ||
+            errorData.data?.message ||
+            errorData.data?.error ||
+            errorData.code ||
+            (typeof errorData === "string"
+              ? errorData
+              : JSON.stringify(errorData))
+          ).toLowerCase();
+        }
+
+        // Detectar errores de EMAIL ya registrado (prioridad alta)
+        // WooCommerce puede devolver códigos como:
+        // - "registration-error-email-exists" (WordPress/WooCommerce)
+        // - "woocommerce_rest_customer_invalid_email"
+        // - "woocommerce_rest_customer_invalid_duplicate"
+        // - "rest_customer_invalid_email"
+        const isEmailDuplicate =
+          response.status === 409 ||
+          errorData.code === "registration-error-email-exists" ||
+          errorData.code === "woocommerce_rest_customer_invalid_email" ||
+          errorData.code === "woocommerce_rest_customer_invalid_duplicate" ||
+          errorData.code === "rest_customer_invalid_email" ||
+          errorData.code === "woocommerce_rest_customer_duplicate" ||
+          (errorText.includes("email") &&
+            (errorText.includes("already") ||
+              errorText.includes("exists") ||
+              errorText.includes("ya existe") ||
+              errorText.includes("duplicate") ||
+              errorText.includes("registered") ||
+              errorText.includes("taken") ||
+              errorText.includes("en uso") ||
+              errorText.includes("is already registered") ||
+              errorText.includes("already registered") ||
+              errorText.includes("email already exists") ||
+              errorText.includes("customer already exists") ||
+              errorText.includes("user already exists") ||
+              errorText.includes("already in use") ||
+              errorText.includes("invalid_email") ||
+              errorText.includes("customer_invalid_email") ||
+              errorText.includes("customer_invalid_duplicate") ||
+              errorText.includes("registration-error-email-exists")));
+
+        if (isEmailDuplicate) {
+          // Si el backend ya proporciona un mensaje descriptivo, usarlo
+          // De lo contrario, usar nuestro mensaje genérico
+          if (errorData.message && errorData.message.trim()) {
+            errorMessage = errorData.message;
+          } else {
+            errorMessage =
+              "Ya existe una cuenta con este email. Por favor, usa otro email o intenta iniciar sesión si ya tienes una cuenta.";
+          }
+        }
+        // Detectar errores de USERNAME ya en uso
+        else if (
+          errorText.includes("username") &&
+          (errorText.includes("already") ||
+            errorText.includes("exists") ||
+            errorText.includes("ya existe") ||
+            errorText.includes("taken") ||
+            errorText.includes("en uso") ||
+            errorText.includes("already in use"))
+        ) {
+          errorMessage =
+            "Este nombre de usuario ya está en uso. Por favor, elige otro.";
+        }
+        // Detectar errores de EMAIL inválido
+        else if (
+          errorText.includes("invalid email") ||
+          errorText.includes("email inválido") ||
+          errorText.includes("email is not valid") ||
+          errorText.includes("invalid_email")
+        ) {
+          errorMessage =
+            "El email ingresado no es válido. Por favor, verifica que esté escrito correctamente.";
+        }
+        // Detectar errores de CONTRASEÑA débil
+        else if (
+          errorText.includes("password") &&
+          (errorText.includes("weak") ||
+            errorText.includes("débil") ||
+            errorText.includes("too short") ||
+            errorText.includes("muy corta"))
+        ) {
+          errorMessage =
+            "La contraseña es muy débil. Por favor, usa una contraseña más segura con al menos 8 caracteres.";
+        }
+        // Si es status 400, puede ser email duplicado o datos inválidos
+        else if (response.status === 400) {
+          // Verificar si es un error de email duplicado por código o texto
+          const isEmailError =
+            errorData.code === "registration-error-email-exists" ||
+            errorData.code === "woocommerce_rest_customer_invalid_email" ||
+            errorData.code === "woocommerce_rest_customer_invalid_duplicate" ||
+            errorData.code === "rest_customer_invalid_email" ||
+            errorData.code === "woocommerce_rest_customer_duplicate" ||
+            (errorText.includes("email") &&
+              (errorText.includes("already") ||
+                errorText.includes("exists") ||
+                errorText.includes("duplicate") ||
+                errorText.includes("taken") ||
+                errorText.includes("invalid_email") ||
+                errorText.includes("customer_invalid_email") ||
+                errorText.includes("registration-error-email-exists")));
+
+          if (isEmailError) {
+            // Si el backend ya proporciona un mensaje descriptivo, usarlo
+            if (errorData.message && errorData.message.trim()) {
+              errorMessage = errorData.message;
+            } else {
+              errorMessage =
+                "Ya existe una cuenta con este email. Por favor, usa otro email o intenta iniciar sesión si ya tienes una cuenta.";
+            }
+          } else {
+            errorMessage =
+              "Los datos ingresados no son válidos. Por favor, verifica todos los campos.";
+          }
+        }
+        // Status 409 es conflicto, generalmente email duplicado
+        else if (response.status === 409) {
+          errorMessage =
+            "Ya existe una cuenta con este email. Por favor, usa otro email o intenta iniciar sesión si ya tienes una cuenta.";
+        }
+      } catch (parseError) {
+        // Si no se puede parsear el error, usar mensaje según el código de estado
+        console.error("Error parsing registration error:", parseError);
+        if (response.status === 409) {
+          errorMessage =
+            "Ya existe una cuenta con este email. Por favor, usa otro email o intenta iniciar sesión si ya tienes una cuenta.";
+        } else if (response.status === 400) {
+          errorMessage =
+            "Los datos ingresados no son válidos. Por favor, verifica todos los campos.";
+        }
+      }
+
+      throw new Error(errorMessage);
     }
 
     const result = await response.json();
@@ -90,9 +272,21 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error during registration:", error);
+
+    // Si el error ya tiene un mensaje descriptivo, usarlo
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Ocurrió un error al crear tu cuenta. Por favor, intenta nuevamente.";
+
     return NextResponse.json(
-      { error: "Error during registration" },
-      { status: 500 }
+      { error: errorMessage },
+      {
+        status:
+          error instanceof Error && errorMessage.includes("ya está registrado")
+            ? 409
+            : 500,
+      }
     );
   }
 }

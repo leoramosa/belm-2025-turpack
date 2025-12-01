@@ -13,6 +13,7 @@ import Link from "next/link";
 interface ProductReviewsProps {
   productId: number;
   productName: string;
+  productSlug?: string;
 }
 
 // Componente para mostrar el rating con estrellas
@@ -54,7 +55,17 @@ function StarRating({
 }
 
 // Componente para mostrar mensaje de autenticación requerida
-function AuthRequiredMessage({ productName }: { productName: string }) {
+function AuthRequiredMessage({
+  productName,
+  productSlug,
+}: {
+  productName: string;
+  productSlug: string;
+}) {
+  // Construir la URL de redirección con el slug del producto
+  const redirectUrl = `/productos/${productSlug}#reviews`;
+  const loginUrl = `/login?redirect=${encodeURIComponent(redirectUrl)}`;
+
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
       <h3 className="text-xl font-bold mb-4">
@@ -66,7 +77,7 @@ function AuthRequiredMessage({ productName }: { productName: string }) {
           Debes iniciar sesión para poder valorar este producto.
         </p>
         <Link
-          href="/login"
+          href={loginUrl}
           className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
         >
           <LogIn className="w-4 h-4" />
@@ -87,14 +98,63 @@ function ReviewForm({
   productName: string;
   onReviewAdded: (newReview?: IProductReview) => void;
 }) {
+  const { user, profile } = useAuth();
+
+  // Obtener nombre y email del usuario autenticado
+  const getUserName = () => {
+    if (profile?.first_name || profile?.last_name) {
+      return `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
+    }
+    if (user?.first_name || user?.last_name) {
+      return `${user.first_name || ""} ${user.last_name || ""}`.trim();
+    }
+    if (user?.user_display_name) {
+      return user.user_display_name;
+    }
+    if (user?.displayName) {
+      return user.displayName;
+    }
+    if (user?.user_login) {
+      return user.user_login;
+    }
+    return "";
+  };
+
+  const getUserEmail = () => {
+    if (profile?.email) {
+      return profile.email;
+    }
+    if (user?.user_email) {
+      return user.user_email;
+    }
+    if (user?.email) {
+      return user.email;
+    }
+    return "";
+  };
+
   const [formData, setFormData] = useState<ICreateProductReview>({
     product_id: productId,
-    reviewer: "",
-    reviewer_email: "",
+    reviewer: getUserName(),
+    reviewer_email: getUserEmail(),
     review: "",
     rating: 5,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Actualizar los campos cuando el usuario o perfil cambien
+  useEffect(() => {
+    const name = getUserName();
+    const email = getUserEmail();
+    if (name || email) {
+      setFormData((prev) => ({
+        ...prev,
+        reviewer: name || prev.reviewer,
+        reviewer_email: email || prev.reviewer_email,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,16 +177,21 @@ function ReviewForm({
       const responseData = await response.json();
 
       toast.success("¡Review enviado! Será revisado antes de publicarse.");
+
+      // Limpiar el formulario (mantener nombre y email si están bloqueados)
+      const userName = getUserName();
+      const userEmail = getUserEmail();
       setFormData({
         product_id: productId,
-        reviewer: "",
-        reviewer_email: "",
+        reviewer: userName, // Mantener el nombre si está bloqueado
+        reviewer_email: userEmail, // Mantener el email si está bloqueado
         review: "",
         rating: 5,
       });
 
-      // Pasar el review creado para agregarlo inmediatamente a la lista
-      onReviewAdded(responseData.review);
+      // NO agregar el review a la lista inmediatamente
+      // Solo se mostrará después de que el administrador lo apruebe
+      // No llamar a onReviewAdded para evitar que aparezca antes de aprobación
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Error al enviar el review"
@@ -155,7 +220,8 @@ function ReviewForm({
               onChange={(e) =>
                 setFormData({ ...formData, reviewer: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              disabled={!!getUserName()}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-600"
               placeholder="Tu nombre"
             />
           </div>
@@ -171,7 +237,8 @@ function ReviewForm({
               onChange={(e) =>
                 setFormData({ ...formData, reviewer_email: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              disabled={!!getUserEmail()}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-600"
               placeholder="tu@email.com"
             />
           </div>
@@ -227,6 +294,7 @@ function ReviewForm({
 export default function ProductReviews({
   productId,
   productName,
+  productSlug,
 }: ProductReviewsProps) {
   const { isAuthenticated } = useAuth();
   const [reviewsData, setReviewsData] =
@@ -261,30 +329,30 @@ export default function ProductReviews({
     loadReviews(currentPage);
   }, [productId, currentPage, loadReviews]);
 
-  const handleReviewAdded = (newReview?: IProductReview) => {
-    // Si se pasó un review nuevo, agregarlo inmediatamente a la lista
-    if (newReview) {
-      if (reviewsData) {
-        // Si ya hay reviews, agregar el nuevo al inicio
-        const updatedReviews = [newReview, ...reviewsData.reviews];
-        setReviewsData({
-          ...reviewsData,
-          reviews: updatedReviews,
-          total: reviewsData.total + 1,
-        });
-      } else {
-        // Si no hay reviews aún, crear la estructura inicial
-        setReviewsData({
-          reviews: [newReview],
-          total: 1,
-          totalPages: 1,
-          currentPage: 1,
-        });
+  // Scroll automático a la sección de reviews cuando se regresa del login
+  useEffect(() => {
+    if (isAuthenticated && typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash === "#reviews") {
+        // Pequeño delay para asegurar que el componente esté renderizado
+        setTimeout(() => {
+          const reviewsElement = document.getElementById("reviews");
+          if (reviewsElement) {
+            reviewsElement.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }, 300);
       }
-    } else {
-      // Si no hay review nuevo, recargar desde el backend
-      loadReviews(currentPage);
     }
+  }, [isAuthenticated]);
+
+  const handleReviewAdded = (newReview?: IProductReview) => {
+    // Los reviews ahora requieren aprobación del administrador
+    // No agregar reviews inmediatamente, solo recargar desde el backend
+    // Esto asegura que solo se muestren reviews aprobados
+    loadReviews(currentPage);
   };
 
   const formatDate = (dateString: string) => {
@@ -317,7 +385,7 @@ export default function ProductReviews({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Columna izquierda: Skeleton de valoraciones */}
           <div>
-            <h2 className="text-3xl font-bold mb-8">Valoraciones</h2>
+            <h2 className="text-3xl font-bold mb-8">Comentarios</h2>
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div
@@ -373,7 +441,7 @@ export default function ProductReviews({
   return (
     <div
       id="reviews"
-      className="mt-16 opacity-100 transform translate-y-0 transition-all duration-700 ease-out"
+      className="mt-16 opacity-100 transform translate-y-0 transition-all duration-700 ease-out border-t pt-12 border-gray-300 border-b pb-16"
       style={{
         animationDelay: "1.6s",
       }}
@@ -381,7 +449,7 @@ export default function ProductReviews({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Columna izquierda: Valoraciones */}
         <div>
-          <h2 className="text-3xl font-bold mb-8">Valoraciones</h2>
+          <h2 className="text-3xl font-bold mb-8">Comentarios</h2>
 
           {/* Lista de reviews */}
           {reviewsData && reviewsData.reviews.length > 0 ? (
@@ -455,7 +523,10 @@ export default function ProductReviews({
               onReviewAdded={handleReviewAdded}
             />
           ) : (
-            <AuthRequiredMessage productName={productName} />
+            <AuthRequiredMessage
+              productName={productName}
+              productSlug={productSlug || ""}
+            />
           )}
         </div>
       </div>

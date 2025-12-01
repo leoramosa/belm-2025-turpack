@@ -2705,7 +2705,7 @@ export default function CheckoutPage() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-base">
+                            <h3 className="font-semibold text-gray-900 text-xs">
                               {item.name}
                             </h3>
                             {/* Mostrar atributos seleccionados */}

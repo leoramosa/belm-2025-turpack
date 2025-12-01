@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { IProduct, ProductAttributeOption } from "@/types/product";
-import { extractColorValue } from "@/utils/productAttributes";
+import { IProduct } from "@/types/product";
+import { ProductCard } from "@/components/Product/ProductCard";
 // Imports removidos - ahora usamos API route
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
@@ -126,216 +125,16 @@ const NewProducts = ({ products: initialProducts }: NewProductsProps) => {
           className="pb-12"
         >
           {products.map((product) => {
-            // Extraer colores del producto usando isColorAttribute
-            const colorAttr = product.attributes?.find(
-              (a) =>
-                a.name.toLowerCase() === "color" ||
-                a.name.toLowerCase() === "colores"
-            );
-            const colors = colorAttr?.options || [];
-
-            const isVariableProduct =
-              product.variations && product.variations.length > 0;
-
-            // Obtener la primera variación para productos variables
-            const getDefaultVariationForPricing = () => {
-              if (!product.variations || product.variations.length === 0)
-                return null;
-              return product.variations[0];
-            };
-            const defaultVariationForPricing = getDefaultVariationForPricing();
-
-            // Determinar precios y descuento basado en primera variación o producto principal
-            const currentPrice =
-              defaultVariationForPricing?.price ?? product.pricing.price;
-            const currentRegularPrice =
-              defaultVariationForPricing?.regularPrice ??
-              product.pricing.regularPrice;
-            const currentSalePrice =
-              defaultVariationForPricing?.salePrice ??
-              product.pricing.salePrice;
-
-            const hasDiscount =
-              currentSalePrice !== null &&
-              currentRegularPrice !== null &&
-              currentSalePrice < currentRegularPrice;
-
-            // Obtener imagen del producto - PRIORIZAR PRIMER COLOR DEL BACKEND
-            const getProductImage = () => {
-              // Extraer colores del producto
-              const colorAttr = product.attributes?.find(
-                (a) =>
-                  a.name.toLowerCase() === "color" ||
-                  a.name.toLowerCase() === "colores"
-              );
-              const colors = colorAttr?.options || [];
-
-              // 🎯 BUSCAR VARIACIÓN DEL PRIMER COLOR (según orden del backend)
-              if (
-                product.variations &&
-                product.variations.length > 0 &&
-                colors.length > 0
-              ) {
-                const firstColor = colors[0]; // Primer color según orden del backend
-
-                // Buscar la variación que corresponda al primer color
-                const firstColorVariation = product.variations.find(
-                  (variation) => {
-                    // Buscar el atributo de color en esta variación
-                    const variationColorAttr = variation.attributes?.find(
-                      (attr) =>
-                        attr.name.toLowerCase() === "color" ||
-                        attr.name.toLowerCase() === "colores"
-                    );
-
-                    // Si coincide con el primer color
-                    if (
-                      variationColorAttr?.option &&
-                      firstColor &&
-                      variationColorAttr.option.toLowerCase().trim() ===
-                        firstColor.name.toLowerCase().trim()
-                    ) {
-                      return true;
-                    }
-                    return false;
-                  }
-                );
-
-                // Si encontramos la variación del primer color y tiene imagen, usarla
-                if (firstColorVariation?.image?.src) {
-                  return firstColorVariation.image.src;
-                }
-
-                // Si no tiene imagen, buscar cualquier variación con imagen
-                for (const variation of product.variations) {
-                  if (variation.image?.src) {
-                    return variation.image.src;
-                  }
-                }
-              }
-
-              // Si hay variaciones pero no encontramos ninguna con imagen, usar la primera
-              if (
-                product.variations &&
-                product.variations.length > 0 &&
-                product.variations[0].image?.src
-              ) {
-                return product.variations[0].image.src;
-              }
-
-              // Fallback a imágenes principales si no hay variaciones con imagen
-              if (product.images && product.images.length > 0) {
-                return product.images[0].src;
-              }
-              return "/product.png";
-            };
-
             return (
               <SwiperSlide key={product.id} className="relative h-full py-5">
-                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
-                  {/* Imagen del producto */}
-                  <div className="relative aspect-square w-full flex-shrink-0">
-                    <Link href={`/productos/${product.slug}`}>
-                      <Image
-                        src={getProductImage()}
-                        alt={product.name}
-                        fill
-                        className="object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                    </Link>
-                    {/* Badges */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                      {/* Badge OFERTA - solo si hay descuento */}
-                      {/*  {hasDiscount && (
-                        <div className="bg-red-500 text-white px-2 py-1 rounded text-sm font-semibold">
-                          Oferta
-                        </div>
-                      )} */}
-                    </div>
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                      {/* Badge NUEVO - siempre visible en productos nuevos */}
-                      <div className="bg-green-500 text-xs lg:text-sm text-white px-2 py-1 rounded  font-semibold">
-                        NUEVO
-                      </div>
-                    </div>
-
-                    {/* Colores */}
-                    <div className="absolute bottom-2 right-0 justify-center left-2">
-                      {colors.length > 0 && (
-                        <div className="flex items-center gap-2 w-full ">
-                          <div className="flex items-center py-1 px-2 rounded-md mb-2 m-auto bg-white/80 backdrop-blur-sm justify-center">
-                            <span className="text-xs lg:text-sm text-gray-600">
-                              Colores:
-                            </span>
-                            <div className="flex gap-1">
-                              {colors
-                                .slice(0, 3)
-                                .map((color: ProductAttributeOption) => {
-                                  const colorValue = extractColorValue(color);
-                                  const hex = colorValue || "#CCCCCC";
-
-                                  return (
-                                    <span
-                                      key={color.name || color.id}
-                                      className="w-4 h-4 rounded-full border border-gray-300"
-                                      style={{
-                                        backgroundColor: hex,
-                                      }}
-                                      title={color.name}
-                                    />
-                                  );
-                                })}
-                              {colors.length > 3 && (
-                                <span className="text-xs text-gray-500">
-                                  +{colors.length - 3}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Contenido - Usando flex para distribuir el espacio */}
-                  <div className="p-4 flex flex-col flex-grow">
-                    <Link href={`/productos/${product.slug}`}>
-                      <h3
-                        className="font-semibold text-xs lg:text-lg text-gray-900  hover:text-primary transition-colors h-8 lg:h-12 overflow-hidden text-ellipsis"
-                        style={{
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                        }}
-                      >
-                        {product.name}
-                      </h3>
-                    </Link>
-
-                    {/* Precio */}
-                    <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-                      <span className="text-lg font-bold text-primary">
-                        S/{" "}
-                        {hasDiscount
-                          ? currentSalePrice?.toFixed(2) ?? "0.00"
-                          : currentPrice?.toFixed(2) ?? "0.00"}
-                      </span>
-                      {hasDiscount && (
-                        <span className="text-sm text-gray-500 line-through">
-                          S/ {currentRegularPrice?.toFixed(2) ?? "0.00"}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Botón - Se mantiene al final */}
-                    <Link
-                      href={`/productos/${product.slug}`}
-                      className="w-full bg-primary text-xs md:text-base text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors duration-300 text-center block mt-auto"
-                    >
-                      {isVariableProduct ? "Seleccionar" : "Ver Producto"}
-                    </Link>
-                  </div>
-                </div>
+                <ProductCard
+                  product={product}
+                  viewMode="grid"
+                  customBadge={{
+                    text: "NUEVO",
+                    className: "bg-green-500",
+                  }}
+                />
               </SwiperSlide>
             );
           })}

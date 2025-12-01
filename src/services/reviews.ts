@@ -127,7 +127,13 @@ export async function createProductReview(
   const url = `${apiUrl}/wp-json/wc/v3/products/reviews`;
   const authHeader = buildBasicAuthHeader(consumerKey, consumerSecret);
 
-  console.log(`Creating review at: ${url}`, reviewData);
+  // 🆕 Crear el review con status "hold" (pendiente) para que requiera aprobación del administrador
+  const reviewPayload = {
+    ...reviewData,
+    status: "hold", // Status "hold" = pendiente de aprobación
+  };
+
+  console.log(`Creating review at: ${url}`, reviewPayload);
 
   const response = await fetch(url, {
     method: "POST",
@@ -135,7 +141,7 @@ export async function createProductReview(
       Authorization: authHeader,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(reviewData),
+    body: JSON.stringify(reviewPayload),
   });
 
   console.log(`Create review response status: ${response.status}`);

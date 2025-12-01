@@ -19,6 +19,23 @@ export function ProductPagination({
   totalItems,
   filteredItems,
 }: ProductPaginationProps) {
+  // Función para hacer scroll hacia arriba
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  // Handler para cambiar de página con scroll
+  const handlePageChange = (page: number) => {
+    onPageChange(page);
+    // Hacer scroll después de un pequeño delay para asegurar que el cambio de página se procese
+    setTimeout(() => {
+      scrollToTop();
+    }, 100);
+  };
+
   // Resetear a página 1 si la página actual excede el total
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -100,7 +117,7 @@ export function ProductPagination({
       <div className="flex items-center justify-center gap-2 flex-wrap">
         {/* Botón Anterior */}
         <button
-          onClick={() => onPageChange(currentPage - 1)}
+          onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className={`px-4 py-2 text-sm font-medium rounded-lg border transition ${
             currentPage === 1
@@ -132,7 +149,7 @@ export function ProductPagination({
             return (
               <button
                 key={pageNumber}
-                onClick={() => onPageChange(pageNumber)}
+                onClick={() => handlePageChange(pageNumber)}
                 className={`min-w-[40px] px-3 py-2 text-sm font-medium rounded-lg border transition ${
                   isActive
                     ? "border-primary bg-primary text-white"
@@ -149,7 +166,7 @@ export function ProductPagination({
 
         {/* Botón Siguiente */}
         <button
-          onClick={() => onPageChange(currentPage + 1)}
+          onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className={`px-4 py-2 text-sm font-medium rounded-lg border transition ${
             currentPage === totalPages

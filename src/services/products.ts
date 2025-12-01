@@ -3,6 +3,7 @@ import "server-only";
 import {
   IProduct,
   ProductAttribute,
+  ProductAttributeOption,
   ProductImage,
   ProductPricing,
   ProductVariation,
@@ -493,13 +494,23 @@ async function enrichAttributes(
         return attribute;
       }
 
+      // Crear un mapa de términos por nombre normalizado para búsqueda rápida
+      const termsMap = new Map<string, WordpressAttributeTerm>();
+      terms.forEach((term) => {
+        const normalizedName = normalize(term.name);
+        if (!termsMap.has(normalizedName)) {
+          termsMap.set(normalizedName, term);
+        }
+      });
+
+      // Enriquecer SOLO las opciones que están asignadas al producto
       const options = attribute.options.map((option) => {
         const term =
+          termsMap.get(normalize(option.name)) ||
           terms.find(
-            (candidate) =>
-              normalize(option.name) === normalize(candidate.name) ||
-              (candidate.slug && candidate.slug === option.slug)
-          ) ?? null;
+            (candidate) => candidate.slug && candidate.slug === option.slug
+          ) ||
+          null;
 
         if (!term) {
           return option;
@@ -530,7 +541,7 @@ interface CachedAttributeTerms {
 
 const attributeTermsCache = new Map<number, CachedAttributeTerms>();
 const ATTRIBUTE_TERMS_NAMESPACE = "/wp-json/wc/v3/products/attributes";
-const CACHE_TTL_MS = 300 * 1000; // 300 segundos (5 minutos) - coincide con revalidate
+const CACHE_TTL_MS = 60 * 1000; // 60 segundos (1 minuto) - reducido para mostrar nuevos colores más rápido
 
 // Función para limpiar el caché de términos de atributos
 export function clearAttributeTermsCache(attributeId?: number): void {
@@ -568,7 +579,7 @@ async function fetchAttributeTerms(
         ),
       },
       next: {
-        revalidate: 300,
+        revalidate: 60, // Reducido de 300 a 60 segundos para mostrar nuevos colores más rápido
       },
     });
 

@@ -6,6 +6,7 @@ import { useSelectCategories } from "@/store/categoryStore";
 import { IProductCategoryNode } from "@/types/ICategory";
 import { IProduct, ProductAttribute } from "@/types/product";
 import { extractColorValue, isColorAttribute } from "@/utils/productAttributes";
+import Link from "next/link";
 
 export interface ProductFilters {
   search: string;
@@ -673,6 +674,37 @@ export function ProductFilter({
         </div>
       )}
 
+      <div>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          Acceso Rápido
+        </h4>
+        <div className="grid grid-cols-1 gap-2">
+          {/* Badge Productos Nuevos */}
+          <Link
+            href="/lo-mas-nuevo"
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-green-50 hover:border-green-200 text-center block"
+          >
+            🆕 Lo más nuevo
+          </Link>
+
+          {/* Badge Ofertas */}
+          <Link
+            href="/ofertas-especiales"
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-orange-50 hover:border-orange-200 text-center block"
+          >
+            🔥 Ofertas especiales
+          </Link>
+
+          {/* Badge Lo más vendido */}
+          <Link
+            href="/lo-mas-vendido"
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-yellow-50 hover:border-yellow-200 text-center block"
+          >
+            ⭐ Lo más vendido
+          </Link>
+        </div>
+      </div>
+
       {/* Search */}
       <div className="">
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1020,5 +1052,5 @@ export function ProductFilter({
   }
 
   // Si es desktop, retornar con el wrapper
-  return <div className="hidden lg:block w-80 shrink-0">{filtersContent}</div>;
+  return <div className="hidden lg:block w-60 shrink-0">{filtersContent}</div>;
 }

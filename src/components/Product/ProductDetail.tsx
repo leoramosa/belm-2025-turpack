@@ -902,9 +902,9 @@ export default function ProductDetail({
             </div>
 
             {/* Stock */}
-            <div>
+            <div className="mb-0 lg:mb-3">
               {product.stockStatus === "instock" ? (
-                <div className="flex items-center gap-2 text-green-600 font-medium">
+                <div className="flex items-center gap-2 text-green-600 font-medium mb-0">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   En stock
                 </div>
@@ -1152,6 +1152,20 @@ export default function ProductDetail({
               </button>
             </div>
 
+            {/* Descripción corta */}
+            {product.shortDescription && (
+              <div
+                className="border-t lg:hidden border-gray-200 pt-5 text-gray-700 leading-relaxed w-full [&_p]:text-justify [&_p]:mb-6 [&_p]:first-child:mt-0 [&_p]:last-child:mb-0 [&_p]:w-full"
+                style={{
+                  lineHeight: "1.7",
+                  textAlign: "justify",
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: shortDescriptionHtml,
+                }}
+              />
+            )}
+
             {/* Nota de compra - Propiedad purchase_note no disponible en IProduct */}
             {/* {product.purchase_note && (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-2xl">
@@ -1267,7 +1281,11 @@ export default function ProductDetail({
         )}
 
         {/* Reviews */}
-        <ProductReviews productId={product.id} productName={product.name} />
+        <ProductReviews
+          productId={product.id}
+          productName={product.name}
+          productSlug={product.slug}
+        />
 
         {/* Productos recomendados */}
         {recommendations && recommendations.length > 0 && (
@@ -1275,7 +1293,7 @@ export default function ProductDetail({
             <ProductRecommendations
               recommendations={recommendations}
               currentProduct={product}
-              title="TAMBIÉN TE PUEDE INTERESAR"
+              title="También te puede interesar"
             />
           </div>
         )}
