@@ -64,6 +64,13 @@ export async function POST(request: NextRequest) {
 
       const coupon = searchData[0];
 
+      // Debug: Verificar free_shipping del cupón
+      console.log("🔍 Cupón aplicado:", {
+        code: coupon.code,
+        free_shipping: coupon.free_shipping,
+        free_shipping_type: typeof coupon.free_shipping,
+      });
+
       // Verificar si el cupón está activo
       if (coupon.status !== "publish") {
         return NextResponse.json({
@@ -149,6 +156,11 @@ export async function POST(request: NextRequest) {
           usage_limit: coupon.usage_limit,
           usage_count: coupon.usage_count,
           date_expires: coupon.date_expires,
+          // free_shipping puede ser boolean o string "yes"/"no" en WooCommerce
+          free_shipping:
+            coupon.free_shipping === true ||
+            coupon.free_shipping === "yes" ||
+            coupon.free_shipping === 1,
         },
         discount: {
           amount: discountAmount,

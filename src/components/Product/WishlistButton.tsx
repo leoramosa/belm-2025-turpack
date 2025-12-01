@@ -44,15 +44,7 @@ export default function WishlistButton({
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) return null;
-
-  // Combinar autenticación con estado de wishlist
-  const isInWishlist = isAuthenticated && inWishlist;
-
+  // Definir sizeClasses e iconSizes antes de usarlos
   const sizeClasses = {
     sm: "w-8 h-8",
     md: "w-10 h-10",
@@ -64,6 +56,27 @@ export default function WishlistButton({
     md: "w-5 h-5",
     lg: "w-6 h-6",
   };
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Renderizar un placeholder durante SSR para evitar problemas de hidratación
+  if (!isMounted) {
+    return (
+      <div
+        className={`
+          relative flex items-center justify-center rounded-full border-2 border-gray-300 bg-white
+          ${sizeClasses[size]}
+          ${className}
+        `}
+        aria-hidden="true"
+      />
+    );
+  }
+
+  // Combinar autenticación con estado de wishlist
+  const isInWishlist = isAuthenticated && inWishlist;
 
   const handleToggleWishlist = () => {
     setIsAnimating(true);

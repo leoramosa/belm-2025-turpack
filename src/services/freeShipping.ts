@@ -31,7 +31,7 @@ export interface FreeShippingCalculation {
 class FreeShippingService {
   private cache: FreeShippingConfig | null = null;
   private cacheTime: number = 0;
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+  private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutos (aumentado porque la configuración rara vez cambia)
 
   /**
    * Obtener configuración de envío gratuito desde el backend
@@ -85,7 +85,8 @@ class FreeShippingService {
   async calculateFreeShipping(
     subtotal: number
   ): Promise<FreeShippingCalculation> {
-    const config = await this.getFreeShippingConfig();
+    // Usar cache si está disponible (no hacer nueva llamada si ya tenemos la config)
+    const config = this.cache || (await this.getFreeShippingConfig());
 
     const qualifies = config.enabled && subtotal >= config.threshold;
     const remaining = config.enabled

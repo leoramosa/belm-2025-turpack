@@ -49,11 +49,13 @@ export const useWishlistStore = create<WishlistState>()(
           });
 
           // Sincronizar con backend en segundo plano con debounce
-          setTimeout(() => {
+          // Nota: Los timeouts aquí no necesitan cleanup porque son operaciones de sincronización
+          // que deben completarse incluso si el componente se desmonta
+          const syncTimeout = setTimeout(() => {
             WishlistSyncService.syncAddToBackend(product).finally(() => {
               // Marcar que la sincronización terminó después de un pequeño delay
               // para asegurar que el backend procesó el cambio
-              setTimeout(() => {
+              const clearTimeout = setTimeout(() => {
                 const state = get();
                 if (
                   state.lastLocalChange &&
@@ -62,8 +64,10 @@ export const useWishlistStore = create<WishlistState>()(
                   set({ lastLocalChange: null });
                 }
               }, 500);
+              // No hay cleanup aquí porque queremos que se complete la sincronización
             });
           }, 100);
+          // No retornamos cleanup porque queremos que la sincronización se complete
         }
       },
       removeFromWishlist: (productId) => {
@@ -76,12 +80,14 @@ export const useWishlistStore = create<WishlistState>()(
         });
 
         // Sincronizar con backend en segundo plano con debounce
-        setTimeout(() => {
+        // Nota: Los timeouts aquí no necesitan cleanup porque son operaciones de sincronización
+        // que deben completarse incluso si el componente se desmonta
+        const syncTimeout = setTimeout(() => {
           WishlistSyncService.syncRemoveFromBackend(String(productId)).finally(
             () => {
               // Marcar que la sincronización terminó después de un pequeño delay
               // para asegurar que el backend procesó el cambio
-              setTimeout(() => {
+              const clearTimeout = setTimeout(() => {
                 const state = get();
                 if (
                   state.lastLocalChange &&
@@ -90,9 +96,11 @@ export const useWishlistStore = create<WishlistState>()(
                   set({ lastLocalChange: null });
                 }
               }, 500);
+              // No hay cleanup aquí porque queremos que se complete la sincronización
             }
           );
         }, 100);
+        // No retornamos cleanup porque queremos que la sincronización se complete
       },
       clearWishlist: () => {
         set({ items: [], lastLocalChange: Date.now() });

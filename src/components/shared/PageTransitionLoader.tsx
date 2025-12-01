@@ -11,7 +11,7 @@ export default function PageTransitionLoader() {
 
   useEffect(() => {
     // Mostrar loader solo en navegaciones entre categorías
-    if (pathname.includes("/categoria/")) {
+    if (pathname.includes("/categorias/")) {
       setIsLoading(true);
       setLoadingText("Cargando categoría...");
 

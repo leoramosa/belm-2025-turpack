@@ -133,6 +133,8 @@ export const useAuth = () => {
         hasLoadedWishlistRef.current = true;
       });
     }
+    // loadFromBackend es estable del store, no necesita estar en dependencias
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, clearOrders]);
 
   return {

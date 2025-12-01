@@ -25,7 +25,7 @@ const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
 
     if (pathname?.includes("/product/")) {
       return "Quiero más información sobre este producto";
-    } else if (pathname?.includes("/categoria/")) {
+    } else if (pathname?.includes("/categorias/")) {
       return "Quiero más información sobre esta categoría";
     } else if (pathname?.includes("/cart")) {
       return "Necesito ayuda con mi carrito de compras";

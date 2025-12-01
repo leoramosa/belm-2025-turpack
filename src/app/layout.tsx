@@ -6,6 +6,7 @@ import { fetchProductCategoriesTree } from "@/services/categories";
 import Navbar from "@/components/shared/Navbar";
 import CartDrawer from "@/components/CartDrawer/CartDrawer";
 import Footer from "@/components/shared/Footer";
+import GlobalLoader from "@/components/shared/GlobalLoader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,7 +42,8 @@ export default async function RootLayout({
         <main>{children}</main>
         <CartDrawer />
         <Footer />
-        <Toaster position="top-right" richColors closeButton duration={4000} />
+        <GlobalLoader />
+        <Toaster position="top-center" richColors closeButton duration={4000} />
       </body>
     </html>
   );

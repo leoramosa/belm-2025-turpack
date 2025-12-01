@@ -28,7 +28,7 @@ const HomePage = ({
   initialDynamicShowcases,
 }: HomePageProps) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 overflow-hidden">
+    <div className=" bg-gradient-to-br from-purple-50 via-white to-purple-50 overflow-hidden">
       {/* Hero Banner Section */}
       <HeroBanner initialData={initialBannerData} />
 

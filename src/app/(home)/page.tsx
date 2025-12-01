@@ -58,6 +58,9 @@ export const metadata: Metadata = {
 // Revalidar la página cada 10 minutos para mejor performance
 export const revalidate = 600;
 
+// Cantidad de productos a mostrar en cada sección del home
+const HOME_PRODUCTS_PER_SECTION = 27;
+
 export default async function Home() {
   // Cargar TODOS los datos en el servidor para máxima performance
   let bannerData: HeroBannerSlide[] | null = null;
@@ -95,9 +98,9 @@ export default async function Home() {
     // Procesar productos usando las funciones auxiliares del servicio
     try {
       [newProducts, bestSellerProducts, saleProducts] = await Promise.all([
-        fetchNewProducts(9, false),
-        fetchBestSellerProducts(9, false),
-        fetchSaleProducts(9, false),
+        fetchNewProducts(HOME_PRODUCTS_PER_SECTION, false),
+        fetchBestSellerProducts(HOME_PRODUCTS_PER_SECTION, false),
+        fetchSaleProducts(HOME_PRODUCTS_PER_SECTION, false),
       ]);
 
       // Productos para showcase: obtener algunos productos para showcase

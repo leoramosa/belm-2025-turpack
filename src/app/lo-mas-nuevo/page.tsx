@@ -35,10 +35,8 @@ export const metadata: Metadata = {
 };
 
 export default async function LoMasNuevoRoutePage() {
-  // Usar EXACTAMENTE la misma función y parámetros que funciona en home
-  // En home se usa: fetchNewProducts(9, false)
-  // Usamos un límite alto pero con includeOutOfStock=false para mantener la misma lógica
-  const newProducts = await fetchNewProducts(500, false);
+  // Máximo 72 productos para la página completa
+  const newProducts = await fetchNewProducts(72, false);
 
   return <LoMasNuevoPage products={newProducts} />;
 }

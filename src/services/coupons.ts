@@ -10,6 +10,7 @@ export interface Coupon {
   usage_limit?: number;
   usage_count: number;
   date_expires?: string;
+  free_shipping?: boolean; // Indica si el cupón incluye envío gratuito
 }
 
 export interface CouponDiscount {

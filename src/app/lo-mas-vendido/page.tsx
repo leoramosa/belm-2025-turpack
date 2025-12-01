@@ -35,10 +35,8 @@ export const metadata: Metadata = {
 };
 
 export default async function LoMasVendidoRoutePage() {
-  // Usar EXACTAMENTE la misma función y parámetros que funciona en home
-  // En home se usa: fetchBestSellerProducts(9, false)
-  // Usamos un límite alto pero con includeOutOfStock=false para mantener la misma lógica
-  const bestSellerProducts = await fetchBestSellerProducts(500, false);
+  // Máximo 72 productos para la página completa
+  const bestSellerProducts = await fetchBestSellerProducts(72, false);
 
   return <LoMasVendidoPage products={bestSellerProducts} />;
 }

@@ -35,11 +35,9 @@ export const metadata: Metadata = {
 };
 
 export default async function OfertasEspecialesRoutePage() {
-  // Usar EXACTAMENTE la misma función y parámetros que funciona en home
-  // En home se usa: fetchSaleProducts(9, false)
-  // Usamos un límite alto pero con includeOutOfStock=false para mantener la misma lógica
+  // Máximo 72 productos para la página completa
   // Esta función ya filtra productos con descuento (simples y variables)
-  const saleProducts = await fetchSaleProducts(500, false);
+  const saleProducts = await fetchSaleProducts(72, false);
 
   return <OfertasEspecialesPage products={saleProducts} />;
 }

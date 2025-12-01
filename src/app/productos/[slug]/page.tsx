@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import ProductDetail from "@/components/Product/ProductDetail";
 import { fetchProductBySlug, fetchProducts } from "@/services/products";
+import { fetchProductCategoriesTree } from "@/services/categories";
 import type { IProduct } from "@/types/product";
 
 interface ProductPageProps {
@@ -11,7 +12,11 @@ interface ProductPageProps {
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = await fetchProductBySlug(slug);
+
+  const [product, categories] = await Promise.all([
+    fetchProductBySlug(slug),
+    fetchProductCategoriesTree(),
+  ]);
 
   if (!product) {
     notFound();
@@ -39,7 +44,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="min-h-screen ">
-      <ProductDetail product={product} recommendations={recommendations} />
+      <ProductDetail
+        product={product}
+        categories={categories}
+        recommendations={recommendations}
+      />
     </div>
   );
 }

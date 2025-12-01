@@ -40,10 +40,18 @@ import { useShippingZonesStore } from "@/store/useShippingZonesStore";
 import { z } from "zod";
 import CouponSection from "./CouponSection";
 import { useFreeShipping } from "@/hooks/useFreeShipping";
+import { freeShippingService } from "@/services/freeShipping";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, getSubtotal, getTotal, getDiscountAmount } = useCartStore();
+  const {
+    cart,
+    getSubtotal,
+    getTotal,
+    getDiscountAmount,
+    appliedCoupon,
+    couponDiscount,
+  } = useCartStore();
   const { getCSRFField } = useCSRF();
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingInfo, setShippingInfo] = useState({
@@ -1482,8 +1490,30 @@ export default function CheckoutPage() {
     (m) => m.id === shippingMethod
   );
 
-  const subtotal = getSubtotal();
-  const discount = getDiscountAmount();
+  // Usar useMemo para calcular subtotal y evitar errores de hidratación
+  // El cálculo se hace basado en el carrito actual y el cupón aplicado
+  // Agregar dependencias del carrito para forzar recálculo cuando cambia
+  const cartKey =
+    cart.length > 0
+      ? cart.map((item) => `${item.id}-${item.quantity}`).join(",")
+      : "empty";
+  const subtotal = useMemo(() => {
+    if (!isClient) return 0;
+    // El subtotal NO incluye descuentos, es el total del carrito sin cupones
+    const calculatedSubtotal = getSubtotal();
+    console.log("💰 Subtotal calculation:", {
+      calculatedSubtotal,
+      cartLength: cart.length,
+      hasCoupon: !!appliedCoupon,
+      couponCode: appliedCoupon?.code,
+    });
+    return calculatedSubtotal;
+  }, [isClient, cart, cartKey, getSubtotal]);
+
+  const discount = useMemo(() => {
+    if (!isClient) return 0;
+    return getDiscountAmount();
+  }, [isClient, cart, getDiscountAmount, appliedCoupon, couponDiscount]);
 
   // 🆕 Calcular costo de envío original
   const originalShippingCost =
@@ -1497,16 +1527,78 @@ export default function CheckoutPage() {
     qualifiesForFreeShipping,
     remainingForFreeShipping,
     shippingCost: calculatedShippingCost,
+    calculateShipping: recalculateShipping,
   } = useFreeShipping(subtotal, originalShippingCost);
 
-  const costoEnvio = useMemo(() => {
-    // Si el hook calculó un costo diferente, usarlo; sino usar el original
-    return calculatedShippingCost !== undefined
-      ? calculatedShippingCost
-      : originalShippingCost;
-  }, [calculatedShippingCost, originalShippingCost]);
+  // Forzar recálculo del envío gratuito solo cuando cambia el subtotal significativamente
+  // No recalcular cuando solo cambia el cupón (el cupón se maneja directamente en isShippingFree)
+  useEffect(() => {
+    if (isClient && subtotal >= 0) {
+      // Solo recalcular si el subtotal cambió significativamente (más de 0.01)
+      // O si se removió un cupón (para resetear el cálculo)
+      const timeoutId = setTimeout(() => {
+        recalculateShipping(subtotal);
+      }, 500); // Debounce más largo para evitar llamadas excesivas
+      return () => clearTimeout(timeoutId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClient, subtotal]); // Solo subtotal, no appliedCoupon ni cartKey
 
-  const total = getTotal() + costoEnvio;
+  // Determinar si el envío es gratuito (por cupón o por threshold)
+  const isShippingFree = useMemo(() => {
+    if (!isClient) return false;
+
+    // Si hay un cupón con envío gratuito, el envío es gratuito
+    if (appliedCoupon?.free_shipping === true) {
+      return true;
+    }
+
+    // Si no hay cupón o el cupón no tiene envío gratuito, usar el cálculo del hook
+    // (basado en si el subtotal alcanza el threshold)
+    return qualifiesForFreeShipping;
+  }, [isClient, appliedCoupon, qualifiesForFreeShipping, subtotal]);
+
+  const costoEnvio = useMemo(() => {
+    if (!isClient) return 0;
+
+    // Si el envío es gratuito (por cupón o por threshold), retornar 0
+    if (isShippingFree) {
+      return 0;
+    }
+
+    // Si no es gratuito, usar el costo original
+    return originalShippingCost;
+  }, [isClient, isShippingFree, originalShippingCost]);
+
+  // Debug: Log cuando cambia el cupón o el subtotal
+  useEffect(() => {
+    if (isClient) {
+      console.log("🛒 Checkout State Update:", {
+        subtotal,
+        discount,
+        appliedCoupon: appliedCoupon?.code || null,
+        couponFreeShipping: appliedCoupon?.free_shipping || false,
+        cartLength: cart.length,
+        qualifiesForFreeShipping,
+        isShippingFree,
+        costoEnvio,
+      });
+    }
+  }, [
+    isClient,
+    subtotal,
+    discount,
+    appliedCoupon,
+    cart.length,
+    qualifiesForFreeShipping,
+    isShippingFree,
+    costoEnvio,
+  ]);
+
+  const total = useMemo(() => {
+    if (!isClient) return 0;
+    return getTotal() + costoEnvio;
+  }, [isClient, cart, discount, costoEnvio, getTotal]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -2169,7 +2261,7 @@ export default function CheckoutPage() {
                                         method.settings.cost.value ===
                                         "0.00" ? (
                                           "Gratis"
-                                        ) : qualifiesForFreeShipping ? (
+                                        ) : isShippingFree ? (
                                           <span className="flex items-center gap-2">
                                             <span className="line-through text-gray-400">
                                               S/. {method.settings.cost.value}
@@ -2583,7 +2675,7 @@ export default function CheckoutPage() {
                           }
                           className="flex items-center gap-4 mb-4"
                         >
-                          <div className="w-16 h-16 flex-shrink-0">
+                          <div className="w-16 h-16 flex-shrink-0 relative">
                             <Image
                               src={
                                 (item.variations &&
@@ -2603,8 +2695,14 @@ export default function CheckoutPage() {
                               alt={item.name}
                               width={64}
                               height={64}
-                              className="w-full h-full object-cover rounded-xl"
+                              className="w-full h-full object-cover rounded-xl border-gray-200 border-3"
                             />
+                            {/* Badge con cantidad */}
+                            {item.quantity > 1 && (
+                              <div className="absolute -top-2 -right-2 bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg">
+                                {item.quantity}
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-gray-900 text-base">
@@ -2619,7 +2717,7 @@ export default function CheckoutPage() {
                                     ([attrId, value]) => (
                                       <span
                                         key={attrId}
-                                        className="bg-gray-100 rounded px-2 py-0.5"
+                                        className="bg-accent rounded px-2 py-0.5"
                                       >
                                         {(() => {
                                           const attr = item.attributes?.find(
@@ -2655,83 +2753,90 @@ export default function CheckoutPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Subtotal</span>
                         <span className="font-medium">
-                          S/. {subtotal.toFixed(2)}
+                          {isClient ? `S/. ${subtotal.toFixed(2)}` : "S/. 0.00"}
                         </span>
                       </div>
 
                       {/* 🆕 Aviso de envío gratuito dinámico */}
-                      {freeShippingConfig.enabled && (
-                        <>
-                          {qualifiesForFreeShipping ? (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
-                              <div className="flex items-center gap-2">
-                                <svg
-                                  className="w-5 h-5 text-green-600"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                <span className="text-sm font-medium text-green-800">
-                                  🎉 ¡Felicidades! Tu pedido califica para{" "}
-                                  {freeShippingConfig.method_title}
-                                </span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                              <div className="flex items-center gap-2">
-                                <svg
-                                  className="w-5 h-5 text-blue-600"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                <span className="text-sm font-medium text-blue-800">
-                                  🚚 Agrega {freeShippingConfig.currency_symbol}
-                                  {remainingForFreeShipping.toFixed(2)} más para
-                                  obtener {freeShippingConfig.method_title}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </>
+                      {freeShippingConfig.enabled && isShippingFree && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                          <div className="flex items-center gap-2">
+                            <svg
+                              className="w-5 h-5 text-green-600"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <span className="text-sm font-medium text-green-800">
+                              🎉 ¡Felicidades! Tu pedido califica para{" "}
+                              {freeShippingConfig.method_title}
+                              {appliedCoupon?.free_shipping && " (por cupón)"}
+                            </span>
+                          </div>
+                        </div>
                       )}
+                      {/* Mensaje de "agrega más" solo cuando NO hay cupón y NO califica para envío gratuito */}
+                      {freeShippingConfig.enabled &&
+                        !isShippingFree &&
+                        !appliedCoupon &&
+                        remainingForFreeShipping > 0 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                            <div className="flex items-center gap-2">
+                              <svg
+                                className="w-5 h-5 text-blue-600"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              <span className="text-sm font-medium text-blue-800">
+                                🚚 Agrega {freeShippingConfig.currency_symbol}
+                                {isClient
+                                  ? remainingForFreeShipping.toFixed(2)
+                                  : "0.00"}{" "}
+                                más para obtener{" "}
+                                {freeShippingConfig.method_title}
+                              </span>
+                            </div>
+                          </div>
+                        )}
 
                       {discount > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Descuento</span>
                           <span className="font-medium text-green-600">
-                            -S/. {discount.toFixed(2)}
+                            {isClient
+                              ? `-S/. ${discount.toFixed(2)}`
+                              : "-S/. 0.00"}
                           </span>
                         </div>
                       )}
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">
-                          {qualifiesForFreeShipping
+                          {isShippingFree
                             ? freeShippingConfig.method_title
                             : "Envío"}
                         </span>
                         <span
                           className={`font-medium ${
-                            qualifiesForFreeShipping ? "text-green-600" : ""
+                            isShippingFree ? "text-green-600" : ""
                           }`}
                         >
                           {envioSeleccionado
-                            ? costoEnvio === 0
-                              ? qualifiesForFreeShipping
-                                ? "Gratis"
-                                : "S/. 0.00"
-                              : `S/. ${costoEnvio.toFixed(2)}`
+                            ? isShippingFree
+                              ? "Gratis"
+                              : isClient
+                              ? `S/. ${costoEnvio.toFixed(2)}`
+                              : "S/. 0.00"
                             : "-"}
                         </span>
                       </div>
@@ -2739,7 +2844,7 @@ export default function CheckoutPage() {
                         <div className="flex justify-between text-lg font-bold">
                           <span>Total</span>
                           <span className="gradient-text">
-                            S/. {total.toFixed(2)}
+                            {isClient ? `S/. ${total.toFixed(2)}` : "S/. 0.00"}
                           </span>
                         </div>
                       </div>

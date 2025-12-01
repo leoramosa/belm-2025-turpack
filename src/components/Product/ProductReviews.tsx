@@ -5,8 +5,10 @@ import {
   ICreateProductReview,
   IProductReview,
 } from "@/interface/IProductReview";
-import { Star, Calendar, MessageSquare, Send } from "lucide-react";
+import { Star, Calendar, MessageSquare, Send, LogIn } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
 
 interface ProductReviewsProps {
   productId: number;
@@ -51,12 +53,38 @@ function StarRating({
   );
 }
 
+// Componente para mostrar mensaje de autenticación requerida
+function AuthRequiredMessage({ productName }: { productName: string }) {
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+      <h3 className="text-xl font-bold mb-4">
+        Sé el primero en valorar "{productName}"
+      </h3>
+      <div className="bg-gray-50 rounded-lg p-6 text-center">
+        <LogIn className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600 mb-4">
+          Debes iniciar sesión para poder valorar este producto.
+        </p>
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+        >
+          <LogIn className="w-4 h-4" />
+          Iniciar sesión
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 // Componente para el formulario de review
 function ReviewForm({
   productId,
+  productName,
   onReviewAdded,
 }: {
   productId: number;
+  productName: string;
   onReviewAdded: (newReview?: IProductReview) => void;
 }) {
   const [formData, setFormData] = useState<ICreateProductReview>({
@@ -109,10 +137,9 @@ function ReviewForm({
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8 opacity-100 transform translate-y-0 transition-all duration-500 ease-out">
-      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <MessageSquare className="w-5 h-5 text-primary" />
-        Escribe tu review
+    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 opacity-100 transform translate-y-0 transition-all duration-500 ease-out">
+      <h3 className="text-xl font-bold mb-4">
+        Sé el primero en valorar "{productName}"
       </h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -152,7 +179,7 @@ function ReviewForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Calificación *
+            TU PUNTUACIÓN *
           </label>
           <StarRating
             rating={formData.rating}
@@ -163,7 +190,7 @@ function ReviewForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Comentario *
+            Tu valoración *
           </label>
           <textarea
             required
@@ -172,7 +199,7 @@ function ReviewForm({
             onChange={(e) =>
               setFormData({ ...formData, review: e.target.value })
             }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-y"
             placeholder="Comparte tu experiencia con este producto..."
           />
         </div>
@@ -188,10 +215,7 @@ function ReviewForm({
               Enviando...
             </>
           ) : (
-            <>
-              <Send className="w-4 h-4" />
-              Enviar Review
-            </>
+            "Enviar"
           )}
         </button>
       </form>
@@ -204,11 +228,11 @@ export default function ProductReviews({
   productId,
   productName,
 }: ProductReviewsProps) {
+  const { isAuthenticated } = useAuth();
   const [reviewsData, setReviewsData] =
     useState<IProductReviewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showReviewForm, setShowReviewForm] = useState(false);
 
   const loadReviews = useCallback(
     async (page: number = 1) => {
@@ -238,8 +262,6 @@ export default function ProductReviews({
   }, [productId, currentPage, loadReviews]);
 
   const handleReviewAdded = (newReview?: IProductReview) => {
-    setShowReviewForm(false);
-
     // Si se pasó un review nuevo, agregarlo inmediatamente a la lista
     if (newReview) {
       if (reviewsData) {
@@ -288,27 +310,61 @@ export default function ProductReviews({
 
   if (loading) {
     return (
-      <div className="mt-16">
-        <h2 className="text-3xl font-bold mb-8">Comentarios</h2>
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 animate-pulse"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full" />
+      <div
+        id="reviews"
+        className="mt-16 opacity-100 transform translate-y-0 transition-all duration-700 ease-out"
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Columna izquierda: Skeleton de valoraciones */}
+          <div>
+            <h2 className="text-3xl font-bold mb-8">Valoraciones</h2>
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 animate-pulse"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-24" />
+                      <div className="h-3 bg-gray-200 rounded w-16" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-full" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Columna derecha: Skeleton del formulario */}
+          <div>
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-4" />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="h-10 bg-gray-200 rounded-lg" />
+                  <div className="h-10 bg-gray-200 rounded-lg" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-32" />
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="w-5 h-5 bg-gray-200 rounded" />
+                    ))}
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <div className="h-4 bg-gray-200 rounded w-24" />
-                  <div className="h-3 bg-gray-200 rounded w-16" />
+                  <div className="h-24 bg-gray-200 rounded-lg" />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-full" />
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
+                <div className="h-12 bg-gray-200 rounded-lg" />
               </div>
             </div>
-          ))}
+          </div>
         </div>
       </div>
     );
@@ -322,98 +378,87 @@ export default function ProductReviews({
         animationDelay: "1.6s",
       }}
     >
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold">Comentarios</h2>
-        <button
-          onClick={() => setShowReviewForm(!showReviewForm)}
-          className="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
-        >
-          {showReviewForm ? "Cancelar" : "Escribir Review"}
-        </button>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Columna izquierda: Valoraciones */}
+        <div>
+          <h2 className="text-3xl font-bold mb-8">Valoraciones</h2>
 
-      {/* Formulario de review */}
-      {showReviewForm && (
-        <div className="opacity-100 transform translate-y-0 transition-all duration-500 ease-out">
-          <ReviewForm productId={productId} onReviewAdded={handleReviewAdded} />
-        </div>
-      )}
-
-      {/* Lista de reviews */}
-      {reviewsData && reviewsData.reviews.length > 0 ? (
-        <div className="space-y-6">
-          {reviewsData.reviews.map((review, index) => (
-            <div
-              key={review.id}
-              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 opacity-100 transform translate-y-0 transition-all duration-500 ease-out"
-              style={{
-                animationDelay: `${index * 100}ms`,
-              }}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
-                  {getInitials(review.reviewer)}
-                </div>
-                <div>
-                  <span className="font-semibold">{review.reviewer}</span>
-                  <div className="flex items-center gap-2">
-                    <StarRating rating={review.rating} />
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {formatDate(review.date_created)}
-                    </span>
+          {/* Lista de reviews */}
+          {reviewsData && reviewsData.reviews.length > 0 ? (
+            <div className="space-y-6">
+              {reviewsData.reviews.map((review, index) => (
+                <div
+                  key={review.id}
+                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 opacity-100 transform translate-y-0 transition-all duration-500 ease-out"
+                  style={{
+                    animationDelay: `${index * 100}ms`,
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                      {getInitials(review.reviewer)}
+                    </div>
+                    <div>
+                      <span className="font-semibold">{review.reviewer}</span>
+                      <div className="flex items-center gap-2">
+                        <StarRating rating={review.rating} />
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(review.date_created)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
+                  <div
+                    className="text-gray-700"
+                    dangerouslySetInnerHTML={{ __html: review.review }}
+                  />
                 </div>
-              </div>
-              <div
-                className="text-gray-700"
-                dangerouslySetInnerHTML={{ __html: review.review }}
-              />
+              ))}
+
+              {/* Paginación */}
+              {reviewsData.totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-8">
+                  <button
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+
+                  <span className="px-4 py-2 text-sm text-gray-600">
+                    Página {currentPage} de {reviewsData.totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === reviewsData.totalPages}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              )}
             </div>
-          ))}
-
-          {/* Paginación */}
-          {reviewsData.totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-8">
-              <button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Anterior
-              </button>
-
-              <span className="px-4 py-2 text-sm text-gray-600">
-                Página {currentPage} de {reviewsData.totalPages}
-              </span>
-
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === reviewsData.totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Siguiente
-              </button>
-            </div>
+          ) : (
+            <div className="text-gray-500">No hay valoraciones aún.</div>
           )}
         </div>
-      ) : (
-        <div className="text-center py-12">
-          <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">
-            No hay comentarios aún
-          </h3>
-          <p className="text-gray-500 mb-6">
-            Sé el primero en compartir tu experiencia con este producto
-          </p>
-          <button
-            onClick={() => setShowReviewForm(true)}
-            className="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
-          >
-            Escribir el primer review
-          </button>
+
+        {/* Columna derecha: Formulario de review o mensaje de autenticación */}
+        <div>
+          {isAuthenticated ? (
+            <ReviewForm
+              productId={productId}
+              productName={productName}
+              onReviewAdded={handleReviewAdded}
+            />
+          ) : (
+            <AuthRequiredMessage productName={productName} />
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

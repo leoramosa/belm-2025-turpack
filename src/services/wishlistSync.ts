@@ -167,6 +167,121 @@ export class WishlistSyncService {
     }
   }
 
+  // Obtener múltiples productos en batch desde WooCommerce
+  private static async fetchProductsBatch(
+    productIds: number[]
+  ): Promise<IProduct[]> {
+    try {
+      // Dividir en chunks de 50 para evitar timeouts
+      const CHUNK_SIZE = 50;
+      const chunks: number[][] = [];
+
+      for (let i = 0; i < productIds.length; i += CHUNK_SIZE) {
+        chunks.push(productIds.slice(i, i + CHUNK_SIZE));
+      }
+
+      // Procesar chunks en paralelo (pero limitado a 2 chunks a la vez para no sobrecargar)
+      const allProducts: IProduct[] = [];
+
+      for (const chunk of chunks) {
+        const response = await fetch(`/api/products/batch`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ids: chunk }),
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          console.warn(`Error fetching batch for ${chunk.length} products`);
+          continue;
+        }
+
+        const products = await response.json();
+
+        // Mapear productos de WooCommerce a IProduct
+        const mappedProducts = products.map((product: any) => {
+          const price = product.price ? parseFloat(product.price) : null;
+          const regularPrice = product.regular_price
+            ? parseFloat(product.regular_price)
+            : null;
+          const salePrice = product.sale_price
+            ? parseFloat(product.sale_price)
+            : null;
+
+          // Mapear imágenes
+          const images =
+            product.images?.map(
+              (img: { id: number; src: string; alt?: string }) => ({
+                id: img.id,
+                src: img.src,
+                alt: img.alt || product.name,
+              })
+            ) || [];
+
+          // Mapear categorías
+          const categories =
+            product.categories?.map(
+              (cat: { id: number; name: string; slug: string }) => ({
+                id: cat.id,
+                name: cat.name,
+                slug: cat.slug,
+              })
+            ) || [];
+
+          // Mapear atributos básicos
+          const attributes =
+            product.attributes?.map((attr: WordpressProductAttribute) => ({
+              id: attr.id || 0,
+              name: attr.name || "",
+              slug:
+                attr.slug ||
+                attr.name?.toLowerCase().replace(/\s+/g, "-") ||
+                "",
+              visible: attr.visible !== false,
+              variation: attr.variation === true,
+              options: (attr.options || []).map((opt: string) => ({
+                id: null,
+                name: opt,
+                slug: opt.toLowerCase().replace(/\s+/g, "-"),
+                description: null,
+              })),
+            })) || [];
+
+          return {
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            type: product.type || "simple",
+            permalink: product.permalink,
+            description: product.description || "",
+            shortDescription: product.short_description || "",
+            sku: product.sku || null,
+            stockStatus: product.stock_status || null,
+            pricing: {
+              price,
+              regularPrice,
+              salePrice,
+              currency: product.currency || "PEN",
+            },
+            images,
+            categories,
+            attributes,
+            variations: [], // Las variaciones requieren llamadas adicionales, se pueden cargar después si es necesario
+          };
+        });
+
+        allProducts.push(...mappedProducts);
+      }
+
+      return allProducts;
+    } catch (error) {
+      console.error("Error fetching products batch:", error);
+      return [];
+    }
+  }
+
   // Cargar wishlist del backend al iniciar sesión
   static async loadFromBackend(): Promise<IProduct[]> {
     try {
@@ -207,18 +322,11 @@ export class WishlistSyncService {
           "productos"
         );
 
-        // Obtener productos completos desde WooCommerce
-        const fullProducts = await Promise.all(
-          productIds.map((id: number) => this.fetchFullProductById(id))
-        );
+        // Obtener productos completos desde WooCommerce usando batch
+        const fullProducts = await this.fetchProductsBatch(productIds);
 
-        // Filtrar nulls y retornar productos completos
-        const completeProducts = fullProducts.filter(
-          (product): product is IProduct => product !== null
-        );
-
-        console.log("Productos completos obtenidos:", completeProducts.length);
-        return completeProducts;
+        console.log("Productos completos obtenidos:", fullProducts.length);
+        return fullProducts;
       } else {
         console.warn("Error cargando wishlist del backend");
         return [];

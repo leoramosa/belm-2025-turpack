@@ -89,6 +89,28 @@ export async function GET(request: NextRequest) {
 
           for (const method of methods) {
             if (method.method_id === "free_shipping" && method.enabled) {
+              // Verificar si el método requiere cupón
+              // Si requires es "coupon" o "either", significa que requiere cupón válido
+              const requires = method.settings?.requires;
+              const requiresValue =
+                typeof requires === "object"
+                  ? requires.value || requires.default || ""
+                  : requires || "";
+
+              // Si requiere cupón, NO incluirlo en la configuración
+              // El envío gratuito por cupón se maneja directamente en el frontend
+              if (
+                requiresValue === "coupon" ||
+                requiresValue === "either" ||
+                zone.name.toLowerCase().includes("cupon") ||
+                zone.name.toLowerCase().includes("cupón")
+              ) {
+                console.log(
+                  `⏭️ Saltando zona "${zone.name}" - requiere cupón (requires: ${requiresValue})`
+                );
+                continue; // Saltar esta zona, buscar la siguiente
+              }
+
               freeShippingConfig.enabled = true;
               freeShippingConfig.zone_name = zone.name;
               freeShippingConfig.zone_id = zone.id;
@@ -116,7 +138,7 @@ export async function GET(request: NextRequest) {
                     : method.settings.title;
               }
 
-              // Si encontramos uno habilitado, retornar
+              // Si encontramos uno habilitado que NO requiere cupón, retornar
               break;
             }
           }
@@ -147,6 +169,21 @@ export async function GET(request: NextRequest) {
 
           for (const method of methods) {
             if (method.method_id === "free_shipping" && method.enabled) {
+              // Verificar si el método requiere cupón
+              const requires = method.settings?.requires;
+              const requiresValue =
+                typeof requires === "object"
+                  ? requires.value || requires.default || ""
+                  : requires || "";
+
+              // Si requiere cupón, NO incluirlo
+              if (requiresValue === "coupon" || requiresValue === "either") {
+                console.log(
+                  `⏭️ Saltando zona "Resto del mundo" - requiere cupón (requires: ${requiresValue})`
+                );
+                continue;
+              }
+
               freeShippingConfig.enabled = true;
               freeShippingConfig.zone_name = "Resto del mundo";
               freeShippingConfig.zone_id = 0;

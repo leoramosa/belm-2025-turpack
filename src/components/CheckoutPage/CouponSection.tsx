@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import {
   CouponService,
@@ -43,10 +43,17 @@ export default function CouponSection({ className = "" }: CouponSectionProps) {
     setIsClient(true);
   }, []);
 
-  // Recalcular descuento automáticamente cuando el usuario regresa al checkout
+  // Recalcular descuento automáticamente solo cuando cambia el carrito (no cuando se aplica el cupón)
+  // Esto evita llamadas redundantes después de aplicar un cupón
+  const cartKey = useMemo(
+    () => cart.map((item) => `${item.id}-${item.quantity}`).join(","),
+    [cart]
+  );
+
   useEffect(() => {
     const recalculateCouponDiscount = async () => {
       // Solo recalcular si hay un cupón aplicado y hay items en el carrito
+      // Y solo si el carrito realmente cambió (no cuando se acaba de aplicar el cupón)
       if (appliedCoupon && cart.length > 0 && !isRecalculating.current) {
         isRecalculating.current = true;
 
@@ -88,9 +95,14 @@ export default function CouponSection({ className = "" }: CouponSectionProps) {
       }
     };
 
-    recalculateCouponDiscount();
+    // Debounce: esperar 1 segundo antes de recalcular para evitar llamadas excesivas
+    const timeoutId = setTimeout(() => {
+      recalculateCouponDiscount();
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedCoupon?.code, cart.length]);
+  }, [cartKey]); // Solo cuando cambia el carrito, no cuando cambia el cupón
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {

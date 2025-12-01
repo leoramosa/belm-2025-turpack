@@ -28,12 +28,12 @@ export default function Footer() {
       { name: "Lo más vendido", href: "/lo-mas-vendido" },
     ],
     Categorías: [
-      { name: "Maquillaje", href: "/categoria/maquillaje" },
-      { name: "Cuidado Facial", href: "/categoria/cuidado-facial" },
-      { name: "Cuidado Corporal", href: "/categoria/cuidado-corporal" },
-      { name: "Cabello", href: "/categoria/cabello" },
-      { name: "Fragancias", href: "/categoria/fragancias" },
-      { name: "Moda y Accesorios", href: "/categoria/moda-y-accesorios" },
+      { name: "Maquillaje", href: "/categorias/maquillaje" },
+      { name: "Cuidado Facial", href: "/categorias/cuidado-facial" },
+      { name: "Cuidado Corporal", href: "/categorias/cuidado-corporal" },
+      { name: "Cabello", href: "/categorias/cabello" },
+      { name: "Fragancias", href: "/categorias/fragancias" },
+      { name: "Moda y Accesorios", href: "/categorias/moda-y-accesorios" },
     ],
     "Atención al Cliente": [
       { name: "Preguntas frecuentes", href: "/politicas/preguntas-frecuentes" },

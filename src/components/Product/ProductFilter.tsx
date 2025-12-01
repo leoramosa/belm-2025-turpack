@@ -24,6 +24,7 @@ interface ProductFilterProps {
   filters: ProductFilters;
   onFiltersChange: (filters: ProductFilters) => void;
   disableAutoCategoryFilter?: boolean;
+  isMobile?: boolean;
 }
 
 function getAllCategoriesFlat(
@@ -265,6 +266,7 @@ export function ProductFilter({
   filters,
   onFiltersChange,
   disableAutoCategoryFilter = false,
+  isMobile = false,
 }: ProductFilterProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -617,85 +619,156 @@ export function ProductFilter({
     filters.selectedColors.length > 0 ||
     filters.selectedTags.length > 0;
 
-  return (
-    <div className="hidden lg:block w-80 shrink-0">
-      <div className="bg-white rounded-2xl shadow-md p-6 sticky top-4 space-y-6">
-        {/* Active Filters */}
-        {activeFilters.length > 0 && (
-          <div className="space-y-6">
-            <h4 className="text-sm font-semibold text-zinc-700">
-              Filtros Activos
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {activeFilters.map((filter) => (
-                <div
-                  key={filter.key}
-                  className="flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-sm text-green-800"
+  // Contenido de los filtros (compartido entre desktop y mobile)
+  const filtersContent = (
+    <div
+      className={`space-y-6 ${
+        isMobile ? "" : "bg-white rounded-2xl shadow-md p-6 sticky top-4"
+      }`}
+    >
+      {/* Active Filters */}
+      {activeFilters.length > 0 && (
+        <div className="space-y-6">
+          <h4 className="text-sm font-semibold text-zinc-700">
+            Filtros Activos
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {activeFilters.map((filter) => (
+              <div
+                key={filter.key}
+                className="flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-sm text-green-800"
+              >
+                <span>{filter.label}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (filter.key === "subcategory") {
+                      handleFilterChange({
+                        subcategory: null,
+                        subSubcategory: null,
+                      });
+                    } else if (filter.key === "subSubcategory") {
+                      handleFilterChange({ subSubcategory: null });
+                    } else if (filter.key.startsWith("color-")) {
+                      handleFilterChange({
+                        selectedColors: filters.selectedColors.filter(
+                          (c) => c !== filter.value
+                        ),
+                      });
+                    } else if (filter.key.startsWith("tag-")) {
+                      handleFilterChange({
+                        selectedTags: filters.selectedTags.filter(
+                          (t) => t !== filter.value
+                        ),
+                      });
+                    }
+                  }}
+                  className="ml-1 text-green-600 hover:text-green-800"
                 >
-                  <span>{filter.label}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (filter.key === "subcategory") {
-                        handleFilterChange({
-                          subcategory: null,
-                          subSubcategory: null,
-                        });
-                      } else if (filter.key === "subSubcategory") {
-                        handleFilterChange({ subSubcategory: null });
-                      } else if (filter.key.startsWith("color-")) {
-                        handleFilterChange({
-                          selectedColors: filters.selectedColors.filter(
-                            (c) => c !== filter.value
-                          ),
-                        });
-                      } else if (filter.key.startsWith("tag-")) {
-                        handleFilterChange({
-                          selectedTags: filters.selectedTags.filter(
-                            (t) => t !== filter.value
-                          ),
-                        });
-                      }
-                    }}
-                    className="ml-1 text-green-600 hover:text-green-800"
-                  >
-                    ✕
-                  </button>
-                </div>
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Buscar
+        </label>
+        <input
+          type="text"
+          placeholder="Buscar..."
+          value={filters.search}
+          onChange={(e) => handleFilterChange({ search: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+        />
+      </div>
+
+      {/* Category */}
+      <div className="">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Categoría
+        </label>
+        <div className="relative" ref={categoryDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+            className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 py-2 text-left text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <span>{selectedCategory?.name || "Todas"}</span>
+            <svg
+              className={`h-4 w-4 transition-transform ${
+                isCategoryOpen ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          {isCategoryOpen && (
+            <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg max-h-60 overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  handleCategorySelect(null);
+                  setIsCategoryOpen(false);
+                }}
+                className={`w-full px-4 py-2 text-left text-sm transition ${
+                  !filters.category
+                    ? "bg-blue-500 text-white"
+                    : "text-zinc-700 hover:bg-zinc-50"
+                }`}
+              >
+                Todas
+              </button>
+              {rootCategories.map((category: IProductCategoryNode) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => {
+                    handleCategorySelect(category.slug);
+                    setIsCategoryOpen(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm transition ${
+                    filters.category === category.slug
+                      ? "bg-blue-500 text-white"
+                      : "text-zinc-700 hover:bg-zinc-50"
+                  }`}
+                >
+                  {category.name}
+                </button>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Search */}
-        <div className="">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Buscar
-          </label>
-          <input
-            type="text"
-            placeholder="Buscar..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange({ search: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-          />
+          )}
         </div>
+      </div>
 
-        {/* Category */}
+      {/* Subcategory */}
+      {filters.category && subcategories.length > 0 && (
         <div className="">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Categoría
+          <label className="text-sm font-semibold text-zinc-700">
+            Subcategoría
           </label>
-          <div className="relative" ref={categoryDropdownRef}>
+          <div className="relative" ref={subcategoryDropdownRef}>
             <button
               type="button"
-              onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+              onClick={() => setIsSubcategoryOpen(!isSubcategoryOpen)}
               className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 py-2 text-left text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
-              <span>{selectedCategory?.name || "Todas"}</span>
+              <span>{selectedSubcategory?.name || "Todas"}</span>
               <svg
                 className={`h-4 w-4 transition-transform ${
-                  isCategoryOpen ? "rotate-180" : ""
+                  isSubcategoryOpen ? "rotate-180" : ""
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -709,303 +782,243 @@ export function ProductFilter({
                 />
               </svg>
             </button>
-            {isCategoryOpen && (
+            {isSubcategoryOpen && (
               <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg max-h-60 overflow-y-auto">
                 <button
                   type="button"
                   onClick={() => {
-                    handleCategorySelect(null);
-                    setIsCategoryOpen(false);
+                    handleSubcategorySelect(null);
+                    setIsSubcategoryOpen(false);
                   }}
                   className={`w-full px-4 py-2 text-left text-sm transition ${
-                    !filters.category
+                    !filters.subcategory
                       ? "bg-blue-500 text-white"
                       : "text-zinc-700 hover:bg-zinc-50"
                   }`}
                 >
                   Todas
                 </button>
-                {rootCategories.map((category: IProductCategoryNode) => (
+                {subcategories.map((subcategory) => (
                   <button
-                    key={category.id}
+                    key={subcategory.id}
                     type="button"
                     onClick={() => {
-                      handleCategorySelect(category.slug);
-                      setIsCategoryOpen(false);
+                      handleSubcategorySelect(subcategory.slug);
+                      setIsSubcategoryOpen(false);
                     }}
                     className={`w-full px-4 py-2 text-left text-sm transition ${
-                      filters.category === category.slug
+                      filters.subcategory === subcategory.slug
                         ? "bg-blue-500 text-white"
                         : "text-zinc-700 hover:bg-zinc-50"
                     }`}
                   >
-                    {category.name}
+                    {subcategory.name}
                   </button>
                 ))}
               </div>
             )}
           </div>
         </div>
+      )}
 
-        {/* Subcategory */}
-        {filters.category && subcategories.length > 0 && (
-          <div className="">
-            <label className="text-sm font-semibold text-zinc-700">
-              Subcategoría
-            </label>
-            <div className="relative" ref={subcategoryDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsSubcategoryOpen(!isSubcategoryOpen)}
-                className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 py-2 text-left text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      {/* Sub-subcategory */}
+      {filters.subcategory && subSubcategories.length > 0 && (
+        <div className="">
+          <label className="text-sm font-semibold text-zinc-700">
+            Sub-subcategoría
+          </label>
+          <div className="relative" ref={subSubcategoryDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsSubSubcategoryOpen(!isSubSubcategoryOpen)}
+              className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 py-2 text-left text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <span>{selectedSubSubcategory?.name || "Todas"}</span>
+              <svg
+                className={`h-4 w-4 transition-transform ${
+                  isSubSubcategoryOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <span>{selectedSubcategory?.name || "Todas"}</span>
-                <svg
-                  className={`h-4 w-4 transition-transform ${
-                    isSubcategoryOpen ? "rotate-180" : ""
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            {isSubSubcategoryOpen && (
+              <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg max-h-60 overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSubSubcategorySelect(null);
+                    setIsSubSubcategoryOpen(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm transition ${
+                    !filters.subSubcategory
+                      ? "bg-blue-500 text-white"
+                      : "text-zinc-700 hover:bg-zinc-50"
                   }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-              {isSubcategoryOpen && (
-                <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg max-h-60 overflow-y-auto">
+                  Todas
+                </button>
+                {subSubcategories.map((subSubcategory) => (
                   <button
+                    key={subSubcategory.id}
                     type="button"
                     onClick={() => {
-                      handleSubcategorySelect(null);
-                      setIsSubcategoryOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-left text-sm transition ${
-                      !filters.subcategory
-                        ? "bg-blue-500 text-white"
-                        : "text-zinc-700 hover:bg-zinc-50"
-                    }`}
-                  >
-                    Todas
-                  </button>
-                  {subcategories.map((subcategory) => (
-                    <button
-                      key={subcategory.id}
-                      type="button"
-                      onClick={() => {
-                        handleSubcategorySelect(subcategory.slug);
-                        setIsSubcategoryOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm transition ${
-                        filters.subcategory === subcategory.slug
-                          ? "bg-blue-500 text-white"
-                          : "text-zinc-700 hover:bg-zinc-50"
-                      }`}
-                    >
-                      {subcategory.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Sub-subcategory */}
-        {filters.subcategory && subSubcategories.length > 0 && (
-          <div className="">
-            <label className="text-sm font-semibold text-zinc-700">
-              Sub-subcategoría
-            </label>
-            <div className="relative" ref={subSubcategoryDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsSubSubcategoryOpen(!isSubSubcategoryOpen)}
-                className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 py-2 text-left text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <span>{selectedSubSubcategory?.name || "Todas"}</span>
-                <svg
-                  className={`h-4 w-4 transition-transform ${
-                    isSubSubcategoryOpen ? "rotate-180" : ""
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-              {isSubSubcategoryOpen && (
-                <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg max-h-60 overflow-y-auto">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleSubSubcategorySelect(null);
+                      handleSubSubcategorySelect(subSubcategory.slug);
                       setIsSubSubcategoryOpen(false);
                     }}
                     className={`w-full px-4 py-2 text-left text-sm transition ${
-                      !filters.subSubcategory
+                      filters.subSubcategory === subSubcategory.slug
                         ? "bg-blue-500 text-white"
                         : "text-zinc-700 hover:bg-zinc-50"
                     }`}
                   >
-                    Todas
+                    {subSubcategory.name}
                   </button>
-                  {subSubcategories.map((subSubcategory) => (
-                    <button
-                      key={subSubcategory.id}
-                      type="button"
-                      onClick={() => {
-                        handleSubSubcategorySelect(subSubcategory.slug);
-                        setIsSubSubcategoryOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm transition ${
-                        filters.subSubcategory === subSubcategory.slug
-                          ? "bg-blue-500 text-white"
-                          : "text-zinc-700 hover:bg-zinc-50"
-                      }`}
-                    >
-                      {subSubcategory.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Price Range */}
-        <div className="">
-          <label className="text-sm font-semibold text-zinc-700">
-            Rango de precio
-          </label>
-          {priceRange.hasRange ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-zinc-600">
-                <span>S/ {currentPriceRange[0]}</span>
-                <span>S/ {currentPriceRange[1]}</span>
+                ))}
               </div>
-              <RangeSlider
-                min={priceRange.min}
-                max={priceRange.max}
-                values={currentPriceRange}
-                onChange={handlePriceChange}
-              />
-            </div>
-          ) : (
-            <div className="text-sm text-zinc-500 py-2">
-              Precio único: S/ {priceRange.min}
-            </div>
-          )}
-        </div>
-
-        {/* In Stock Only */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="inStockOnly"
-            checked={filters.inStockOnly}
-            onChange={(e) =>
-              handleFilterChange({ inStockOnly: e.target.checked })
-            }
-            className="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
-          />
-          <label
-            htmlFor="inStockOnly"
-            className="text-sm font-medium text-zinc-700"
-          >
-            Solo productos en stock
-          </label>
-        </div>
-
-        {/* Colors - Dinámicos de los productos */}
-        {colorOptions.length > 0 && (
-          <div className="">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Colores
-            </label>
-            <div className="space-x-2 grid grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-y-2">
-              {colorOptions.map((colorOption) => {
-                const isSelected = filters.selectedColors.includes(
-                  colorOption.name
-                );
-                return (
-                  <button
-                    key={colorOption.name}
-                    type="button"
-                    onClick={() => {
-                      const newColors = isSelected
-                        ? filters.selectedColors.filter(
-                            (c) => c !== colorOption.name
-                          )
-                        : [...filters.selectedColors, colorOption.name];
-                      handleFilterChange({ selectedColors: newColors });
-                    }}
-                    className={`w-6 h-6 rounded-full border-2 relative border-gray-300 ${
-                      isSelected
-                        ? "border-primary ring-2 ring-primary ring-offset-2"
-                        : "border-zinc-300 hover:border-zinc-400"
-                    }`}
-                    style={{
-                      backgroundColor: colorOption.hex || "#CCCCCC",
-                    }}
-                    title={colorOption.name}
-                    aria-label={colorOption.name}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Tags */}
-        <div className="">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Etiquetas
-          </label>
-          <div className="space-y-2">
-            {["Bolso", "Nuevo", "Oferta"].map((tag) => (
-              <div key={tag} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id={`tag-${tag}`}
-                  checked={filters.selectedTags.includes(tag)}
-                  onChange={(e) => {
-                    const newTags = e.target.checked
-                      ? [...filters.selectedTags, tag]
-                      : filters.selectedTags.filter((t) => t !== tag);
-                    handleFilterChange({ selectedTags: newTags });
-                  }}
-                  className="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
-                />
-                <label htmlFor={`tag-${tag}`} className="text-sm text-zinc-700">
-                  {tag}
-                </label>
-              </div>
-            ))}
+            )}
           </div>
         </div>
+      )}
 
-        {/* Clear Filters */}
-        {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={handleClearFilters}
-            className="w-full rounded-lg border-2 border-primary/30 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10"
-          >
-            Limpiar filtros
-          </button>
+      {/* Price Range */}
+      <div className="">
+        <label className="text-sm font-semibold text-zinc-700">
+          Rango de precio
+        </label>
+        {priceRange.hasRange ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-zinc-600">
+              <span>S/ {currentPriceRange[0]}</span>
+              <span>S/ {currentPriceRange[1]}</span>
+            </div>
+            <RangeSlider
+              min={priceRange.min}
+              max={priceRange.max}
+              values={currentPriceRange}
+              onChange={handlePriceChange}
+            />
+          </div>
+        ) : (
+          <div className="text-sm text-zinc-500 py-2">
+            Precio único: S/ {priceRange.min}
+          </div>
         )}
       </div>
+
+      {/* In Stock Only */}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="inStockOnly"
+          checked={filters.inStockOnly}
+          onChange={(e) =>
+            handleFilterChange({ inStockOnly: e.target.checked })
+          }
+          className="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+        />
+        <label
+          htmlFor="inStockOnly"
+          className="text-sm font-medium text-zinc-700"
+        >
+          Solo productos en stock
+        </label>
+      </div>
+
+      {/* Colors - Dinámicos de los productos */}
+      {colorOptions.length > 0 && (
+        <div className="">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Colores
+          </label>
+          <div className="space-x-2 grid grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-y-2">
+            {colorOptions.map((colorOption) => {
+              const isSelected = filters.selectedColors.includes(
+                colorOption.name
+              );
+              return (
+                <button
+                  key={colorOption.name}
+                  type="button"
+                  onClick={() => {
+                    const newColors = isSelected
+                      ? filters.selectedColors.filter(
+                          (c) => c !== colorOption.name
+                        )
+                      : [...filters.selectedColors, colorOption.name];
+                    handleFilterChange({ selectedColors: newColors });
+                  }}
+                  className={`w-6 h-6 rounded-full border-2 relative border-gray-300 ${
+                    isSelected
+                      ? "border-primary ring-2 ring-primary ring-offset-2"
+                      : "border-zinc-300 hover:border-zinc-400"
+                  }`}
+                  style={{
+                    backgroundColor: colorOption.hex || "#CCCCCC",
+                  }}
+                  title={colorOption.name}
+                  aria-label={colorOption.name}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Tags */}
+      <div className="">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Etiquetas
+        </label>
+        <div className="space-y-2">
+          {["Bolso", "Nuevo", "Oferta"].map((tag) => (
+            <div key={tag} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id={`tag-${tag}`}
+                checked={filters.selectedTags.includes(tag)}
+                onChange={(e) => {
+                  const newTags = e.target.checked
+                    ? [...filters.selectedTags, tag]
+                    : filters.selectedTags.filter((t) => t !== tag);
+                  handleFilterChange({ selectedTags: newTags });
+                }}
+                className="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+              />
+              <label htmlFor={`tag-${tag}`} className="text-sm text-zinc-700">
+                {tag}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Clear Filters */}
+      {hasActiveFilters && (
+        <button
+          type="button"
+          onClick={handleClearFilters}
+          className="w-full rounded-lg border-2 border-primary/30 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10"
+        >
+          Limpiar filtros
+        </button>
+      )}
     </div>
   );
+
+  // Si es mobile, solo retornar el contenido sin el wrapper
+  if (isMobile) {
+    return filtersContent;
+  }
+
+  // Si es desktop, retornar con el wrapper
+  return <div className="hidden lg:block w-80 shrink-0">{filtersContent}</div>;
 }

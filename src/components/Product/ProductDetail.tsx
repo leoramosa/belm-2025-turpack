@@ -3,7 +3,7 @@ import { IProduct } from "@/types/product";
 import { useCartStore } from "@/store/useCartStore";
 import { useUIStore } from "@/store/useUIStore";
 import Image from "next/image";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { isColorAttribute, extractColorValue } from "@/utils/productAttributes";
@@ -75,6 +75,91 @@ export default function ProductDetail({
   categories = [],
   recommendations = [],
 }: ProductDetailProps) {
+  // Función para procesar y limpiar la descripción HTML del backend
+  const processedDescription = useMemo(() => {
+    if (!product.description) return "";
+
+    let html = product.description;
+
+    // Solo remover estilos que limitan el ancho (max-width y width problemáticos)
+    html = html.replace(/style="([^"]*)"/gi, (match, styles) => {
+      let cleanStyles = styles
+        .split(";")
+        .map((s: string) => s.trim())
+        .filter((s: string) => {
+          if (!s) return false;
+          const prop = s.split(":")[0]?.trim().toLowerCase();
+          // Solo remover propiedades que limitan el ancho
+          return !["max-width", "width", "flex-shrink", "flex-basis"].includes(
+            prop
+          );
+        })
+        .join("; ");
+
+      return cleanStyles ? `style="${cleanStyles}"` : "";
+    });
+
+    // Solo remover la clase flex-shrink-0 que causa problemas
+    html = html.replace(
+      /class="([^"]*)\bflex-shrink-0\b([^"]*)"/gi,
+      (match, before, after) => {
+        const classes = `${before} ${after}`.trim().replace(/\s+/g, " ");
+        return classes ? `class="${classes}"` : "";
+      }
+    );
+
+    // Asegurar que los divs y sections tengan ancho completo
+    html = html.replace(/<div([^>]*)>/gi, (match, attrs) => {
+      if (!attrs.includes("style")) {
+        return `<div${attrs} style="width: 100%; max-width: 100%;">`;
+      }
+      if (!attrs.match(/width/i)) {
+        return match.replace(
+          /style="([^"]*)"/,
+          'style="$1; width: 100%; max-width: 100%;"'
+        );
+      }
+      return match;
+    });
+
+    html = html.replace(/<section([^>]*)>/gi, (match, attrs) => {
+      if (!attrs.includes("style")) {
+        return `<section${attrs} style="width: 100%; max-width: 100%;">`;
+      }
+      if (!attrs.match(/width/i)) {
+        return match.replace(
+          /style="([^"]*)"/,
+          'style="$1; width: 100%; max-width: 100%;"'
+        );
+      }
+      return match;
+    });
+
+    return html;
+  }, [product.description]);
+
+  // Debug: Verificar la descripción recibida
+  useEffect(() => {
+    if (product.description) {
+      console.log(
+        "📝 Longitud de descripción original:",
+        product.description.length
+      );
+      console.log(
+        "📝 Longitud de descripción procesada:",
+        processedDescription.length
+      );
+      console.log(
+        "📝 Primeros 200 caracteres:",
+        product.description.substring(0, 200)
+      );
+      console.log(
+        "📝 Últimos 200 caracteres:",
+        product.description.substring(product.description.length - 200)
+      );
+    }
+  }, [product.description, processedDescription]);
+
   const { addToCart } = useCartStore();
   const { addProduct } = useRecentlyViewedStore();
   const { openCart } = useUIStore();
@@ -87,6 +172,9 @@ export default function ProductDetail({
   const [selectedAttributes, setSelectedAttributes] = useState<{
     [key: number]: string;
   }>({});
+
+  // 🆕 Ref para evitar re-renders innecesarios del check
+  const isUpdatingImageRef = useRef(false);
 
   // 🆕 Estados para Swiper
   const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
@@ -109,16 +197,15 @@ export default function ProductDetail({
     product.attributes.every((attr) => selectedAttributes[attr.id]);
 
   // Para productos variables: obtener la variación seleccionada según los atributos
-  const getSelectedVariation = () => {
+  // Usar useMemo para evitar recálculos innecesarios que causan re-renders
+  const selectedVariation = useMemo(() => {
     if (!product.variations || product.variations.length === 0) return null;
     return product.variations.find((variation) =>
       variation.attributes.every(
         (attr) => selectedAttributes[attr.id] === attr.option
       )
     );
-  };
-
-  const selectedVariation = getSelectedVariation();
+  }, [product.variations, selectedAttributes]);
 
   // Para productos variables: usar la primera variación como "default" para mostrar precios
   // pero sin seleccionar visualmente ningún atributo hasta que el usuario haga clic
@@ -248,9 +335,13 @@ export default function ProductDetail({
     return orderedImages;
   }, [product]); // Depende del producto para recalcular cuando cambie
 
-  // 🆕 INICIALIZAR selectedImage CON LA PRIMERA VARIACIÓN DE COLOR
+  // 🆕 INICIALIZAR selectedImage CON LA PRIMERA VARIACIÓN DE COLOR (solo al montar o cambiar de producto)
   useEffect(() => {
-    if (galleryImages.length > 0) {
+    // Solo inicializar si no hay atributos seleccionados aún
+    if (
+      galleryImages.length > 0 &&
+      Object.keys(selectedAttributes).length === 0
+    ) {
       // Buscar la imagen de la primera variación de color en la galería
       const colorAttribute = product.attributes?.find(
         (attr) =>
@@ -287,15 +378,21 @@ export default function ProductDetail({
       // o no hay atributo de color, simplemente selecciona la primera imagen de la galería.
       setSelectedImage(0);
     }
-  }, [product, galleryImages]); // Depende de product y galleryImages
+    // galleryImages ya depende de product, así que solo necesitamos product.id
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id, selectedAttributes]);
 
   // 🆕 MEJORAR useEffect PARA MEJOR MATCHING DE IMÁGENES CON VARIACIONES
+  // Solo actualizar la imagen cuando hay una variación completa seleccionada
   useEffect(() => {
+    // Solo actualizar si hay una variación completa (todos los atributos seleccionados)
     if (
       selectedVariation &&
       selectedVariation.image?.src &&
-      galleryImages.length > 0
+      galleryImages.length > 0 &&
+      !isUpdatingImageRef.current
     ) {
+      isUpdatingImageRef.current = true;
       // Buscar el índice de la imagen de la variación en la galería
       const imageIndex = galleryImages.findIndex(
         (img) => img.src === selectedVariation.image!.src
@@ -304,82 +401,20 @@ export default function ProductDetail({
       // Si encontramos la imagen, cambiar a ese índice
       if (imageIndex !== -1) {
         setSelectedImage(imageIndex);
-      } else {
-        // Si la imagen de la variación no está en la galería, intentar buscar por similitud o usar fallback
-        // Buscar la imagen de la primera variación de color como fallback
-        const colorAttribute = product.attributes?.find(
-          (attr) =>
-            attr.name.toLowerCase().includes("color") ||
-            attr.name.toLowerCase().includes("colores")
-        );
-
-        if (
-          colorAttribute &&
-          colorAttribute.options &&
-          colorAttribute.options.length > 0
-        ) {
-          const firstColorOption = colorAttribute.options[0];
-          const firstColorVariation = product.variations?.find((variation) =>
-            variation.attributes?.some(
-              (attr) =>
-                (attr.name.toLowerCase().includes("color") ||
-                  attr.name.toLowerCase().includes("colores")) &&
-                attr.option === firstColorOption.name
-            )
-          );
-
-          if (firstColorVariation?.image?.src) {
-            const firstColorImageIndex = galleryImages.findIndex(
-              (img) => img.src === firstColorVariation.image!.src
-            );
-            if (firstColorImageIndex !== -1) {
-              setSelectedImage(firstColorImageIndex);
-              return;
-            }
-          }
-        }
-
-        // Último fallback: primera imagen de la galería
-        setSelectedImage(0);
       }
-    } else if (galleryImages.length > 0) {
-      // Si no hay variación seleccionada, volver a la imagen del primer color
-      const colorAttribute = product.attributes?.find(
-        (attr) =>
-          attr.name.toLowerCase().includes("color") ||
-          attr.name.toLowerCase().includes("colores")
-      );
+      // Resetear el flag después de un breve delay con cleanup
+      const timeoutId = setTimeout(() => {
+        isUpdatingImageRef.current = false;
+      }, 100);
 
-      if (
-        colorAttribute &&
-        colorAttribute.options &&
-        colorAttribute.options.length > 0
-      ) {
-        const firstColorOption = colorAttribute.options[0];
-        const firstColorVariation = product.variations?.find((variation) =>
-          variation.attributes?.some(
-            (attr) =>
-              (attr.name.toLowerCase().includes("color") ||
-                attr.name.toLowerCase().includes("colores")) &&
-              attr.option === firstColorOption.name
-          )
-        );
-
-        if (firstColorVariation?.image?.src) {
-          const firstColorImageIndex = galleryImages.findIndex(
-            (img) => img.src === firstColorVariation.image!.src
-          );
-          if (firstColorImageIndex !== -1) {
-            setSelectedImage(firstColorImageIndex);
-            return;
-          }
-        }
-      }
-
-      // Fallback final: primera imagen de la galería
-      setSelectedImage(0);
+      return () => {
+        clearTimeout(timeoutId);
+      };
     }
-  }, [selectedVariation, galleryImages, product]); // Depende de selectedVariation, galleryImages y product
+    // NO actualizar la imagen si no hay variación completa
+    // Esto permite que el check se mantenga visible cuando solo se selecciona un color
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVariation]); // Solo depende de selectedVariation para evitar re-renders innecesarios
 
   const handleAddToCart = async () => {
     if (!allAttributesSelected) {
@@ -512,18 +547,18 @@ export default function ProductDetail({
     categories || []
   );
 
-  // Breadcrumbs
+  // Breadcrumbs - Solo mostrar la categoría padre principal (primera del path)
   const breadcrumbs = [
     { label: "Inicio", href: "/" },
     ...(categoryPath.length > 0
       ? [
           {
             label: categoryPath[0].name,
-            href: `/categoria/${categoryPath[0].slug}`,
+            href: `/categorias/${categoryPath[0].slug}`,
           },
         ]
       : []),
-    { label: product.name, href: `/product/${product.slug}` },
+    { label: product.name, href: `/productos/${product.slug}` },
   ];
 
   // Usar precios de la variación seleccionada si existe, sino usar precios de la primera variación (para productos variables)
@@ -588,7 +623,7 @@ export default function ProductDetail({
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       {/* Breadcrumbs mejorados */}
       <nav className="max-w-7xl mx-auto pt-6 px-4">
-        <div className="flex items-center gap-2 text-sm text-gray-500 animate-fade-in">
+        <div className="flex items-center gap-2 text-sm text-gray-500 ">
           {breadcrumbs.map((b, i) => (
             <div key={b.href} className="flex items-center gap-2">
               <Link
@@ -726,7 +761,7 @@ export default function ProductDetail({
                         prevEl: ".swiper-button-prev-thumbs",
                       }}
                       className="w-full"
-                      loop={true}
+                      loop={false}
                       allowTouchMove={true}
                       centeredSlides={false}
                       breakpoints={{
@@ -886,7 +921,7 @@ export default function ProductDetail({
             {/* Descripción corta */}
             {product.shortDescription && (
               <div
-                className="hidden lg:block text-gray-700 leading-relaxed [&_p]:text-justify [&_p]:mb-6 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+                className="hidden lg:block text-gray-700 leading-relaxed w-full [&_p]:text-justify [&_p]:mb-6 [&_p]:first-child:mt-0 [&_p]:last-child:mb-0 [&_p]:w-full"
                 style={{
                   lineHeight: "1.7",
                   textAlign: "justify",
@@ -954,8 +989,12 @@ export default function ProductDetail({
 
                       <div className="flex flex-wrap gap-3">
                         {attr.options.map((option) => {
-                          const isSelected =
-                            selectedAttributes[attr.id] === option.name;
+                          // Normalizar comparación para evitar problemas de case
+                          const selectedValue = selectedAttributes[attr.id];
+                          const isSelected = selectedValue
+                            ? selectedValue.toLowerCase().trim() ===
+                              option.name.toLowerCase().trim()
+                            : false;
                           const isColor = isColorAttr;
 
                           return (
@@ -996,14 +1035,25 @@ export default function ProductDetail({
                               }
                             >
                               {!isColor && option.name}
-                              {isSelected && !isColor && (
-                                <div className="absolute inset-0 bg-primary-100 rounded-2xl transition-all duration-300" />
+                              {!isColor && (
+                                <div
+                                  className={`absolute inset-0 bg-primary-100 rounded-2xl transition-all duration-300 ${
+                                    isSelected
+                                      ? "opacity-100"
+                                      : "opacity-0 pointer-events-none"
+                                  }`}
+                                />
                               )}
-                              {isSelected && (
-                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white rounded-full flex items-center justify-center animate-scale-in">
-                                  <Check className="w-3 h-3" />
-                                </div>
-                              )}
+                              {/* Check siempre en el DOM, controlado por clases CSS */}
+                              <div
+                                className={`absolute -top-1 -right-1 w-5 h-5 bg-primary text-white rounded-full flex items-center justify-center z-10 transition-all duration-200 ${
+                                  isSelected
+                                    ? "opacity-100 scale-100"
+                                    : "opacity-0 scale-0 pointer-events-none"
+                                }`}
+                              >
+                                <Check className="w-3 h-3" />
+                              </div>
                             </button>
                           );
                         })}
@@ -1018,10 +1068,10 @@ export default function ProductDetail({
             <div className="space-y-3">
               <h3 className="font-semibold text-gray-900 text-lg">Cantidad</h3>
               <div className="flex items-center gap-4">
-                <div className="flex items-center bg-white border-2 border-gray-200 rounded-2xl overflow-hidden">
+                <div className="flex items-center bg-white border-2 border-gray-200 rounded-2xl overflow-hidden px-1">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="p-3 hover:bg-gray-50 transition-colors duration-200"
+                    className="p-3 bg-accent rounded-l-xl hover:bg-secondary transition-colors duration-200 cursor-pointer"
                     disabled={quantity <= 1}
                   >
                     <Minus className="w-5 h-5 text-gray-600" />
@@ -1031,7 +1081,7 @@ export default function ProductDetail({
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="p-3 hover:bg-gray-50 transition-colors duration-200"
+                    className="p-3 bg-accent rounded-r-xl hover:bg-secondary transition-colors duration-200 cursor-pointer"
                   >
                     <Plus className="w-5 h-5 text-gray-600" />
                   </button>
@@ -1205,12 +1255,15 @@ export default function ProductDetail({
 
         {/* Descripción larga */}
         {product.description && (
-          <div
-            className="mt-12 prose prose-lg max-w-none [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:text-gray-900 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mb-3 [&_h3]:text-gray-900 [&_p]:mb-4 [&_p]:text-gray-700 [&_p]:leading-relaxed [&_p]:text-justify [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_ol]:space-y-2 [&_li]:text-gray-700 [&_li]:leading-relaxed [&_li]:text-justify [&_strong]:font-bold [&_strong]:text-gray-900 [&_em]:italic [&_em]:text-gray-700 [&_a]:text-primary [&_a]:underline [&_a]:hover:text-primary-dark [&_table]:border-collapse [&_table]:w-full [&_table]:mb-4 [&_td]:border [&_td]:border-gray-300 [&_td]:p-2 [&_th]:border [&_th]:border-gray-300 [&_th]:p-2 [&_th]:bg-gray-100 [&_th]:font-bold"
-            dangerouslySetInnerHTML={{
-              __html: product.description,
-            }}
-          />
+          <div className="mt-12 w-full overflow-visible">
+            <div
+              className="w-full prose prose-lg max-w-none [&_*]:max-w-none [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:text-gray-900 [&_h1]:w-full [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900 [&_h2]:w-full [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mb-3 [&_h3]:text-gray-900 [&_h3]:w-full [&_p]:mb-4 [&_p]:text-gray-700 [&_p]:leading-relaxed [&_p]:text-justify [&_p]:w-full [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ul]:space-y-2 [&_ul]:w-full [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_ol]:space-y-2 [&_ol]:w-full [&_li]:text-gray-700 [&_li]:leading-relaxed [&_li]:text-justify [&_li]:w-full [&_strong]:font-bold [&_strong]:text-gray-900 [&_em]:italic [&_em]:text-gray-700 [&_a]:text-primary [&_a]:underline [&_a]:hover:text-primary-dark [&_table]:border-collapse [&_table]:w-full [&_table]:mb-4 [&_td]:border [&_td]:border-gray-300 [&_td]:p-2 [&_th]:border [&_th]:border-gray-300 [&_th]:p-2 [&_th]:bg-gray-100 [&_th]:font-bold [&_div]:w-full [&_div]:!max-w-full [&_section]:w-full [&_section]:!max-w-full"
+              style={{ maxWidth: "100%", width: "100%", overflow: "visible" }}
+              dangerouslySetInnerHTML={{
+                __html: processedDescription,
+              }}
+            />
+          </div>
         )}
 
         {/* Reviews */}

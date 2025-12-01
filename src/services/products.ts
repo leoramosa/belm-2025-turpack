@@ -172,7 +172,7 @@ export async function fetchBestSellerProducts(
  * Obtiene productos nuevos ordenados por fecha
  */
 export async function fetchNewProducts(
-  limit: number = 9,
+  limit: number = 27,
   includeOutOfStock: boolean = false
 ): Promise<IProduct[]> {
   const products = await fetchProducts({
@@ -210,7 +210,7 @@ export async function fetchAllNewProducts(
  * Obtiene productos en oferta (con descuento)
  */
 export async function fetchSaleProducts(
-  limit: number = 9,
+  limit: number = 27,
   includeOutOfStock: boolean = false
 ): Promise<IProduct[]> {
   // Obtener más productos para filtrar los que tienen descuento
