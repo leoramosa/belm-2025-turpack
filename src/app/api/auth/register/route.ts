@@ -1,6 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import CryptoJS from "crypto-js";
 
+// Interfaces para manejar errores de WooCommerce
+interface WooCommerceError {
+  code?: string;
+  message?: string;
+  data?:
+    | {
+        status?: number;
+        message?: string;
+        error?: string;
+      }
+    | WooCommerceError[];
+}
+
+interface WooCommerceErrorResponse {
+  code?: string;
+  message?: string;
+  error?: string;
+  data?:
+    | {
+        status?: number;
+        message?: string;
+        error?: string;
+      }
+    | WooCommerceError[];
+}
+
+type ErrorData =
+  | WooCommerceErrorResponse
+  | WooCommerceError[]
+  | string
+  | Record<string, unknown>;
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password, first_name, last_name, username } =
@@ -82,9 +114,9 @@ export async function POST(request: NextRequest) {
 
       try {
         // Intentar parsear como JSON primero
-        let errorData: any;
+        let errorData: ErrorData;
         try {
-          errorData = await response.json();
+          errorData = (await response.json()) as ErrorData;
         } catch {
           // Si no es JSON, intentar como texto
           const errorText = await response.text();
@@ -111,25 +143,42 @@ export async function POST(request: NextRequest) {
         // Si es un array de errores (WooCommerce a veces devuelve arrays)
         if (Array.isArray(errorData)) {
           errorText = errorData
-            .map((err: any) => err.message || err.code || JSON.stringify(err))
+            .map(
+              (err: WooCommerceError) =>
+                err.message || err.code || JSON.stringify(err)
+            )
             .join(" ")
             .toLowerCase();
         }
         // Si tiene una propiedad 'data' que es un array
-        else if (Array.isArray(errorData.data)) {
-          errorText = errorData.data
-            .map((err: any) => err.message || err.code || JSON.stringify(err))
+        else if (
+          typeof errorData === "object" &&
+          errorData !== null &&
+          "data" in errorData &&
+          Array.isArray((errorData as WooCommerceErrorResponse).data)
+        ) {
+          const errorDataObj = errorData as WooCommerceErrorResponse;
+          const dataArray = errorDataObj.data as WooCommerceError[];
+          errorText = dataArray
+            .map(
+              (err: WooCommerceError) =>
+                err.message || err.code || JSON.stringify(err)
+            )
             .join(" ")
             .toLowerCase();
         }
         // Formato estándar
         else {
+          const errorDataObj = errorData as WooCommerceErrorResponse;
           errorText = (
-            errorData.message ||
-            errorData.error ||
-            errorData.data?.message ||
-            errorData.data?.error ||
-            errorData.code ||
+            errorDataObj.message ||
+            errorDataObj.error ||
+            (typeof errorDataObj.data === "object" &&
+            errorDataObj.data !== null &&
+            !Array.isArray(errorDataObj.data)
+              ? errorDataObj.data.message || errorDataObj.data.error
+              : undefined) ||
+            errorDataObj.code ||
             (typeof errorData === "string"
               ? errorData
               : JSON.stringify(errorData))
@@ -142,13 +191,14 @@ export async function POST(request: NextRequest) {
         // - "woocommerce_rest_customer_invalid_email"
         // - "woocommerce_rest_customer_invalid_duplicate"
         // - "rest_customer_invalid_email"
+        const errorDataObj = errorData as WooCommerceErrorResponse;
         const isEmailDuplicate =
           response.status === 409 ||
-          errorData.code === "registration-error-email-exists" ||
-          errorData.code === "woocommerce_rest_customer_invalid_email" ||
-          errorData.code === "woocommerce_rest_customer_invalid_duplicate" ||
-          errorData.code === "rest_customer_invalid_email" ||
-          errorData.code === "woocommerce_rest_customer_duplicate" ||
+          errorDataObj.code === "registration-error-email-exists" ||
+          errorDataObj.code === "woocommerce_rest_customer_invalid_email" ||
+          errorDataObj.code === "woocommerce_rest_customer_invalid_duplicate" ||
+          errorDataObj.code === "rest_customer_invalid_email" ||
+          errorDataObj.code === "woocommerce_rest_customer_duplicate" ||
           (errorText.includes("email") &&
             (errorText.includes("already") ||
               errorText.includes("exists") ||
@@ -171,8 +221,8 @@ export async function POST(request: NextRequest) {
         if (isEmailDuplicate) {
           // Si el backend ya proporciona un mensaje descriptivo, usarlo
           // De lo contrario, usar nuestro mensaje genérico
-          if (errorData.message && errorData.message.trim()) {
-            errorMessage = errorData.message;
+          if (errorDataObj.message && errorDataObj.message.trim()) {
+            errorMessage = errorDataObj.message;
           } else {
             errorMessage =
               "Ya existe una cuenta con este email. Por favor, usa otro email o intenta iniciar sesión si ya tienes una cuenta.";
@@ -216,11 +266,12 @@ export async function POST(request: NextRequest) {
         else if (response.status === 400) {
           // Verificar si es un error de email duplicado por código o texto
           const isEmailError =
-            errorData.code === "registration-error-email-exists" ||
-            errorData.code === "woocommerce_rest_customer_invalid_email" ||
-            errorData.code === "woocommerce_rest_customer_invalid_duplicate" ||
-            errorData.code === "rest_customer_invalid_email" ||
-            errorData.code === "woocommerce_rest_customer_duplicate" ||
+            errorDataObj.code === "registration-error-email-exists" ||
+            errorDataObj.code === "woocommerce_rest_customer_invalid_email" ||
+            errorDataObj.code ===
+              "woocommerce_rest_customer_invalid_duplicate" ||
+            errorDataObj.code === "rest_customer_invalid_email" ||
+            errorDataObj.code === "woocommerce_rest_customer_duplicate" ||
             (errorText.includes("email") &&
               (errorText.includes("already") ||
                 errorText.includes("exists") ||
@@ -232,8 +283,8 @@ export async function POST(request: NextRequest) {
 
           if (isEmailError) {
             // Si el backend ya proporciona un mensaje descriptivo, usarlo
-            if (errorData.message && errorData.message.trim()) {
-              errorMessage = errorData.message;
+            if (errorDataObj.message && errorDataObj.message.trim()) {
+              errorMessage = errorDataObj.message;
             } else {
               errorMessage =
                 "Ya existe una cuenta con este email. Por favor, usa otro email o intenta iniciar sesión si ya tienes una cuenta.";
