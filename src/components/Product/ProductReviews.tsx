@@ -58,7 +58,7 @@ function AuthRequiredMessage({ productName }: { productName: string }) {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
       <h3 className="text-xl font-bold mb-4">
-        Sé el primero en valorar "{productName}"
+        Sé el primero en valorar &quot;{productName}&quot;
       </h3>
       <div className="bg-gray-50 rounded-lg p-6 text-center">
         <LogIn className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -139,7 +139,7 @@ function ReviewForm({
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 opacity-100 transform translate-y-0 transition-all duration-500 ease-out">
       <h3 className="text-xl font-bold mb-4">
-        Sé el primero en valorar "{productName}"
+        Sé el primero en valorar &quot;{productName}&quot;
       </h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">

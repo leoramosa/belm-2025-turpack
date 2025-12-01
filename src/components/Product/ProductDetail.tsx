@@ -83,7 +83,7 @@ export default function ProductDetail({
 
     // Solo remover estilos que limitan el ancho (max-width y width problemáticos)
     html = html.replace(/style="([^"]*)"/gi, (match, styles) => {
-      let cleanStyles = styles
+      const cleanStyles = styles
         .split(";")
         .map((s: string) => s.trim())
         .filter((s: string) => {
