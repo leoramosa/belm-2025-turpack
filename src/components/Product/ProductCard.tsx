@@ -444,7 +444,7 @@ export function ProductCard({
         {/* Content Section */}
         <div className="p-3 flex flex-col justify-between grow">
           {/* Product Name */}
-          <h3 className="font-semibold text-sm lg:text-lg mb-1 line-clamp-1 cursor-pointer">
+          <h3 className="font-semibold text-sm lg:text-[16px] mb-1 line-clamp-1 cursor-pointer">
             {product.name}
           </h3>
 
