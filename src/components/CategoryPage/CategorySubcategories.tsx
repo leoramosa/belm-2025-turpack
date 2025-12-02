@@ -112,8 +112,8 @@ export default function CategorySubcategories({
   };
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-10">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="max-w-7xl mx-auto px-2 py-10">
+      <div className="container mx-auto ">
         {/* Título centrado */}
         <div className="text-center mb-8">
           <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
@@ -130,27 +130,36 @@ export default function CategorySubcategories({
         </div>
 
         {/* Carrusel de subcategorías */}
-        <div className="relative px-12">
+        <div className="relative">
           <Swiper
             modules={[Navigation]}
             onSwiper={setSwiperInstance}
             onSlideChange={updateNavigationState}
             onInit={updateNavigationState}
-            loop={false}
-            spaceBetween={24}
-            slidesPerView={2}
+            loop={true}
+            spaceBetween={20}
+            slidesPerView={2.3}
+            pagination={{ clickable: true }}
             breakpoints={{
-              640: {
+              320: {
+                slidesPerView: 2.5,
+                spaceBetween: 15,
+              },
+              480: {
                 slidesPerView: 3,
-                spaceBetween: 24,
+                spaceBetween: 20,
+              },
+              640: {
+                slidesPerView: 4,
+                spaceBetween: 20,
               },
               768: {
                 slidesPerView: 4,
-                spaceBetween: 24,
+                spaceBetween: 20,
               },
               1024: {
                 slidesPerView: 4,
-                spaceBetween: 24,
+                spaceBetween: 20,
               },
             }}
             className="pb-4"
@@ -159,7 +168,7 @@ export default function CategorySubcategories({
               <SwiperSlide key={category.id}>
                 <div
                   onClick={() => handleCategoryClick(category)}
-                  className="group cursor-pointer flex flex-col items-center"
+                  className="flex flex-col items-center group"
                 >
                   {/* Imagen circular - más grande como en la imagen */}
                   <div className="relative w-32 h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-gray-200 group-hover:border-primary transition-all duration-300 shadow-lg mb-3">
