@@ -323,10 +323,26 @@ export default function OrderDetail({ orderId }: OrderDetailProps) {
       {/* Resumen */}
       <div className="bg-white rounded-3xl p-6 shadow-lg">
         <h2 className="text-xl font-bold mb-4">Resumen</h2>
-        <div className="flex justify-between text-gray-700">
-          <span>Subtotal de artículos</span>
-          <span>{formatPrice(order.subtotal, order.currency)}</span>
-        </div>
+        {/* 🆕 Calcular subtotal desde line_items si order.subtotal es 0 o no está disponible */}
+        {(() => {
+          const calculatedSubtotal = order.line_items.reduce((sum, item) => {
+            const itemSubtotal = parseFloat(item.subtotal || item.total || "0");
+            return sum + itemSubtotal;
+          }, 0);
+
+          // Usar el subtotal calculado si order.subtotal es 0 o inválido
+          const displaySubtotal =
+            parseFloat(order.subtotal || "0") > 0
+              ? parseFloat(order.subtotal || "0")
+              : calculatedSubtotal;
+
+          return (
+            <div className="flex justify-between text-gray-700">
+              <span>Subtotal de artículos</span>
+              <span>{formatPrice(displaySubtotal, order.currency)}</span>
+            </div>
+          );
+        })()}
         <div className="flex justify-between text-gray-700">
           <span>Envío</span>
           <span>{formatPrice(order.shipping_total, order.currency)}</span>

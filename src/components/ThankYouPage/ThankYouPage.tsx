@@ -395,6 +395,36 @@ export default function ThankYouPage({
         }
       });
     }
+
+    // Extraer código del cupón de meta_data si existe
+    let couponCode: string | null = null;
+    if (Array.isArray(order.meta_data)) {
+      const couponMeta = order.meta_data.find(
+        (meta) =>
+          typeof meta.key === "string" &&
+          (meta.key.toLowerCase().includes("coupon") ||
+            meta.key.toLowerCase().includes("discount_code") ||
+            meta.key === "_applied_coupon" ||
+            meta.key === "coupon_code")
+      );
+      if (couponMeta) {
+        couponCode = String(couponMeta.value);
+      }
+    }
+
+    // Calcular subtotal desde line_items si order.subtotal es 0 o no está disponible
+    // Esto es más confiable porque los line_items siempre tienen la información correcta
+    const calculatedSubtotal = order.line_items.reduce((sum, item) => {
+      // Usar subtotal del item si está disponible, sino usar total
+      const itemSubtotal = parseFloat(item.subtotal || item.total || "0");
+      return sum + itemSubtotal;
+    }, 0);
+
+    // Usar el subtotal calculado si order.subtotal es 0 o no válido
+    const displaySubtotal =
+      parseFloat(order.subtotal || "0") > 0
+        ? parseFloat(order.subtotal)
+        : calculatedSubtotal;
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
         <div className="pt-20 pb-12">
@@ -451,11 +481,108 @@ export default function ThankYouPage({
                   Fecha: {new Date(order.date_created).toLocaleDateString()}
                 </div>
               </div>
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total</span>
-                  <span className="font-bold">S/. {order.total}</span>
+              {/* Resumen de productos */}
+              <div className="bg-gray-50 rounded-2xl p-6 mb-8">
+                <h3 className="font-semibold text-gray-900 mb-4">
+                  Resumen del pedido
+                </h3>
+                <div className="space-y-3">
+                  {order.line_items.map((item, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <img
+                        src={item.image?.src || "/logo-belm-v2.png"}
+                        alt={item.name}
+                        className="w-12 h-12 object-cover rounded-lg"
+                      />
+                      <div className="flex-1 text-left">
+                        <div className="font-medium text-sm">{item.name}</div>
+                        {(() => {
+                          const formattedMeta = formatProductMetaData(
+                            item.meta_data || []
+                          );
+                          return formattedMeta && formattedMeta.length > 0 ? (
+                            <div className="text-xs text-gray-600 space-x-2">
+                              {formattedMeta.map((meta, i) => (
+                                <span key={meta.key}>
+                                  {meta.displayKey}: {meta.value}
+                                  {i < formattedMeta.length - 1 && " • "}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-gray-600">
+                          Cant: {item.quantity}
+                        </span>
+                        <div className="font-medium">S/. {item.total}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              </div>
+              {/* Resumen de precios mejorado */}
+              <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+                <h3 className="font-semibold text-gray-900 mb-4">
+                  Resumen de precios
+                </h3>
+                <div className="space-y-3">
+                  {/* Subtotal */}
+                  <div className="flex justify-between text-gray-700">
+                    <span>Subtotal</span>
+                    <span className="font-medium">
+                      S/. {displaySubtotal.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Descuento del cupón - Solo mostrar si hay descuento */}
+                  {parseFloat(order.discount_total || "0") > 0 && (
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <span className="text-green-600">Descuento</span>
+                        {couponCode && (
+                          <span className="text-xs text-gray-500">
+                            Cupón: {couponCode}
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-medium text-green-600">
+                        -S/.{" "}
+                        {parseFloat(order.discount_total || "0").toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Costo de envío - Solo mostrar si hay envío */}
+                  {parseFloat(order.shipping_total || "0") > 0 ? (
+                    <div className="flex justify-between text-gray-700">
+                      <span>Envío</span>
+                      <span className="font-medium">
+                        S/. {parseFloat(order.shipping_total || "0").toFixed(2)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-green-600">
+                      <span>Envío</span>
+                      <span className="font-medium">Gratis</span>
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-300 pt-3 mt-3">
+                    <div className="flex justify-between font-bold text-lg text-gray-900">
+                      <span>Total</span>
+                      <span>
+                        S/. {parseFloat(order.total || "0").toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información adicional */}
+              <div className="space-y-4 mb-8">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Email</span>
                   <span className="font-medium">{order.billing.email}</span>
@@ -476,6 +603,7 @@ export default function ThankYouPage({
                   </span>
                 </div>
               </div>
+
               {/* 📋 Instrucciones paso a paso - Solo para transferencia bancaria */}
               {isTransferPeru && (
                 <div className="bg-green-50 rounded-2xl p-6 border border-green-200 mb-6">
@@ -688,47 +816,7 @@ export default function ThankYouPage({
                   </div>
                 </div>
               )}
-              {/* Resumen de productos */}
-              <div className="bg-gray-50 rounded-2xl p-6 mb-8">
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  Resumen del pedido
-                </h3>
-                <div className="space-y-3">
-                  {order.line_items.map((item, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <img
-                        src={item.image?.src || "/logo-belm-v2.png"}
-                        alt={item.name}
-                        className="w-12 h-12 object-cover rounded-lg"
-                      />
-                      <div className="flex-1 text-left">
-                        <div className="font-medium text-sm">{item.name}</div>
-                        {(() => {
-                          const formattedMeta = formatProductMetaData(
-                            item.meta_data || []
-                          );
-                          return formattedMeta && formattedMeta.length > 0 ? (
-                            <div className="text-xs text-gray-600 space-x-2">
-                              {formattedMeta.map((meta, i) => (
-                                <span key={meta.key}>
-                                  {meta.displayKey}: {meta.value}
-                                  {i < formattedMeta.length - 1 && " • "}
-                                </span>
-                              ))}
-                            </div>
-                          ) : null;
-                        })()}
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-gray-600">
-                          Cant: {item.quantity}
-                        </span>
-                        <div className="font-medium">S/. {item.total}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
               <div className="bg-blue-50 rounded-2xl p-6 mb-8">
                 <h3 className="font-semibold text-blue-900 mb-2">
                   ¿Qué sigue?
@@ -772,6 +860,34 @@ export default function ThankYouPage({
     );
   }
 
+  // Extraer código del cupón de meta_data si existe (para el segundo bloque)
+  let couponCodeFallback: string | null = null;
+  if (order && Array.isArray(order.meta_data)) {
+    const couponMeta = order.meta_data.find(
+      (meta) =>
+        typeof meta.key === "string" &&
+        (meta.key.toLowerCase().includes("coupon") ||
+          meta.key.toLowerCase().includes("discount_code") ||
+          meta.key === "_applied_coupon" ||
+          meta.key === "coupon_code")
+    );
+    if (couponMeta) {
+      couponCodeFallback = String(couponMeta.value);
+    }
+  }
+
+  // Calcular subtotal desde line_items si order.subtotal es 0 o no está disponible
+  const calculatedSubtotalFallback = order.line_items.reduce((sum, item) => {
+    const itemSubtotal = parseFloat(item.subtotal || item.total || "0");
+    return sum + itemSubtotal;
+  }, 0);
+
+  // Usar el subtotal calculado si order.subtotal es 0 o no válido
+  const displaySubtotalFallback =
+    parseFloat(order.subtotal || "0") > 0
+      ? parseFloat(order.subtotal)
+      : calculatedSubtotalFallback;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <div className="pt-20 pb-12">
@@ -796,11 +912,64 @@ export default function ThankYouPage({
                 Fecha: {new Date(order.date_created).toLocaleDateString()}
               </div>
             </div>
-            <div className="space-y-4 mb-8">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total</span>
-                <span className="font-bold">S/. {order.total}</span>
+            {/* Resumen de precios mejorado */}
+            <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+              <h3 className="font-semibold text-gray-900 mb-4">
+                Resumen de precios
+              </h3>
+              <div className="space-y-3">
+                {/* Subtotal */}
+                <div className="flex justify-between text-gray-700">
+                  <span>Subtotal</span>
+                  <span className="font-medium">
+                    S/. {displaySubtotalFallback.toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Descuento del cupón - Solo mostrar si hay descuento */}
+                {parseFloat(order.discount_total || "0") > 0 && (
+                  <div className="flex justify-between items-center">
+                    <div className="flex flex-col">
+                      <span className="text-green-600">Descuento</span>
+                      {couponCodeFallback && (
+                        <span className="text-xs text-gray-500">
+                          Cupón: {couponCodeFallback}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-medium text-green-600">
+                      -S/. {parseFloat(order.discount_total || "0").toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Costo de envío - Solo mostrar si hay envío */}
+                {parseFloat(order.shipping_total || "0") > 0 ? (
+                  <div className="flex justify-between text-gray-700">
+                    <span>Envío</span>
+                    <span className="font-medium">
+                      S/. {parseFloat(order.shipping_total || "0").toFixed(2)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between text-green-600">
+                    <span>Envío</span>
+                    <span className="font-medium">Gratis</span>
+                  </div>
+                )}
+
+                {/* Divider */}
+                <div className="border-t border-gray-300 pt-3 mt-3">
+                  <div className="flex justify-between font-bold text-lg text-gray-900">
+                    <span>Total</span>
+                    <span>S/. {parseFloat(order.total || "0").toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* Información adicional */}
+            <div className="space-y-4 mb-8">
               <div className="flex justify-between">
                 <span className="text-gray-600">Email</span>
                 <span className="font-medium">{order.billing.email}</span>

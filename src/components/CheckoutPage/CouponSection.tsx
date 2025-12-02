@@ -317,9 +317,9 @@ export default function CouponSection({ className = "" }: CouponSectionProps) {
             </div>
           )}
 
-          <div className="flex justify-between text-lg font-semibold pt-2 border-t border-gray-200">
-            <span>Total:</span>
-            <span className="text-primary">
+          <div className="flex justify-between text-md font-semibold pt-2 border-t border-gray-200">
+            <span>Subtotal:</span>
+            <span className="">
               S/ {isClient ? getTotal().toFixed(2) : "0.00"}
             </span>
           </div>

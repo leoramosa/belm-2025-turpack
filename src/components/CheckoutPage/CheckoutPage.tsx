@@ -41,6 +41,8 @@ import { z } from "zod";
 import CouponSection from "./CouponSection";
 import { useFreeShipping } from "@/hooks/useFreeShipping";
 import { freeShippingService } from "@/services/freeShipping";
+import { useAuth } from "@/hooks/useAuth";
+import { fetchOrdersForUser } from "@/services/orders";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -53,7 +55,9 @@ export default function CheckoutPage() {
     couponDiscount,
   } = useCartStore();
   const { getCSRFField } = useCSRF();
+  const { isAuthenticated, profile, loadUserProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+  const [useSavedData, setUseSavedData] = useState(false);
   const [shippingInfo, setShippingInfo] = useState({
     firstName: "",
     firstLastName: "",
@@ -99,6 +103,105 @@ export default function CheckoutPage() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // 🆕 useEffect para pre-llenar datos guardados cuando el checkbox está marcado
+  useEffect(() => {
+    const fillSavedData = async () => {
+      if (!useSavedData || !isAuthenticated) {
+        return;
+      }
+
+      try {
+        // Cargar perfil si no está disponible
+        let userProfile = profile;
+        if (!userProfile) {
+          try {
+            userProfile = await loadUserProfile();
+          } catch (error) {
+            console.error("Error al cargar perfil:", error);
+            return;
+          }
+        }
+
+        if (!userProfile || !userProfile.id || !userProfile.email) {
+          return;
+        }
+
+        // 🆕 Obtener la última orden del usuario (más reciente)
+        let lastOrder = null;
+        try {
+          const orders = await fetchOrdersForUser(
+            userProfile.id,
+            userProfile.email
+          );
+
+          if (orders && orders.length > 0) {
+            // Ordenar por fecha de creación (más reciente primero)
+            const sortedOrders = [...orders].sort((a, b) => {
+              const dateA = new Date(a.date_created).getTime();
+              const dateB = new Date(b.date_created).getTime();
+              return dateB - dateA; // Orden descendente (más reciente primero)
+            });
+
+            lastOrder = sortedOrders[0]; // La primera es la más reciente
+          }
+        } catch (error) {
+          console.error("Error al obtener órdenes:", error);
+          // Continuar con el perfil si falla obtener órdenes
+        }
+
+        // 🆕 Preferir datos de la última orden, si no existe usar perfil
+        let addressData = null;
+        let phoneData = "";
+        let emailData = userProfile.email || "";
+
+        if (lastOrder) {
+          // Usar shipping de la orden, si no existe usar billing
+          addressData = lastOrder.shipping || lastOrder.billing;
+          // El teléfono está en billing, no en shipping
+          phoneData = lastOrder.billing?.phone || "";
+          emailData = lastOrder.billing?.email || userProfile.email || "";
+        } else {
+          // Si no hay órdenes, usar datos del perfil
+          addressData = userProfile.shipping || userProfile.billing;
+          phoneData = addressData?.phone || "";
+        }
+
+        if (addressData) {
+          // Dividir last_name en firstLastName y secondLastName
+          const lastNameParts = (addressData.last_name || "").trim().split(" ");
+          const firstLastName = lastNameParts[0] || "";
+          const secondLastName = lastNameParts.slice(1).join(" ") || "";
+
+          setShippingInfo({
+            firstName: addressData.first_name || "",
+            firstLastName: firstLastName,
+            secondLastName: secondLastName,
+            company: addressData.company || lastOrder?.billing?.company || "",
+            email: emailData,
+            phone: phoneData,
+            address: addressData.address_1 || "",
+            apartment: addressData.address_2 || "",
+            city: addressData.city || "",
+            state: addressData.state || "",
+            zipCode: addressData.postcode || "",
+            provincia: addressData.state || "", // Usar state como provincia si no hay campo específico
+          });
+        } else if (userProfile.email) {
+          // Si no hay datos de envío, al menos pre-llenar el email
+          setShippingInfo((prev) => ({
+            ...prev,
+            email: userProfile?.email || prev.email,
+          }));
+        }
+      } catch (error) {
+        console.error("Error al pre-llenar datos guardados:", error);
+      }
+    };
+
+    fillSavedData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useSavedData, isAuthenticated, profile]);
 
   type PaymentMethod = {
     id: string;
@@ -790,6 +893,9 @@ export default function CheckoutPage() {
     cartItems,
     shippingInfo: shippingInfoParam,
     paymentMethod,
+    shippingCost, // 🆕 Nuevo parámetro para el costo de envío calculado
+    couponCode, // 🆕 Código del cupón aplicado
+    discountAmount, // 🆕 Monto del descuento del cupón
   }: {
     amount: number;
     customerEmail: string;
@@ -822,6 +928,9 @@ export default function CheckoutPage() {
       company?: string; // 🆕 Agregar campo company
     };
     paymentMethod: string;
+    shippingCost?: number; // 🆕 Costo de envío calculado (considera cupón de envío gratis)
+    couponCode?: string; // 🆕 Código del cupón aplicado
+    discountAmount?: number; // 🆕 Monto del descuento del cupón
   }) {
     try {
       // Construir line_items para WooCommerce
@@ -848,21 +957,39 @@ export default function CheckoutPage() {
         company: shippingInfoParam.company || "", // 🆕 Agregar campo company
       };
 
-      // 🆕 Calcular subtotal y costo de envío
+      // 🆕 Calcular subtotal
       const subtotal = cartItems.reduce(
         (sum, item) => sum + parseFloat(item.price) * item.quantity,
         0
       );
-      const shippingCost = amount - subtotal;
+
+      // 🆕 Usar el costo de envío pasado como parámetro (ya considera cupón de envío gratis)
+      // Si no se pasa, calcular desde amount - subtotal como fallback
+      const finalShippingCost =
+        shippingCost !== undefined
+          ? shippingCost
+          : Math.max(0, amount - subtotal);
 
       // 🆕 Construir shipping_lines para incluir el costo de envío
+      // Solo incluir shipping_lines si el costo es mayor a 0 (envío gratis = no incluir shipping_lines)
       const shippingLines =
-        shippingCost > 0
+        finalShippingCost > 0
           ? [
               {
                 method_id: "flat_rate",
                 method_title: "Envío",
-                total: shippingCost.toFixed(2),
+                total: finalShippingCost.toFixed(2),
+              },
+            ]
+          : [];
+
+      // 🆕 Construir coupon_lines si hay un cupón aplicado
+      const couponLines =
+        couponCode && discountAmount !== undefined && discountAmount > 0
+          ? [
+              {
+                code: couponCode,
+                discount: discountAmount.toFixed(2),
               },
             ]
           : [];
@@ -876,6 +1003,7 @@ export default function CheckoutPage() {
         shipping: billingShipping,
         line_items: lineItems,
         shipping_lines: shippingLines, // 🆕 Incluir costos de envío
+        ...(couponLines.length > 0 && { coupon_lines: couponLines }), // 🆕 Incluir cupones si hay
         total: amount.toString(),
       };
 
@@ -1302,10 +1430,14 @@ export default function CheckoutPage() {
         method_title: String(shippingMethod),
         settings: { cost: { value: "0.00" } },
       };
+      // 🆕 Calcular costo de envío considerando cupón de envío gratis
+      // Si hay un cupón con envío gratis o califica para envío gratuito, el costo es 0
+      const finalShippingCost = isShippingFree ? 0 : costoEnvio;
+
       const shippingLine = {
         method_id: String(selectedShipping.id),
         method_title: selectedShipping.method_title || String(shippingMethod),
-        total: selectedShipping.settings?.cost?.value || "0.00",
+        total: finalShippingCost.toFixed(2), // Usar costo calculado que considera cupón
       };
       const lineItems = cart.map((item) => {
         let variation_id: number | undefined = undefined;
@@ -1374,6 +1506,9 @@ export default function CheckoutPage() {
               company: shippingInfo.company, // 🆕 Agregar campo company
             },
             paymentMethod: paymentMethod?.id || "izipay",
+            shippingCost: costoEnvio, // 🆕 Pasar el costo de envío calculado (considera cupón de envío gratis)
+            couponCode: appliedCoupon?.code, // 🆕 Pasar código del cupón si hay
+            discountAmount: discount, // 🆕 Pasar monto del descuento
           });
 
           if (!wcOrderResult.success || !wcOrderResult.order_id) {
@@ -1427,6 +1562,16 @@ export default function CheckoutPage() {
 
       // ✅ PASO 2: Para métodos NO-Izipay, crear orden normalmente
 
+      // 🆕 Construir coupon_lines si hay un cupón aplicado
+      const couponLines = appliedCoupon
+        ? [
+            {
+              code: appliedCoupon.code,
+              discount: discount.toFixed(2), // Descuento calculado
+            },
+          ]
+        : [];
+
       const orderPayload = {
         payment_method: paymentMethod?.id || "transfer-peru",
         payment_method_title:
@@ -1439,6 +1584,7 @@ export default function CheckoutPage() {
         shipping: billingShipping,
         line_items: lineItems,
         shipping_lines: [shippingLine],
+        ...(couponLines.length > 0 && { coupon_lines: couponLines }), // 🆕 Incluir cupones si hay
         customer: {
           email: shippingInfo.email,
           first_name: shippingInfo.firstName,
@@ -1734,6 +1880,27 @@ export default function CheckoutPage() {
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
                     Datos personales
                   </h2>
+                  {/* 🆕 Checkbox para usar datos guardados (solo si está autenticado) */}
+                  {isAuthenticated && (
+                    <div className="mb-6">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={useSavedData}
+                          onChange={(e) => setUseSavedData(e.target.checked)}
+                          className="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Utilizar datos guardados
+                        </span>
+                      </label>
+                      {useSavedData && profile && (
+                        <p className="text-xs text-gray-500 mt-1 ml-7">
+                          Se utilizarán los datos de tu última compra
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <form
                     onSubmit={handlePersonalDataSubmit}
                     className="space-y-6"
@@ -2750,13 +2917,6 @@ export default function CheckoutPage() {
                     <CouponSection className="mb-6" />
 
                     <div className="space-y-4 mb-6 border-t pt-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal</span>
-                        <span className="font-medium">
-                          {isClient ? `S/. ${subtotal.toFixed(2)}` : "S/. 0.00"}
-                        </span>
-                      </div>
-
                       {/* 🆕 Aviso de envío gratuito dinámico */}
                       {freeShippingConfig.enabled && isShippingFree && (
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
@@ -2810,16 +2970,17 @@ export default function CheckoutPage() {
                           </div>
                         )}
 
-                      {discount > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Descuento</span>
-                          <span className="font-medium text-green-600">
-                            {isClient
-                              ? `-S/. ${discount.toFixed(2)}`
-                              : "-S/. 0.00"}
-                          </span>
-                        </div>
-                      )}
+                      {/* 🆕 Subtotal: Total después del descuento (no repetir subtotal de productos ni descuento) */}
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Subtotal</span>
+                        <span className="font-medium">
+                          {isClient
+                            ? `S/. ${(subtotal - discount).toFixed(2)}`
+                            : "S/. 0.00"}
+                        </span>
+                      </div>
+
+                      {/* Envío */}
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">
                           {isShippingFree
@@ -2840,6 +3001,8 @@ export default function CheckoutPage() {
                             : "-"}
                         </span>
                       </div>
+
+                      {/* Total final */}
                       <div className="border-t pt-3">
                         <div className="flex justify-between text-lg font-bold">
                           <span>Total</span>
