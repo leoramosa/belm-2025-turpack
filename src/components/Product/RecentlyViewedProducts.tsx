@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -22,13 +20,16 @@ export default function RecentlyViewedProducts({
 
   // Debug: verificar que el store funciona
 
-  // Filtrar el producto actual si está en la lista
-  const filteredProducts = products.filter((product: IProduct) => {
-    if (typeof currentProductId === "string") {
-      return product.id.toString() !== currentProductId;
-    }
-    return product.id !== currentProductId;
-  });
+  // Filtrar el producto actual si está en la lista y limitar a 6 productos
+  // El store mantiene 7 productos, así que al filtrar el actual siempre quedan 6
+  const filteredProducts = products
+    .filter((product: IProduct) => {
+      if (typeof currentProductId === "string") {
+        return product.id.toString() !== currentProductId;
+      }
+      return product.id !== currentProductId;
+    })
+    .slice(0, 6); // Limitar a 6 productos máximo para mostrar
 
   if (filteredProducts.length === 0) {
     return null;
