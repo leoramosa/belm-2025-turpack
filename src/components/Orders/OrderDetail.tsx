@@ -8,6 +8,8 @@ import { useCartStore } from "@/store/useCartStore";
 import { useUIStore } from "@/store/useUIStore";
 import { extractBaseProductName } from "@/utils/productName";
 import { extractAttributes as extractAttributesUtil } from "@/utils/orderAttributes";
+import type { IOrderItem } from "@/interface/IOrder";
+import type { IProduct } from "@/types/product";
 import {
   ShoppingBag,
   Calendar,
@@ -173,7 +175,7 @@ export default function OrderDetail({ orderId }: OrderDetailProps) {
   // Función para convertir atributos a selectedAttributes (formato del carrito)
   // También crea un array de atributos para mostrar en el carrito
   const convertAttributesToSelectedAttributes = (
-    item: any
+    item: IOrderItem
   ): {
     selectedAttributes: { [key: number]: string };
     attributesForDisplay: Array<{
@@ -241,7 +243,16 @@ export default function OrderDetail({ orderId }: OrderDetailProps) {
           const { selectedAttributes, attributesForDisplay } =
             convertAttributesToSelectedAttributes(item);
 
-          const productData: any = {
+          // Tipo específico para productos reconstruidos desde órdenes
+          type ReconstructedProduct = Omit<IProduct, "attributes"> & {
+            attributes: Array<{
+              id: number;
+              name: string;
+              options: string[];
+            }>;
+          };
+
+          const productData: ReconstructedProduct = {
             id: item.product_id,
             name: baseName, // Nombre base sin variaciones
             slug: baseName.toLowerCase().replace(/\s+/g, "-"),
@@ -271,8 +282,9 @@ export default function OrderDetail({ orderId }: OrderDetailProps) {
 
           // Agregar el producto con la cantidad correcta
           // Agregar uno por uno para que el store maneje correctamente la cantidad
+          // Cast a IProduct ya que el store puede manejar productos parciales
           for (let i = 0; i < item.quantity; i++) {
-            addToCart(productData, selectedAttributes);
+            addToCart(productData as unknown as IProduct, selectedAttributes);
           }
           addedCount += item.quantity;
         } catch (error) {
@@ -402,7 +414,7 @@ export default function OrderDetail({ orderId }: OrderDetailProps) {
 
     // Buscar fecha de envío en meta_data
     const shippingDateMeta = order.meta_data?.find(
-      (m: any) =>
+      (m: { key: string; value: string | number | boolean }) =>
         m.key === "shipping_date" ||
         m.key === "date_shipped" ||
         m.key === "_date_shipped"
@@ -642,14 +654,18 @@ export default function OrderDetail({ orderId }: OrderDetailProps) {
                   })}
                 </div>
                 {order.meta_data?.find(
-                  (m: any) => m.key === "tracking_number"
+                  (m: { key: string; value: string | number | boolean }) =>
+                    m.key === "tracking_number"
                 ) && (
                   <div className="flex items-center gap-1">
                     <span className="font-medium">Tracking:</span>
                     <span>
                       {
                         order.meta_data.find(
-                          (m: any) => m.key === "tracking_number"
+                          (m: {
+                            key: string;
+                            value: string | number | boolean;
+                          }) => m.key === "tracking_number"
                         )?.value
                       }
                     </span>

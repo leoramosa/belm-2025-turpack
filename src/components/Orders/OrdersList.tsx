@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCartStore } from "@/store/useCartStore";
 import { extractBaseProductName } from "@/utils/productName";
 import { extractAttributes as extractAttributesUtil } from "@/utils/orderAttributes";
+import type { IOrder, IOrderItem } from "@/interface/IOrder";
+import type { IProduct } from "@/types/product";
 import {
   ShoppingBag,
   Calendar,
@@ -91,68 +93,8 @@ function formatPrice(value: number | string | null, currency: string): string {
   }
 }
 
-// Función para extraer atributos de meta_data del item
-function extractAttributes(item: any): Array<{ name: string; value: string }> {
-  if (!item.meta_data || !Array.isArray(item.meta_data)) {
-    return [];
-  }
-
-  const attributes: Array<{ name: string; value: string }> = [];
-
-  item.meta_data.forEach((meta: any) => {
-    // Los atributos pueden venir en diferentes formatos:
-    // 1. Keys que empiezan con "pa_" (pa_color, pa_tamaño, etc.)
-    // 2. Keys que son nombres de atributos directamente (Color, Tamaño, etc.)
-    // 3. Keys que contienen "attribute" en el nombre
-
-    const key = meta.key || "";
-    const value = meta.value || "";
-
-    // Ignorar metadatos que no son atributos
-    if (
-      !key ||
-      key.startsWith("_") ||
-      key === "product_id" ||
-      key === "variation_id" ||
-      typeof value !== "string"
-    ) {
-      return;
-    }
-
-    // Si la key empieza con "pa_", remover el prefijo y capitalizar
-    let attributeName = key;
-    if (key.startsWith("pa_")) {
-      attributeName = key.replace("pa_", "");
-      // Capitalizar primera letra
-      attributeName =
-        attributeName.charAt(0).toUpperCase() + attributeName.slice(1);
-    } else if (key.toLowerCase().includes("attribute")) {
-      // Si contiene "attribute", extraer el nombre
-      attributeName = key.replace(/attribute/i, "").replace(/[_-]/g, " ");
-      attributeName = attributeName.trim();
-      if (!attributeName) return;
-    } else {
-      // Usar la key directamente si parece un nombre de atributo
-      attributeName = key;
-    }
-
-    // Limpiar y formatear el nombre del atributo
-    attributeName = attributeName
-      .replace(/[_-]/g, " ")
-      .replace(/\b\w/g, (l: string) => l.toUpperCase())
-      .trim();
-
-    // Agregar el atributo si tiene un valor válido
-    if (attributeName && value) {
-      attributes.push({
-        name: attributeName,
-        value: String(value),
-      });
-    }
-  });
-
-  return attributes;
-}
+// Usar función utilitaria para extraer atributos
+const extractAttributes = extractAttributesUtil;
 
 export default function OrdersList() {
   const router = useRouter();
@@ -203,7 +145,7 @@ export default function OrdersList() {
     router.push(`/orders/${orderId}`);
   };
 
-  const handleBuyAgain = async (order: any) => {
+  const handleBuyAgain = async (order: IOrder) => {
     try {
       let addedCount = 0;
       let failedCount = 0;
@@ -213,7 +155,16 @@ export default function OrdersList() {
         try {
           // Crear un producto básico desde el item de la orden
           // Nota: Esto es una aproximación, idealmente deberías obtener el producto completo por ID
-          const productData: any = {
+          // Tipo específico para productos reconstruidos desde órdenes
+          type ReconstructedProduct = Omit<IProduct, "attributes"> & {
+            attributes: Array<{
+              id: number;
+              name: string;
+              options: string[];
+            }>;
+          };
+
+          const productData: ReconstructedProduct = {
             id: item.product_id,
             name: extractBaseProductName(item.name),
             slug: item.name.toLowerCase().replace(/\s+/g, "-"), // Slug aproximado
@@ -244,7 +195,8 @@ export default function OrdersList() {
 
           // Agregar al carrito con la cantidad de la orden
           for (let i = 0; i < item.quantity; i++) {
-            addToCart(productData);
+            // Cast a IProduct ya que el store puede manejar productos parciales
+            addToCart(productData as unknown as IProduct);
           }
           addedCount += item.quantity;
         } catch (error) {

@@ -953,7 +953,8 @@ export default function CheckoutPage() {
           Object.entries(item.selectedAttributes).forEach(([attrId, value]) => {
             // Buscar el atributo en item.attributes para obtener su nombre
             const attribute = item.attributes?.find(
-              (attr: any) => String(attr.id) === String(attrId)
+              (attr: { id: number; name: string; slug?: string }) =>
+                String(attr.id) === String(attrId)
             );
 
             if (attribute && value) {
