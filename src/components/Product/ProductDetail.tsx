@@ -81,7 +81,7 @@ export default function ProductDetail({
 
     let html = product.description;
 
-    // Solo remover estilos que limitan el ancho (max-width y width problemáticos)
+    // Remover estilos que limitan el ancho y padding/margin que puedan interferir
     html = html.replace(/style="([^"]*)"/gi, (match, styles) => {
       const cleanStyles = styles
         .split(";")
@@ -89,10 +89,20 @@ export default function ProductDetail({
         .filter((s: string) => {
           if (!s) return false;
           const prop = s.split(":")[0]?.trim().toLowerCase();
-          // Solo remover propiedades que limitan el ancho
-          return !["max-width", "width", "flex-shrink", "flex-basis"].includes(
-            prop
-          );
+          // Remover propiedades que limitan el ancho y padding/margin que puedan interferir
+          return ![
+            "max-width",
+            "width",
+            "flex-shrink",
+            "flex-basis",
+            "padding",
+            "padding-left",
+            "padding-right",
+            "padding-top",
+            "padding-bottom",
+            "margin-left",
+            "margin-right",
+          ].includes(prop);
         })
         .join("; ");
 
@@ -252,6 +262,37 @@ export default function ProductDetail({
     if (getAvailableStock === null) return null; // Sin límite si no hay stock definido
     return Math.max(0, getAvailableStock - getCurrentCartQuantity);
   }, [getAvailableStock, getCurrentCartQuantity]);
+
+  // 🆕 Determinar si el producto está sin stock (considerando stockStatus y stockQuantity)
+  const isOutOfStock = useMemo(() => {
+    // Primero verificar stockStatus
+    if (product.stockStatus) {
+      const status = product.stockStatus.toLowerCase().trim();
+      if (
+        status === "outofstock" ||
+        status === "out-of-stock" ||
+        status === "out_of_stock"
+      ) {
+        return true;
+      }
+    }
+
+    // Si hay stock disponible calculado, verificar si es 0
+    if (getAvailableStock !== null) {
+      return getAvailableStock === 0;
+    }
+
+    // Si stockStatus no es "instock" ni "onbackorder", considerar sin stock
+    if (product.stockStatus) {
+      const status = product.stockStatus.toLowerCase().trim();
+      if (status !== "instock" && status !== "onbackorder") {
+        return true;
+      }
+    }
+
+    // Si no hay información de stock, asumir que tiene stock (por defecto)
+    return false;
+  }, [product.stockStatus, getAvailableStock]);
 
   // Ajustar la cantidad local si excede el máximo disponible
   useEffect(() => {
@@ -814,7 +855,7 @@ export default function ProductDetail({
 
                       {/* Badge de stock */}
                       <div className="absolute top-4 right-4">
-                        {product.stockStatus === "instock" ? (
+                        {!isOutOfStock ? (
                           <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg flex items-center gap-1">
                             <div className="w-2 h-2 bg-white rounded-full"></div>
                             En stock
@@ -1033,7 +1074,7 @@ export default function ProductDetail({
 
             {/* Stock */}
             <div className="mb-0 lg:mb-3">
-              {product.stockStatus === "instock" ? (
+              {!isOutOfStock ? (
                 <div className="flex items-center gap-2 text-green-600 font-medium mb-0">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   En stock
@@ -1340,7 +1381,7 @@ export default function ProductDetail({
                   disabled={
                     !allAttributesSelected ||
                     isAddingToCart ||
-                    product.stockStatus !== "instock" ||
+                    isOutOfStock ||
                     (maxQuantity !== null &&
                       (maxQuantity === 0 ||
                         quantity === 0 ||
@@ -1349,7 +1390,7 @@ export default function ProductDetail({
                   className={`flex-1 flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 ${
                     allAttributesSelected &&
                     !isAddingToCart &&
-                    product.stockStatus === "instock" &&
+                    !isOutOfStock &&
                     !(
                       maxQuantity !== null &&
                       (maxQuantity === 0 ||
@@ -1378,7 +1419,7 @@ export default function ProductDetail({
                 disabled={
                   !allAttributesSelected ||
                   isAddingToCart ||
-                  product.stockStatus !== "instock" ||
+                  isOutOfStock ||
                   (maxQuantity !== null &&
                     (maxQuantity === 0 ||
                       quantity === 0 ||
@@ -1387,7 +1428,7 @@ export default function ProductDetail({
                 className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-102 active:scale-98 ${
                   allAttributesSelected &&
                   !isAddingToCart &&
-                  product.stockStatus === "instock" &&
+                  !isOutOfStock &&
                   !(
                     maxQuantity !== null &&
                     (maxQuantity === 0 ||
@@ -1519,10 +1560,14 @@ export default function ProductDetail({
 
         {/* Descripción larga */}
         {product.description && (
-          <div className="mt-12 w-full overflow-visible">
+          <div className="mt-12 w-full ">
             <div
-              className="w-full prose prose-lg max-w-none [&_*]:max-w-none [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:text-gray-900 [&_h1]:w-full [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900 [&_h2]:w-full [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mb-3 [&_h3]:text-gray-900 [&_h3]:w-full [&_p]:mb-4 [&_p]:text-gray-700 [&_p]:leading-relaxed [&_p]:text-justify [&_p]:w-full [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ul]:space-y-2 [&_ul]:w-full [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_ol]:space-y-2 [&_ol]:w-full [&_li]:text-gray-700 [&_li]:leading-relaxed [&_li]:text-justify [&_li]:w-full [&_strong]:font-bold [&_strong]:text-gray-900 [&_em]:italic [&_em]:text-gray-700 [&_a]:text-primary [&_a]:underline [&_a]:hover:text-primary-dark [&_table]:border-collapse [&_table]:w-full [&_table]:mb-4 [&_td]:border [&_td]:border-gray-300 [&_td]:p-2 [&_th]:border [&_th]:border-gray-300 [&_th]:p-2 [&_th]:bg-gray-100 [&_th]:font-bold [&_div]:w-full [&_div]:!max-w-full [&_section]:w-full [&_section]:!max-w-full"
-              style={{ maxWidth: "100%", width: "100%", overflow: "visible" }}
+              className="w-full prose prose-lg max-w-none [&_*]:max-w-none [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:text-gray-900 [&_h1]:w-full [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900 [&_h2]:w-full [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mb-3 [&_h3]:text-gray-900 [&_h3]:w-full [&_p]:mb-4 [&_p]:text-gray-700 [&_p]:leading-relaxed [&_p]:text-justify [&_p]:w-full [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mr-6 [&_ul]:mb-4 [&_ul]:space-y-2 [&_ul]:max-w-[calc(100%-3rem)] [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mr-6 [&_ol]:mb-4 [&_ol]:space-y-2 [&_ol]:max-w-[calc(100%-3rem)] [&_li]:text-gray-700 [&_li]:leading-relaxed [&_li]:text-justify [&_li]:w-full [&_strong]:font-bold [&_strong]:text-gray-900 [&_em]:italic [&_em]:text-gray-700 [&_a]:text-primary [&_a]:underline [&_a]:hover:text-primary-dark [&_table]:border-collapse [&_table]:w-full [&_table]:mb-4 [&_td]:border [&_td]:border-gray-300 [&_td]:p-2 [&_th]:border [&_th]:border-gray-300 [&_th]:p-2 [&_th]:bg-gray-100 [&_th]:font-bold [&_div]:w-full [&_div]:!max-w-full [&_section]:w-full [&_section]:!max-w-full"
+              style={{
+                overflow: "visible",
+                paddingLeft: "1rem",
+                paddingRight: "1rem",
+              }}
               dangerouslySetInnerHTML={{
                 __html: processedDescription,
               }}

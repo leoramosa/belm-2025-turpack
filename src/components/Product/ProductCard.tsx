@@ -143,21 +143,9 @@ export function ProductCard({
     isVariableProduct && product.variations?.[0] ? product.variations[0] : null;
 
   // 🆕 Determinar si el producto está sin stock
+  // Prioridad: stockQuantity === 0 > stockStatus
   const isOutOfStock = useMemo(() => {
-    // Primero verificar stockStatus (más confiable para productos sin gestión de stock)
-    if (product.stockStatus) {
-      const status = product.stockStatus.toLowerCase().trim();
-      // Si el stockStatus indica que está sin stock, retornar true
-      if (
-        status === "outofstock" ||
-        status === "out-of-stock" ||
-        status === "out_of_stock"
-      ) {
-        return true;
-      }
-    }
-
-    // Si es producto variable, verificar variaciones
+    // Si es producto variable, verificar variaciones primero
     if (
       isVariableProduct &&
       product.variations &&
@@ -173,22 +161,30 @@ export function ProductCard({
       return !hasStock;
     }
 
-    // Producto simple: verificar stockQuantity
+    // Producto simple: verificar stockQuantity primero (más confiable)
+    // Si stockQuantity es 0, está sin stock (independientemente de stockStatus)
     if (product.stockQuantity !== null && product.stockQuantity !== undefined) {
       return product.stockQuantity === 0;
     }
 
-    // Si stockStatus indica que está sin stock (ya verificado arriba), retornar true
-    // Si no hay información de stock pero stockStatus es null o no indica "instock", verificar
+    // Si no hay stockQuantity, usar stockStatus como respaldo
     if (product.stockStatus) {
       const status = product.stockStatus.toLowerCase().trim();
-      // Si no es "instock" ni "onbackorder", asumir que está sin stock
+      // Si el stockStatus indica que está sin stock, retornar true
+      if (
+        status === "outofstock" ||
+        status === "out-of-stock" ||
+        status === "out_of_stock"
+      ) {
+        return true;
+      }
+      // Si no es "instock" ni "onbackorder", considerar sin stock
       if (status !== "instock" && status !== "onbackorder") {
         return true;
       }
     }
 
-    // Si no hay información de stock, asumir que tiene stock (por defecto)
+    // Si no hay información de stock (stockQuantity es null y stockStatus no indica problema), asumir que tiene stock (por defecto)
     return false;
   }, [
     isVariableProduct,
