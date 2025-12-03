@@ -1255,7 +1255,7 @@ export default function ProductDetail({
                               </div>
                               {/* 🆕 Indicador de sin stock */}
                               {isOutOfStock && !isSelected && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80 rounded-full">
+                                <div className="absolute inset-0 flex items-center justify-center bg-gray-100/60 rounded-full">
                                   <X className="w-4 h-4 text-gray-500" />
                                 </div>
                               )}

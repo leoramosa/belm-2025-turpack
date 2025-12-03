@@ -11,7 +11,7 @@ interface RecentlyViewedState {
   hasProduct: (productId: string) => boolean;
 }
 
-const MAX_PRODUCTS = 7; // Mantener 7 para que al filtrar el producto actual siempre queden 6
+const MAX_PRODUCTS = 6; // Mantener 7 para que al filtrar el producto actual siempre queden 6
 
 export const useRecentlyViewedStore = create<RecentlyViewedState>()(
   persist(

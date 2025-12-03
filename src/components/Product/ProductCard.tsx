@@ -27,6 +27,7 @@ interface ProductCardProps {
   showCategoryBadge?: boolean; // Si es true, muestra el badge de categoría incluso si hay customBadge
   wishlistMode?: boolean; // Si es true, muestra botón de remover en lugar de wishlist button
   onRemoveFromWishlist?: (productId: string | number) => void; // Callback para remover de wishlist
+  hideWishlistButton?: boolean; // Si es true, oculta completamente el botón de wishlist
 }
 
 function findCategoryInTree(
@@ -88,6 +89,7 @@ export function ProductCard({
   showCategoryBadge = false,
   wishlistMode = false,
   onRemoveFromWishlist,
+  hideWishlistButton = false,
 }: ProductCardProps) {
   const primaryImage = product.images[0] ?? null;
   const { pricing } = product;
@@ -122,7 +124,7 @@ export function ProductCard({
     return null;
   }, [product.categories, allCategories]);
 
-  const colorAttribute = product.attributes.find(
+  const colorAttribute = product.attributes?.find(
     (attribute: ProductAttribute) => isColorAttribute(attribute)
   );
   const colorOptions = colorAttribute
@@ -139,6 +141,61 @@ export function ProductCard({
   // Para productos variables, usar la primera variación para mostrar precio y descuento
   const firstVariation =
     isVariableProduct && product.variations?.[0] ? product.variations[0] : null;
+
+  // 🆕 Determinar si el producto está sin stock
+  const isOutOfStock = useMemo(() => {
+    // Primero verificar stockStatus (más confiable para productos sin gestión de stock)
+    if (product.stockStatus) {
+      const status = product.stockStatus.toLowerCase().trim();
+      // Si el stockStatus indica que está sin stock, retornar true
+      if (
+        status === "outofstock" ||
+        status === "out-of-stock" ||
+        status === "out_of_stock"
+      ) {
+        return true;
+      }
+    }
+
+    // Si es producto variable, verificar variaciones
+    if (
+      isVariableProduct &&
+      product.variations &&
+      product.variations.length > 0
+    ) {
+      // Verificar si al menos una variación tiene stock
+      const hasStock = product.variations.some(
+        (variation) =>
+          variation.stockQuantity !== null &&
+          variation.stockQuantity !== undefined &&
+          variation.stockQuantity > 0
+      );
+      return !hasStock;
+    }
+
+    // Producto simple: verificar stockQuantity
+    if (product.stockQuantity !== null && product.stockQuantity !== undefined) {
+      return product.stockQuantity === 0;
+    }
+
+    // Si stockStatus indica que está sin stock (ya verificado arriba), retornar true
+    // Si no hay información de stock pero stockStatus es null o no indica "instock", verificar
+    if (product.stockStatus) {
+      const status = product.stockStatus.toLowerCase().trim();
+      // Si no es "instock" ni "onbackorder", asumir que está sin stock
+      if (status !== "instock" && status !== "onbackorder") {
+        return true;
+      }
+    }
+
+    // Si no hay información de stock, asumir que tiene stock (por defecto)
+    return false;
+  }, [
+    isVariableProduct,
+    product.variations,
+    product.stockQuantity,
+    product.stockStatus,
+  ]);
 
   // Determinar el precio y precio regular a mostrar
   let displayPrice: number | null = null;
@@ -182,13 +239,25 @@ export function ProductCard({
           {/* Image Section */}
           <div className="relative h-48 w-full overflow-hidden rounded-t-2xl md:h-auto md:w-56 md:rounded-l-2xl md:rounded-tr-none">
             {primaryImage ? (
-              <Image
-                src={primaryImage.src}
-                alt={primaryImage.alt || product.name}
-                fill
-                className="object-cover"
-                sizes="(min-width: 768px) 224px, 100vw"
-              />
+              <>
+                <Image
+                  src={primaryImage.src}
+                  alt={primaryImage.alt || product.name}
+                  fill
+                  className={`object-cover transition-opacity ${
+                    isOutOfStock ? "opacity-50" : ""
+                  }`}
+                  sizes="(min-width: 768px) 224px, 100vw"
+                />
+                {/* Overlay oscuro cuando está sin stock */}
+                {isOutOfStock && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30 pointer-events-none">
+                    <span className="text-white font-bold text-lg lg:text-xl drop-shadow-lg">
+                      Sin stock
+                    </span>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-sm font-medium text-zinc-500">
                 Sin imagen
@@ -256,41 +325,43 @@ export function ProductCard({
               </span>
             )}
             {/* Wishlist Button o Remove Button */}
-            <div
-              className="absolute top-2 right-2 z-10"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            >
-              {wishlistMode && onRemoveFromWishlist ? (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onRemoveFromWishlist(product.id);
-                  }}
-                  className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors duration-200 shadow-sm"
-                  aria-label="Remover de lista de deseos"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+            {!hideWishlistButton && (
+              <div
+                className="absolute top-2 right-2 z-10"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
+                {wishlistMode && onRemoveFromWishlist ? (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onRemoveFromWishlist(product.id);
+                    }}
+                    className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors duration-200 shadow-sm"
+                    aria-label="Remover de lista de deseos"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
-              ) : (
-                <WishlistButton product={product} size="sm" />
-              )}
-            </div>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                ) : (
+                  <WishlistButton product={product} size="sm" />
+                )}
+              </div>
+            )}
           </div>
 
           {/* Content Section */}
@@ -367,10 +438,20 @@ export function ProductCard({
                   e.stopPropagation();
                   router.push(`/productos/${product.slug}`);
                 }}
-                className="flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 font-semibold text-white transition hover:bg-primary/90"
+                className={`flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold text-white transition ${
+                  isOutOfStock
+                    ? "bg-gray-500 hover:bg-gray-600"
+                    : "bg-primary hover:bg-primary/90"
+                }`}
               >
-                <IoCartOutline className="h-5 w-5" />
-                <span>{isVariableProduct ? "Seleccionar" : "Agregar"}</span>
+                {!isOutOfStock && <IoCartOutline className="h-5 w-5" />}
+                <span>
+                  {isOutOfStock
+                    ? "Ver detalle"
+                    : isVariableProduct
+                    ? "Seleccionar"
+                    : "Agregar"}
+                </span>
               </button>
             </div>
           </div>
@@ -386,13 +467,25 @@ export function ProductCard({
         {/* Image Section */}
         <div className="relative object-cover aspect-square w-full overflow-hidden rounded-t-2xl">
           {primaryImage ? (
-            <Image
-              src={primaryImage.src}
-              alt={primaryImage.alt || product.name}
-              fill
-              className="object-cover"
-              sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-            />
+            <>
+              <Image
+                src={primaryImage.src}
+                alt={primaryImage.alt || product.name}
+                fill
+                className={`object-cover transition-opacity ${
+                  isOutOfStock ? "opacity-50" : ""
+                }`}
+                sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+              />
+              {/* Overlay oscuro cuando está sin stock */}
+              {isOutOfStock && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30 pointer-events-none">
+                  <span className="text-white font-bold text-lg lg:text-xl drop-shadow-lg">
+                    Sin stock
+                  </span>
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-sm font-medium text-zinc-500">
               Sin imagen
@@ -460,41 +553,43 @@ export function ProductCard({
             </span>
           )}
           {/* Wishlist Button o Remove Button */}
-          <div
-            className="absolute top-2 right-2 z-10"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-          >
-            {wishlistMode && onRemoveFromWishlist ? (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRemoveFromWishlist(product.id);
-                }}
-                className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors duration-200 shadow-sm"
-                aria-label="Remover de lista de deseos"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+          {!hideWishlistButton && (
+            <div
+              className="absolute top-2 right-2 z-10"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              {wishlistMode && onRemoveFromWishlist ? (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onRemoveFromWishlist(product.id);
+                  }}
+                  className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors duration-200 shadow-sm"
+                  aria-label="Remover de lista de deseos"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
-            ) : (
-              <WishlistButton product={product} size="sm" />
-            )}
-          </div>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              ) : (
+                <WishlistButton product={product} size="sm" />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content Section */}
@@ -562,10 +657,20 @@ export function ProductCard({
               e.stopPropagation();
               router.push(`/productos/${product.slug}`);
             }}
-            className="mt-auto cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-semibold text-white transition hover:bg-primary/90"
+            className={`mt-auto cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-semibold text-white transition ${
+              isOutOfStock
+                ? "bg-gray-500 hover:bg-gray-600"
+                : "bg-primary hover:bg-primary/90"
+            }`}
           >
-            <IoCartOutline className="h-5 w-5" />
-            <span>{isVariableProduct ? "Seleccionar" : "Comprar"}</span>
+            {!isOutOfStock && <IoCartOutline className="h-5 w-5" />}
+            <span>
+              {isOutOfStock
+                ? "Ver detalle"
+                : isVariableProduct
+                ? "Seleccionar"
+                : "Comprar"}
+            </span>
           </button>
         </div>
       </div>
