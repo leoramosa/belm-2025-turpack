@@ -109,22 +109,28 @@ export default function CartDrawer() {
                         Object.keys(item.selectedAttributes).length > 0 && (
                           <div className="text-xs text-gray-600 mt-1 flex flex-wrap gap-2">
                             {Object.entries(item.selectedAttributes).map(
-                              ([attrId, value]) => (
-                                <span
-                                  key={attrId}
-                                  className="bg-gray-100 rounded px-2 py-0.5"
-                                >
-                                  {(() => {
-                                    const attr = item.attributes?.find(
-                                      (attribute) =>
-                                        String(attribute.id) === String(attrId)
-                                    );
-                                    return attr
-                                      ? `${attr.name}: ${value}`
-                                      : value;
-                                  })()}
-                                </span>
-                              )
+                              ([attrId, value]) => {
+                                // Buscar el atributo por ID
+                                const attr = item.attributes?.find(
+                                  (attribute) =>
+                                    String(attribute.id) === String(attrId)
+                                );
+
+                                // Si encontramos el atributo, mostrar "Nombre: Valor"
+                                // Si no, mostrar solo el valor (fallback)
+                                const displayText = attr
+                                  ? `${attr.name}: ${value}`
+                                  : value;
+
+                                return (
+                                  <span
+                                    key={attrId}
+                                    className="bg-gray-100 rounded px-2 py-0.5"
+                                  >
+                                    {displayText}
+                                  </span>
+                                );
+                              }
                             )}
                           </div>
                         )}

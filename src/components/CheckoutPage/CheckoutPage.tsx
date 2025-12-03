@@ -907,6 +907,11 @@ export default function CheckoutPage() {
       name: string;
       price: string;
       selectedAttributes?: Record<string, string>;
+      attributes?: Array<{
+        id: number;
+        name: string;
+        slug?: string;
+      }>;
       variations?: Array<{
         id: number;
         attributes: Array<{
@@ -933,15 +938,72 @@ export default function CheckoutPage() {
     discountAmount?: number; // 🆕 Monto del descuento del cupón
   }) {
     try {
+      // Función para convertir selectedAttributes a meta_data para WooCommerce
+      const convertAttributesToMetaData = (
+        item: (typeof cartItems)[0]
+      ): Array<{ key: string; value: string }> => {
+        if (!item.selectedAttributes) {
+          return [];
+        }
+
+        const metaData: Array<{ key: string; value: string }> = [];
+
+        // Si tenemos los atributos del producto, usarlos para obtener el nombre correcto
+        if (item.attributes && item.attributes.length > 0) {
+          Object.entries(item.selectedAttributes).forEach(([attrId, value]) => {
+            // Buscar el atributo en item.attributes para obtener su nombre
+            const attribute = item.attributes?.find(
+              (attr: any) => String(attr.id) === String(attrId)
+            );
+
+            if (attribute && value) {
+              // WooCommerce usa prefijo "pa_" para atributos globales
+              let key = `pa_${attribute.name
+                .toLowerCase()
+                .replace(/\s+/g, "_")}`;
+
+              // Si el atributo tiene un slug, usarlo
+              if (attribute.slug) {
+                key = `pa_${attribute.slug}`;
+              }
+
+              metaData.push({
+                key,
+                value: String(value),
+              });
+            }
+          });
+        } else {
+          // Si no tenemos los atributos, intentar inferir el nombre desde selectedAttributes
+          // Esto es un fallback para cuando no tenemos la estructura completa
+          Object.entries(item.selectedAttributes).forEach(([attrId, value]) => {
+            if (value) {
+              // Intentar usar el ID como nombre base (esto es un fallback)
+              metaData.push({
+                key: `pa_attribute_${attrId}`,
+                value: String(value),
+              });
+            }
+          });
+        }
+
+        return metaData;
+      };
+
       // Construir line_items para WooCommerce
-      const lineItems = cartItems.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        ...(item.variations &&
-          item.variations.length > 0 && {
-            variation_id: item.variations[0].id,
-          }),
-      }));
+      const lineItems = cartItems.map((item) => {
+        const metaData = convertAttributesToMetaData(item);
+
+        return {
+          product_id: item.product_id,
+          quantity: item.quantity,
+          ...(item.variations &&
+            item.variations.length > 0 && {
+              variation_id: item.variations[0].id,
+            }),
+          ...(metaData.length > 0 && { meta_data: metaData }),
+        };
+      });
 
       // Construir datos de facturación y envío
       const billingShipping = {
@@ -1439,6 +1501,43 @@ export default function CheckoutPage() {
         method_title: selectedShipping.method_title || String(shippingMethod),
         total: finalShippingCost.toFixed(2), // Usar costo calculado que considera cupón
       };
+      // Función para convertir selectedAttributes a meta_data para WooCommerce
+      const convertAttributesToMetaData = (
+        item: (typeof cart)[0]
+      ): Array<{ key: string; value: string }> => {
+        if (!item.selectedAttributes || !item.attributes) {
+          return [];
+        }
+
+        const metaData: Array<{ key: string; value: string }> = [];
+
+        // Iterar sobre los atributos del producto para obtener el nombre correcto
+        Object.entries(item.selectedAttributes).forEach(([attrId, value]) => {
+          // Buscar el atributo en item.attributes para obtener su nombre
+          const attribute = item.attributes.find(
+            (attr) => String(attr.id) === String(attrId)
+          );
+
+          if (attribute && value) {
+            // WooCommerce usa prefijo "pa_" para atributos globales
+            // Intentar diferentes formatos de key
+            let key = `pa_${attribute.name.toLowerCase().replace(/\s+/g, "_")}`;
+
+            // Si el atributo tiene un slug, usarlo
+            if (attribute.slug) {
+              key = `pa_${attribute.slug}`;
+            }
+
+            metaData.push({
+              key,
+              value: String(value),
+            });
+          }
+        });
+
+        return metaData;
+      };
+
       const lineItems = cart.map((item) => {
         let variation_id: number | undefined = undefined;
         if (
@@ -1454,10 +1553,14 @@ export default function CheckoutPage() {
           });
           if (match) variation_id = match.id;
         }
+
+        const metaData = convertAttributesToMetaData(item);
+
         return {
           product_id: Number(item.id),
           quantity: item.quantity,
           ...(variation_id ? { variation_id } : {}),
+          ...(metaData.length > 0 && { meta_data: metaData }),
         };
       });
       const paymentMethod = paymentMethods.find(
@@ -1490,6 +1593,7 @@ export default function CheckoutPage() {
               ...(item.selectedAttributes && {
                 selectedAttributes: item.selectedAttributes,
               }),
+              ...(item.attributes && { attributes: item.attributes }),
               ...(item.variations && { variations: item.variations }),
             })),
             shippingInfo: {
@@ -1531,6 +1635,7 @@ export default function CheckoutPage() {
               ...(item.selectedAttributes && {
                 selectedAttributes: item.selectedAttributes,
               }),
+              ...(item.attributes && { attributes: item.attributes }),
               ...(item.variations && { variations: item.variations }),
             })),
             shippingInfo: {

@@ -4,24 +4,14 @@ import { FiHeart, FiTrash2, FiShoppingCart } from "react-icons/fi";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { useAuth } from "@/hooks/useAuth";
 import { useCartStore } from "@/store/useCartStore";
-import Image from "next/image";
 import Link from "next/link";
-import { IProduct } from "@/types/product";
+import { ProductCard } from "@/components/Product/ProductCard";
 
 export default function WishlistPageWrapper() {
   const { items, removeFromWishlist, clearWishlist, getWishlistCount } =
     useWishlistStore();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCartStore();
-
-  const handleAddToCart = (product: IProduct) => {
-    addToCart(product);
-  };
-
-  // Función para determinar si un producto es variable (tiene atributos)
-  const isVariableProduct = (product: IProduct) => {
-    return product.attributes && product.attributes.length > 0;
-  };
 
   const handleRemoveFromWishlist = (productId: string | number) => {
     removeFromWishlist(String(productId));
@@ -34,15 +24,15 @@ export default function WishlistPageWrapper() {
   };
 
   const handleAddAllToCart = () => {
-    // Solo agregar productos simples al carrito
+    // Solo agregar productos simples al carrito (productos sin variaciones)
     const simpleProducts = items.filter(
-      (product) => !isVariableProduct(product)
+      (product) => !product.variations || product.variations.length === 0
     );
     simpleProducts.forEach((product) => addToCart(product));
 
     // Mostrar mensaje si hay productos variables que no se pueden agregar
-    const variableProducts = items.filter((product) =>
-      isVariableProduct(product)
+    const variableProducts = items.filter(
+      (product) => product.variations && product.variations.length > 0
     );
     if (variableProducts.length > 0) {
       alert(
@@ -147,103 +137,14 @@ export default function WishlistPageWrapper() {
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {items.map((product, index) => (
-            <div
+          {items.map((product) => (
+            <ProductCard
               key={product.id}
-              className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 animate-fade-in"
-              style={{
-                animationDelay: `${index * 100}ms`,
-              }}
-            >
-              {/* Product Image */}
-              <div className="relative aspect-square overflow-hidden rounded-t-xl">
-                <Link href={`/productos/${product.slug}`}>
-                  <Image
-                    src={
-                      product.images && product.images.length > 0
-                        ? product.images[0].src
-                        : "/logo-belm-v2.png"
-                    }
-                    alt={
-                      product.images && product.images.length > 0
-                        ? product.images[0].alt || product.name
-                        : product.name
-                    }
-                    fill
-                    className="object-cover hover:scale-105 transition-transform duration-300"
-                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  />
-                </Link>
-
-                {/* Remove from wishlist button */}
-                <button
-                  onClick={() => handleRemoveFromWishlist(product.id)}
-                  className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors duration-200"
-                >
-                  <FiTrash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Product Info */}
-              <div className="p-4">
-                <Link href={`/productos/${product.slug}`}>
-                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-primary transition-colors duration-200">
-                    {product.name}
-                  </h3>
-                </Link>
-
-                {/* Price */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-bold text-lg text-gray-900">
-                    S/.{" "}
-                    {(
-                      product.pricing?.price ||
-                      product.pricing?.salePrice ||
-                      0
-                    ).toFixed(2)}
-                  </span>
-                  {product.pricing?.regularPrice &&
-                    product.pricing.regularPrice >
-                      (product.pricing?.price ||
-                        product.pricing?.salePrice ||
-                        0) && (
-                      <span className="text-sm text-gray-500 line-through">
-                        S/. {product.pricing.regularPrice.toFixed(2)}
-                      </span>
-                    )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex space-x-2">
-                  {isVariableProduct(product) ? (
-                    // Producto variable: Botón "Seleccionar" que va a la página del producto
-                    <Link
-                      href={`/productos/${product.slug}`}
-                      className="flex-1 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-dark transition-colors duration-200 flex items-center justify-center"
-                    >
-                      <FiShoppingCart className="w-4 h-4 mr-1" />
-                      Seleccionar
-                    </Link>
-                  ) : (
-                    // Producto simple: Botón "Agregar" que agrega al carrito
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="flex-1 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-dark transition-colors duration-200 flex items-center justify-center"
-                    >
-                      <FiShoppingCart className="w-4 h-4 mr-1" />
-                      Agregar
-                    </button>
-                  )}
-
-                  <Link
-                    href={`/productos/${product.slug}`}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:border-primary hover:text-primary transition-colors duration-200 flex items-center justify-center"
-                  >
-                    Ver
-                  </Link>
-                </div>
-              </div>
-            </div>
+              product={product}
+              viewMode="grid"
+              wishlistMode={true}
+              onRemoveFromWishlist={handleRemoveFromWishlist}
+            />
           ))}
         </div>
 

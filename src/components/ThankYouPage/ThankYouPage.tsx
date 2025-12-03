@@ -5,6 +5,8 @@ import { FiCheck as Check } from "react-icons/fi";
 import { useCartStore } from "@/store/useCartStore";
 import { fetchOrderById } from "@/services/orders";
 import type { IOrder } from "@/interface/IOrder";
+import { extractBaseProductName } from "@/utils/productName";
+import { extractAttributes } from "@/utils/orderAttributes";
 
 // Función para formatear meta_data de productos
 const formatProductMetaData = (
@@ -495,17 +497,17 @@ export default function ThankYouPage({
                         className="w-12 h-12 object-cover rounded-lg"
                       />
                       <div className="flex-1 text-left">
-                        <div className="font-medium text-sm">{item.name}</div>
+                        <div className="font-medium text-sm">
+                          {extractBaseProductName(item.name)}
+                        </div>
                         {(() => {
-                          const formattedMeta = formatProductMetaData(
-                            item.meta_data || []
-                          );
-                          return formattedMeta && formattedMeta.length > 0 ? (
+                          const attributes = extractAttributes(item);
+                          return attributes && attributes.length > 0 ? (
                             <div className="text-xs text-gray-600 space-x-2">
-                              {formattedMeta.map((meta, i) => (
-                                <span key={meta.key}>
-                                  {meta.displayKey}: {meta.value}
-                                  {i < formattedMeta.length - 1 && " • "}
+                              {attributes.map((attr, i) => (
+                                <span key={i}>
+                                  {attr.name}: {attr.value}
+                                  {i < attributes.length - 1 && " • "}
                                 </span>
                               ))}
                             </div>
@@ -1004,7 +1006,22 @@ export default function ThankYouPage({
                       className="w-12 h-12 object-cover rounded-lg"
                     />
                     <div className="flex-1 text-left">
-                      <div className="font-medium text-sm">{item.name}</div>
+                      <div className="font-medium text-sm">
+                        {extractBaseProductName(item.name)}
+                      </div>
+                      {(() => {
+                        const attributes = extractAttributes(item);
+                        return attributes && attributes.length > 0 ? (
+                          <div className="text-xs text-gray-600 space-x-2">
+                            {attributes.map((attr, i) => (
+                              <span key={i}>
+                                {attr.name}: {attr.value}
+                                {i < attributes.length - 1 && " • "}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null;
+                      })()}
                       {(() => {
                         const formattedMeta = formatProductMetaData(
                           item.meta_data || []

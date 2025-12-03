@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useOrdersStore } from "@/store/useOrdersStore";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   Package,
@@ -49,6 +50,11 @@ const statusMap: Record<
     color: "bg-orange-100 text-orange-700 border-orange-300",
     icon: <Clock size={16} className="text-orange-500 mr-1" />,
   },
+  "on-hold": {
+    label: "En Espera",
+    color: "bg-yellow-100 text-yellow-600 border-yellow-600",
+    icon: <Clock size={16} className="text-yellow-600 mr-1" />,
+  },
   refunded: {
     label: "Reembolsado",
     color: "bg-blue-100 text-blue-700 border-blue-300",
@@ -59,6 +65,26 @@ const statusMap: Record<
     color: "bg-red-100 text-red-700 border-red-300",
     icon: <XCircle size={16} className="text-red-500 mr-1" />,
   },
+  failed: {
+    label: "Fallido",
+    color: "bg-red-100 text-red-700 border-red-300",
+    icon: <XCircle size={16} className="text-red-500 mr-1" />,
+  },
+  shipped: {
+    label: "Enviado",
+    color: "bg-purple-100 text-purple-700 border-purple-300",
+    icon: <Package size={16} className="text-purple-500 mr-1" />,
+  },
+  delivered: {
+    label: "Entregado",
+    color: "bg-green-100 text-green-700 border-green-300",
+    icon: <CheckCircle size={16} className="text-green-500 mr-1" />,
+  },
+};
+
+// Función helper para obtener el estado traducido
+const getStatusLabel = (status: string): string => {
+  return statusMap[status]?.label || status;
 };
 
 function formatPrice(value: number | string | null, currency: string): string {
@@ -78,11 +104,38 @@ function formatPrice(value: number | string | null, currency: string): string {
 
 export default function OrderTrackPage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { currentOrder, loading, error, loadOrderById, clearError } =
     useOrdersStore();
   const [orderId, setOrderId] = useState("");
   const [email, setEmail] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Redirigir a /orders si el usuario está autenticado
+  useEffect(() => {
+    // Pequeño delay para verificar autenticación
+    const checkAuth = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      setIsCheckingAuth(false);
+      if (isAuthenticated) {
+        router.replace("/orders");
+      }
+    };
+    checkAuth();
+  }, [isAuthenticated, router]);
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (isCheckingAuth || isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-gray-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +165,7 @@ export default function OrderTrackPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white py-12">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-white py-12">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
@@ -189,7 +242,7 @@ export default function OrderTrackPage() {
 
             {/* Resultado del pedido */}
             {currentOrder && !loading && !error && (
-              <div className="mt-8 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border border-green-200">
+              <div className="mt-8 bg-linear-to-br from-green-50 to-blue-50 rounded-2xl p-6 border border-green-200">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-green-100 rounded-lg">
                     <Shield className="w-5 h-5 text-green-600" />
@@ -202,8 +255,8 @@ export default function OrderTrackPage() {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Estado:</span>
-                    <span className="font-semibold capitalize text-green-600">
-                      {currentOrder.status}
+                    <span className="font-semibold text-green-600">
+                      {getStatusLabel(currentOrder.status)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -230,7 +283,7 @@ export default function OrderTrackPage() {
                 <div className="mt-6 space-y-3">
                   <button
                     onClick={handleCreateAccount}
-                    className="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-semibold hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-linear-to-br from-primary to-secondary text-white rounded-xl font-semibold hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
                   >
                     <UserPlus className="w-5 h-5" />
                     Crear cuenta con este correo
@@ -306,7 +359,7 @@ export default function OrderTrackPage() {
                 </div>
               </div>
 
-              <div className="mt-8 p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl border border-primary/20">
+              <div className="mt-8 p-4 bg-linear-to-br-r from-primary/10 to-secondary/10 rounded-2xl border border-primary/20">
                 <h3 className="font-semibold text-gray-900 mb-2">
                   ¿Ya tienes una cuenta?
                 </h3>
@@ -325,7 +378,7 @@ export default function OrderTrackPage() {
             </div>
 
             {/* Información adicional */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6">
+            <div className="bg-linear-to-br from-gray-50 to-gray-100 rounded-2xl p-6">
               <h3 className="font-semibold text-gray-900 mb-3">
                 Información importante
               </h3>
@@ -445,7 +498,7 @@ export default function OrderTrackPage() {
 
             {/* Información de envío */}
             {currentOrder.shipping && (
-              <div className="border-t border-gray-100 pt-6 mt-6">
+              <div className=" border-gray-100 pt-6">
                 <div className="flex items-center gap-3 mb-4">
                   <MapPin size={24} className="text-primary" />
                   <h3 className="text-lg font-semibold text-gray-900">

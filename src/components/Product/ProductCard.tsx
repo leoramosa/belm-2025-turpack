@@ -25,6 +25,8 @@ interface ProductCardProps {
   };
   discountPercentage?: number;
   showCategoryBadge?: boolean; // Si es true, muestra el badge de categoría incluso si hay customBadge
+  wishlistMode?: boolean; // Si es true, muestra botón de remover en lugar de wishlist button
+  onRemoveFromWishlist?: (productId: string | number) => void; // Callback para remover de wishlist
 }
 
 function findCategoryInTree(
@@ -84,6 +86,8 @@ export function ProductCard({
   customBadge,
   discountPercentage,
   showCategoryBadge = false,
+  wishlistMode = false,
+  onRemoveFromWishlist,
 }: ProductCardProps) {
   const primaryImage = product.images[0] ?? null;
   const { pricing } = product;
@@ -251,7 +255,7 @@ export function ProductCard({
                 {rootCategory.name}
               </span>
             )}
-            {/* Wishlist Button */}
+            {/* Wishlist Button o Remove Button */}
             <div
               className="absolute top-2 right-2 z-10"
               onClick={(e) => {
@@ -259,7 +263,33 @@ export function ProductCard({
                 e.stopPropagation();
               }}
             >
-              <WishlistButton product={product} size="sm" />
+              {wishlistMode && onRemoveFromWishlist ? (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onRemoveFromWishlist(product.id);
+                  }}
+                  className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors duration-200 shadow-sm"
+                  aria-label="Remover de lista de deseos"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              ) : (
+                <WishlistButton product={product} size="sm" />
+              )}
             </div>
           </div>
 
@@ -429,7 +459,7 @@ export function ProductCard({
               {rootCategory.name}
             </span>
           )}
-          {/* Wishlist Button */}
+          {/* Wishlist Button o Remove Button */}
           <div
             className="absolute top-2 right-2 z-10"
             onClick={(e) => {
@@ -437,12 +467,38 @@ export function ProductCard({
               e.stopPropagation();
             }}
           >
-            <WishlistButton product={product} size="sm" />
+            {wishlistMode && onRemoveFromWishlist ? (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRemoveFromWishlist(product.id);
+                }}
+                className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors duration-200 shadow-sm"
+                aria-label="Remover de lista de deseos"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
+            ) : (
+              <WishlistButton product={product} size="sm" />
+            )}
           </div>
         </div>
 
         {/* Content Section */}
-        <div className="p-3 flex flex-col justify-between grow">
+        <div className="p-4 flex flex-col justify-between grow">
           {/* Product Name */}
           <h3 className="font-semibold text-sm lg:text-[16px] mb-1 line-clamp-1 cursor-pointer">
             {product.name}
@@ -506,7 +562,7 @@ export function ProductCard({
               e.stopPropagation();
               router.push(`/productos/${product.slug}`);
             }}
-            className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-semibold text-white transition hover:bg-primary/90"
+            className="mt-auto cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-semibold text-white transition hover:bg-primary/90"
           >
             <IoCartOutline className="h-5 w-5" />
             <span>{isVariableProduct ? "Seleccionar" : "Comprar"}</span>

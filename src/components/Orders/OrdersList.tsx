@@ -1,10 +1,80 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/userStore";
 import { useOrdersStore } from "@/store/useOrdersStore";
 import { useAuth } from "@/hooks/useAuth";
-import { ShoppingBag, Calendar, Eye, AlertCircle, Package } from "lucide-react";
+import { useCartStore } from "@/store/useCartStore";
+import { extractBaseProductName } from "@/utils/productName";
+import { extractAttributes as extractAttributesUtil } from "@/utils/orderAttributes";
+import {
+  ShoppingBag,
+  Calendar,
+  Eye,
+  AlertCircle,
+  Package,
+  RefreshCcw,
+  CheckCircle,
+  Clock,
+  XCircle,
+} from "lucide-react";
+import { toast } from "sonner";
+
+const statusMap: Record<
+  string,
+  { label: string; color: string; icon: React.ReactNode }
+> = {
+  completed: {
+    label: "Completado",
+    color: "bg-green-100 text-green-700 border-green-300",
+    icon: <CheckCircle size={16} className="text-green-500 mr-1" />,
+  },
+  processing: {
+    label: "Procesando",
+    color: "bg-yellow-100 text-yellow-700 border-yellow-300",
+    icon: <Clock size={16} className="text-yellow-500 mr-1" />,
+  },
+  pending: {
+    label: "Pendiente",
+    color: "bg-orange-100 text-orange-700 border-orange-300",
+    icon: <Clock size={16} className="text-orange-500 mr-1" />,
+  },
+  "on-hold": {
+    label: "En Espera",
+    color: "bg-yellow-100 text-yellow-600 border-yellow-600",
+    icon: <Clock size={16} className="text-yellow-600 mr-1" />,
+  },
+  refunded: {
+    label: "Reembolsado",
+    color: "bg-blue-100 text-blue-700 border-blue-300",
+    icon: <RefreshCcw size={16} className="text-blue-500 mr-1" />,
+  },
+  cancelled: {
+    label: "Cancelado",
+    color: "bg-red-100 text-red-700 border-red-300",
+    icon: <XCircle size={16} className="text-red-500 mr-1" />,
+  },
+  failed: {
+    label: "Fallido",
+    color: "bg-red-100 text-red-700 border-red-300",
+    icon: <XCircle size={16} className="text-red-500 mr-1" />,
+  },
+  shipped: {
+    label: "Enviado",
+    color: "bg-purple-100 text-purple-700 border-purple-300",
+    icon: <Package size={16} className="text-purple-500 mr-1" />,
+  },
+  delivered: {
+    label: "Entregado",
+    color: "bg-green-100 text-green-700 border-green-300",
+    icon: <CheckCircle size={16} className="text-green-500 mr-1" />,
+  },
+};
+
+// Función helper para obtener el estado traducido
+const getStatusLabel = (status: string): string => {
+  return statusMap[status]?.label || status;
+};
 
 function formatPrice(value: number | string | null, currency: string): string {
   if (value === null || value === undefined) return "S/ 0.00";
@@ -21,29 +91,109 @@ function formatPrice(value: number | string | null, currency: string): string {
   }
 }
 
+// Función para extraer atributos de meta_data del item
+function extractAttributes(item: any): Array<{ name: string; value: string }> {
+  if (!item.meta_data || !Array.isArray(item.meta_data)) {
+    return [];
+  }
+
+  const attributes: Array<{ name: string; value: string }> = [];
+
+  item.meta_data.forEach((meta: any) => {
+    // Los atributos pueden venir en diferentes formatos:
+    // 1. Keys que empiezan con "pa_" (pa_color, pa_tamaño, etc.)
+    // 2. Keys que son nombres de atributos directamente (Color, Tamaño, etc.)
+    // 3. Keys que contienen "attribute" en el nombre
+
+    const key = meta.key || "";
+    const value = meta.value || "";
+
+    // Ignorar metadatos que no son atributos
+    if (
+      !key ||
+      key.startsWith("_") ||
+      key === "product_id" ||
+      key === "variation_id" ||
+      typeof value !== "string"
+    ) {
+      return;
+    }
+
+    // Si la key empieza con "pa_", remover el prefijo y capitalizar
+    let attributeName = key;
+    if (key.startsWith("pa_")) {
+      attributeName = key.replace("pa_", "");
+      // Capitalizar primera letra
+      attributeName =
+        attributeName.charAt(0).toUpperCase() + attributeName.slice(1);
+    } else if (key.toLowerCase().includes("attribute")) {
+      // Si contiene "attribute", extraer el nombre
+      attributeName = key.replace(/attribute/i, "").replace(/[_-]/g, " ");
+      attributeName = attributeName.trim();
+      if (!attributeName) return;
+    } else {
+      // Usar la key directamente si parece un nombre de atributo
+      attributeName = key;
+    }
+
+    // Limpiar y formatear el nombre del atributo
+    attributeName = attributeName
+      .replace(/[_-]/g, " ")
+      .replace(/\b\w/g, (l: string) => l.toUpperCase())
+      .trim();
+
+    // Agregar el atributo si tiene un valor válido
+    if (attributeName && value) {
+      attributes.push({
+        name: attributeName,
+        value: String(value),
+      });
+    }
+  });
+
+  return attributes;
+}
+
 export default function OrdersList() {
   const router = useRouter();
   const { isAuthenticated, requireAuth } = useAuth();
   const profile = useUserStore((s) => s.profile);
   const { orders, loading, error, loadOrders, clearOrders, clearError } =
     useOrdersStore();
+  const { addToCart } = useCartStore();
 
-  // 🔒 PROTECCIÓN DE AUTENTICACIÓN
+  // Estado para verificar si el store está hidratado
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Esperar a que el store se hidrate antes de verificar autenticación
   useEffect(() => {
-    if (!requireAuth("/login")) {
-      return; // El hook ya redirige
+    // Pequeño delay para permitir que Zustand persist se hidrate
+    const timer = setTimeout(() => {
+      setIsHydrated(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 🔒 PROTECCIÓN DE AUTENTICACIÓN (solo después de hidratación)
+  useEffect(() => {
+    if (!isHydrated) return; // Esperar a que el store se hidrate
+
+    if (!isAuthenticated) {
+      // Solo redirigir si realmente no está autenticado después de la hidratación
+      router.push("/login");
+      return;
     }
-  }, [requireAuth]);
+  }, [isAuthenticated, isHydrated, router]);
 
   useEffect(() => {
-    // Solo cargar órdenes si está autenticado y tiene profile
-    if (isAuthenticated && profile?.id) {
+    // Solo cargar órdenes si está autenticado, tiene profile y el store está hidratado
+    if (isHydrated && isAuthenticated && profile?.id) {
       loadOrders(profile.id, profile.email);
-    } else {
+    } else if (isHydrated && !isAuthenticated) {
       clearOrders(); // Limpiar órdenes si no está autenticado
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, profile?.id, profile?.email]);
+  }, [isHydrated, isAuthenticated, profile?.id, profile?.email]);
 
   const handleViewOrder = (orderId: number) => {
     // Verificar autenticación antes de navegar
@@ -53,7 +203,92 @@ export default function OrdersList() {
     router.push(`/orders/${orderId}`);
   };
 
-  // 🔒 REDIRECCIÓN SI NO ESTÁ AUTENTICADO
+  const handleBuyAgain = async (order: any) => {
+    try {
+      let addedCount = 0;
+      let failedCount = 0;
+
+      // Intentar agregar cada producto de la orden al carrito
+      for (const item of order.line_items) {
+        try {
+          // Crear un producto básico desde el item de la orden
+          // Nota: Esto es una aproximación, idealmente deberías obtener el producto completo por ID
+          const productData: any = {
+            id: item.product_id,
+            name: extractBaseProductName(item.name),
+            slug: item.name.toLowerCase().replace(/\s+/g, "-"), // Slug aproximado
+            type: item.variation_id > 0 ? "variable" : "simple",
+            description: "",
+            shortDescription: "",
+            stockStatus: "instock",
+            pricing: {
+              price: parseFloat(item.price || item.subtotal) / item.quantity,
+              regularPrice:
+                parseFloat(item.price || item.subtotal) / item.quantity,
+              salePrice: null,
+              currency: order.currency || "PEN",
+            },
+            images: item.image
+              ? [
+                  {
+                    id: 0,
+                    alt: item.image.alt || item.name,
+                    src: item.image.src,
+                  },
+                ]
+              : [],
+            categories: [],
+            attributes: [],
+            variations: [],
+          };
+
+          // Agregar al carrito con la cantidad de la orden
+          for (let i = 0; i < item.quantity; i++) {
+            addToCart(productData);
+          }
+          addedCount += item.quantity;
+        } catch (error) {
+          console.error(`Error agregando producto ${item.name}:`, error);
+          failedCount += item.quantity;
+        }
+      }
+
+      if (addedCount > 0) {
+        toast.success(
+          `${addedCount} producto${addedCount > 1 ? "s" : ""} agregado${
+            addedCount > 1 ? "s" : ""
+          } al carrito`,
+          {
+            description:
+              failedCount > 0
+                ? `${failedCount} producto(s) no se pudieron agregar`
+                : undefined,
+          }
+        );
+        // Opcional: redirigir al carrito
+        // router.push("/cart");
+      } else {
+        toast.error("No se pudieron agregar los productos al carrito");
+      }
+    } catch (error) {
+      console.error("Error en handleBuyAgain:", error);
+      toast.error("Error al agregar productos al carrito");
+    }
+  };
+
+  // Mostrar loading mientras se hidrata el store
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 🔒 REDIRECCIÓN SI NO ESTÁ AUTENTICADO (solo después de hidratación)
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -136,7 +371,7 @@ export default function OrdersList() {
           >
             <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4">
               <div className="flex items-center gap-4 mb-4 lg:mb-0">
-                <div className="w-12 h-12 bg-gradient-to-r from-[#07D6AF] to-[#ED0AA2] rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-linear-to-r from-primary to-secondary rounded-full flex items-center justify-center">
                   <ShoppingBag size={24} className="text-white" />
                 </div>
                 <div>
@@ -169,51 +404,67 @@ export default function OrdersList() {
                   <p className="text-lg font-bold text-gray-900">
                     {formatPrice(order.total, order.currency)}
                   </p>
-                  <p className="text-sm text-gray-600 capitalize">
-                    {order.status}
-                  </p>
+                  <span
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border ${
+                      statusMap[order.status]?.color ||
+                      "bg-gray-100 text-gray-700 border-gray-300"
+                    }`}
+                  >
+                    {statusMap[order.status]?.icon}
+                    {getStatusLabel(order.status)}
+                  </span>
                 </div>
-                <button
-                  className="flex items-center gap-2 text-gray-700 hover:text-[#07D6AF] font-medium"
-                  onClick={() => handleViewOrder(order.id)}
-                >
-                  <Eye size={18} /> Ver Detalles
-                </button>
               </div>
             </div>
             {/* Productos de la orden */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
               {order.line_items.length === 0 ? (
                 <div className="col-span-full text-center text-gray-500 py-4">
                   No hay productos en esta orden.
                 </div>
               ) : (
-                order.line_items.slice(0, 3).map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl"
-                  >
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                      {item.image?.src ? (
-                        <img
-                          src={item.image.src}
-                          alt={item.image.alt || item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Package size={20} className="text-gray-400" />
-                      )}
+                order.line_items.slice(0, 3).map((item) => {
+                  const attributes = extractAttributes(item);
+                  const itemPrice =
+                    parseFloat(item.price || item.subtotal) / item.quantity;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 p-3 border bg-order border-gray-100 rounded-xl"
+                    >
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {item.image?.src ? (
+                          <img
+                            src={item.image.src}
+                            alt={item.image.alt || item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package size={24} className="text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-gray-900 truncate mb-1">
+                          {extractBaseProductName(item.name || "(Sin título)")}
+                        </p>
+                        {attributes.map((attr, idx) => (
+                          <p key={idx} className="text-xs text-gray-600">
+                            {attr.name}: {attr.value}
+                          </p>
+                        ))}
+                        <p className="text-xs text-gray-600">
+                          Cantidad: {item.quantity}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {formatPrice(itemPrice, order.currency)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {item.name || "(Sin título)"}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Cantidad: {item.quantity}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
             {order.line_items.length > 3 && (
@@ -221,6 +472,24 @@ export default function OrdersList() {
                 y {order.line_items.length - 3} producto(s) más...
               </div>
             )}
+
+            {/* Botones de acción */}
+            <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => handleViewOrder(order.id)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200"
+              >
+                <Eye size={18} />
+                Ver Detalles
+              </button>
+              <button
+                onClick={() => handleBuyAgain(order)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-semibold hover:scale-105 transition-all duration-200"
+              >
+                <RefreshCcw size={18} />
+                Volver a Comprar
+              </button>
+            </div>
           </div>
         ))}
       </div>

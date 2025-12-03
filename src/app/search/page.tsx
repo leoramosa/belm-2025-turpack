@@ -42,22 +42,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     console.error("Error loading search products:", error);
   }
 
-  // Si no hay término de búsqueda, redirigir o mostrar todos los productos
+  // Si no hay término de búsqueda, mostrar todos los productos
   if (!searchQuery.trim()) {
-    return (
-      <div className="min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-zinc-900 mb-4">
-              Buscar productos
-            </h1>
-            <p className="text-zinc-600">
-              Ingresa un término de búsqueda para encontrar productos
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    try {
+      // Cargar todos los productos cuando no hay búsqueda
+      products = await fetchProducts({
+        fetchAll: true,
+      });
+    } catch (error) {
+      console.error("Error loading all products:", error);
+    }
   }
 
   return (
@@ -65,24 +59,34 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-zinc-900 mb-2">
-            Resultados de búsqueda
+            {searchQuery.trim()
+              ? "Resultados de búsqueda"
+              : "Explorar productos"}
           </h1>
           <p className="text-zinc-600">
-            {products.length > 0 ? (
+            {searchQuery.trim() ? (
+              products.length > 0 ? (
+                <>
+                  {products.length} producto{products.length !== 1 ? "s" : ""}{" "}
+                  encontrado{products.length !== 1 ? "s" : ""} para &ldquo;
+                  {searchQuery}&rdquo;
+                </>
+              ) : (
+                <>
+                  No se encontraron productos para &ldquo;{searchQuery}&rdquo;
+                </>
+              )
+            ) : (
               <>
                 {products.length} producto{products.length !== 1 ? "s" : ""}{" "}
-                encontrado{products.length !== 1 ? "s" : ""} para &ldquo;
-                {searchQuery}&rdquo;
+                disponible{products.length !== 1 ? "s" : ""}
               </>
-            ) : (
-              <>No se encontraron productos para &ldquo;{searchQuery}&rdquo;</>
             )}
           </p>
         </div>
 
         {products.length > 0 ? (
           <ProductGridClient
-            title={`Búsqueda: "${searchQuery}"`}
             products={products}
             disableAutoCategoryFilter={false}
             initialSearchQuery={searchQuery}
