@@ -46,9 +46,14 @@ async function getProductStock(
 }> {
   let baseProductName = `Producto #${productId}`;
   const attributes: Array<{ name: string; value: string }> = [];
+  let baseProductData: {
+    stock_quantity: number | null;
+    manage_stock: boolean;
+    name?: string;
+  } | null = null;
 
   try {
-    // Primero obtener el producto base para tener su nombre
+    // Primero obtener el producto base para tener su nombre y datos de stock
     const productUrl = `${apiUrl}/wp-json/wc/v3/products/${productId}`;
     const productResponse = await fetch(productUrl, {
       method: "GET",
@@ -62,6 +67,8 @@ async function getProductStock(
     if (productResponse.ok) {
       const product = (await productResponse.json()) as {
         name?: string;
+        stock_quantity: number | null;
+        manage_stock: boolean;
         attributes?: Array<{
           id: number;
           name: string;
@@ -69,6 +76,11 @@ async function getProductStock(
         }>;
       };
       baseProductName = product.name || baseProductName;
+      baseProductData = {
+        stock_quantity: product.stock_quantity,
+        manage_stock: product.manage_stock,
+        name: product.name,
+      };
     }
 
     if (variationId) {
@@ -149,9 +161,10 @@ async function getProductStock(
           });
         }
 
-        if (variation.manage_stock && variation.stock_quantity !== null) {
+        // Si manage_stock es true, validar stock (incluso si stock_quantity es null, tratarlo como 0)
+        if (variation.manage_stock) {
           return {
-            stock: variation.stock_quantity,
+            stock: variation.stock_quantity ?? 0, // Si stock_quantity es null, tratarlo como 0
             productName: variation.name || baseProductName,
             baseProductName,
             attributes,
@@ -160,18 +173,13 @@ async function getProductStock(
       }
     }
 
-    // Si no es variación o no se encontró, obtener el stock del producto base
-    if (productResponse.ok) {
-      const product = (await productResponse.json()) as {
-        stock_quantity: number | null;
-        manage_stock: boolean;
-        name?: string;
-      };
-
-      if (product.manage_stock && product.stock_quantity !== null) {
+    // Si no es variación o no se encontró, usar el stock del producto base
+    if (baseProductData) {
+      // Si manage_stock es true, validar stock (incluso si stock_quantity es null, tratarlo como 0)
+      if (baseProductData.manage_stock) {
         return {
-          stock: product.stock_quantity,
-          productName: product.name || baseProductName,
+          stock: baseProductData.stock_quantity ?? 0, // Si stock_quantity es null, tratarlo como 0
+          productName: baseProductData.name || baseProductName,
           baseProductName,
           attributes,
         };
@@ -232,11 +240,18 @@ export async function validateOrderStock(
   );
 
   // Filtrar solo los errores (productos sin stock suficiente)
+  // Validar si stock es null (no gestionado) o si la cantidad solicitada excede el stock disponible
   const errors: StockValidationResult["errors"] = stockValidations
-    .filter(
-      (validation) =>
-        validation.stock !== null && validation.item.quantity > validation.stock
-    )
+    .filter((validation) => {
+      // Si stock es null, significa que no se gestiona stock, permitir la orden
+      if (validation.stock === null) {
+        return false;
+      }
+      // Si stock es 0 o la cantidad solicitada excede el stock disponible, es un error
+      return (
+        validation.stock === 0 || validation.item.quantity > validation.stock
+      );
+    })
     .map((validation) => ({
       productId: validation.item.product_id,
       variationId: validation.item.variation_id,
