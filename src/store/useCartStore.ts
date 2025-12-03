@@ -17,7 +17,7 @@ interface CartState {
   addToCart: (
     product: IProduct,
     selectedAttributes?: { [key: number]: string }
-  ) => void;
+  ) => boolean; // Retorna true si se agregó exitosamente, false si no hay stock
   removeFromCart: (
     slug: string,
     selectedAttributes?: { [key: number]: string }
@@ -25,7 +25,7 @@ interface CartState {
   incrementQuantity: (
     slug: string,
     selectedAttributes?: { [key: number]: string }
-  ) => void;
+  ) => boolean; // Retorna true si se incrementó exitosamente, false si no hay stock
   decrementQuantity: (
     slug: string,
     selectedAttributes?: { [key: number]: string }
@@ -36,6 +36,10 @@ interface CartState {
   getSubtotal: () => number;
   getTotal: () => number;
   getDiscountAmount: () => number;
+  getAvailableStock: (
+    product: IProduct,
+    selectedAttributes?: { [key: number]: string }
+  ) => number | null; // Retorna el stock disponible para un producto/variación
 }
 
 export const useCartStore = create<CartState>()(
@@ -44,13 +48,49 @@ export const useCartStore = create<CartState>()(
       cart: [],
       appliedCoupon: null,
       couponDiscount: null,
+      // Helper para obtener el stock disponible de un producto/variación
+      getAvailableStock: (product, selectedAttributes) => {
+        // Si hay variaciones, buscar la variación que coincida con los atributos seleccionados
+        if (
+          product.variations &&
+          product.variations.length > 0 &&
+          selectedAttributes
+        ) {
+          const variation = product.variations.find((variation) =>
+            variation.attributes.every(
+              (attr) => selectedAttributes[attr.id] === attr.option
+            )
+          );
+          if (
+            variation?.stockQuantity !== null &&
+            variation?.stockQuantity !== undefined
+          ) {
+            return variation.stockQuantity;
+          }
+        }
+        // Usar el stock del producto base
+        return product.stockQuantity ?? null;
+      },
       addToCart: (product, selectedAttributes) => {
+        const availableStock = get().getAvailableStock(
+          product,
+          selectedAttributes
+        );
         const existing = get().cart.find(
           (item) =>
             item.slug === product.slug &&
             JSON.stringify(item.selectedAttributes || {}) ===
               JSON.stringify(selectedAttributes || {})
         );
+
+        // Validar stock disponible
+        if (availableStock !== null) {
+          const currentQuantity = existing ? existing.quantity : 0;
+          if (currentQuantity + 1 > availableStock) {
+            return false; // No hay stock suficiente
+          }
+        }
+
         if (existing) {
           set({
             cart: get().cart.map((item) =>
@@ -83,6 +123,7 @@ export const useCartStore = create<CartState>()(
             ],
           });
         }
+        return true; // Se agregó exitosamente
       },
       removeFromCart: (slug, selectedAttributes) => {
         set({
@@ -97,8 +138,27 @@ export const useCartStore = create<CartState>()(
         });
       },
       incrementQuantity: (slug, selectedAttributes) => {
+        const currentCart = get().cart;
+        const item = currentCart.find(
+          (item) =>
+            item.slug === slug &&
+            JSON.stringify(item.selectedAttributes || {}) ===
+              JSON.stringify(selectedAttributes || {})
+        );
+
+        if (!item) return false;
+
+        // Validar stock disponible
+        const availableStock = get().getAvailableStock(
+          item,
+          selectedAttributes
+        );
+        if (availableStock !== null && item.quantity + 1 > availableStock) {
+          return false; // No hay stock suficiente
+        }
+
         set({
-          cart: get().cart.map((item) =>
+          cart: currentCart.map((item) =>
             item.slug === slug &&
             JSON.stringify(item.selectedAttributes || {}) ===
               JSON.stringify(selectedAttributes || {})
@@ -106,6 +166,7 @@ export const useCartStore = create<CartState>()(
               : item
           ),
         });
+        return true; // Se incrementó exitosamente
       },
       decrementQuantity: (slug, selectedAttributes) => {
         const currentCart = get().cart;

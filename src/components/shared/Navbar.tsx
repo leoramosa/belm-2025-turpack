@@ -14,7 +14,7 @@ import { useUIStore } from "@/store/useUIStore";
 import { useUserStore } from "@/store/userStore";
 import type { UserState } from "@/store/userStore";
 import { IProductCategoryNode } from "@/types/ICategory";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useMemo, useRef } from "react";
 import WishlistCount from "./WishlistCount";
 import MegaMenuServer from "./MegaMenu/MegaMenuServer";
@@ -33,6 +33,7 @@ export default function Navbar({ categories: propCategories }: NavbarProps) {
   const profile = useUserStore((s: UserState) => s.profile);
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [openMegaMenu, setOpenMegaMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -120,6 +121,14 @@ export default function Navbar({ categories: propCategories }: NavbarProps) {
     };
   }, [userDropdownOpen]);
 
+  // Limpiar el input de búsqueda cuando se navega a la página de búsqueda
+  useEffect(() => {
+    if (pathname === "/search") {
+      // Limpiar el input cuando se navega a /search
+      setSearchQuery("");
+    }
+  }, [pathname]);
+
   const handleAccountClick = (e: React.MouseEvent) => {
     // Solo alternar el dropdown (ya sabemos que está autenticado)
     e.preventDefault();
@@ -141,7 +150,11 @@ export default function Navbar({ categories: propCategories }: NavbarProps) {
 
     // Búsqueda simplificada sin validación (validación removida temporalmente)
     if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      const query = searchQuery.trim();
+      // Limpiar el input inmediatamente después de navegar
+      setSearchQuery("");
+      // Navegar a la página de búsqueda
+      router.push(`/search?q=${encodeURIComponent(query)}`);
     }
   };
 

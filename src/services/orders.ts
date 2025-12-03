@@ -105,9 +105,15 @@ export const createOrder = async (
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+
+      // Si el error es de stock insuficiente (400), propagar el mensaje específico
+      if (response.status === 400 && errorData.message) {
+        throw new Error(errorData.message);
+      }
+
       throw new Error(
         `Error del servidor: ${response.status} - ${
-          errorData.message || "Error desconocido"
+          errorData.message || errorData.error || "Error desconocido"
         }`
       );
     }

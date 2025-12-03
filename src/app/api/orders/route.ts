@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import CryptoJS from "crypto-js";
+import { validateOrderStock } from "@/lib/stockValidation";
 
 interface WooCommerceOrder {
   id: number;
@@ -172,6 +173,64 @@ export async function POST(request: NextRequest) {
         oauth_signature: encodeURIComponent(signature),
       };
     };
+
+    // 🆕 VALIDAR STOCK ANTES DE CREAR LA ORDEN
+    // Esto previene que se creen órdenes cuando no hay stock disponible
+    const lineItems =
+      (orderPayload.line_items as Array<{
+        product_id: number;
+        variation_id?: number;
+        quantity: number;
+        meta_data?: Array<{ key: string; value: string | number | boolean }>;
+      }>) || [];
+
+    if (lineItems.length > 0) {
+      // Crear header de Basic Auth para validación de stock
+      const credentials = `${consumerKey}:${consumerSecret}`;
+      const encoded = Buffer.from(credentials).toString("base64");
+      const authHeader = `Basic ${encoded}`;
+
+      // Validar stock de todos los productos
+      const stockValidation = await validateOrderStock(
+        lineItems,
+        apiUrl,
+        authHeader
+      );
+
+      if (!stockValidation.isValid) {
+        // Construir mensaje de error detallado con nombre del producto y atributos
+        const errorMessages = stockValidation.errors.map((error) => {
+          // Construir parte de atributos
+          let attributesText = "";
+          if (error.attributes && error.attributes.length > 0) {
+            const attributesList = error.attributes
+              .map((attr) => `${attr.name}: ${attr.value}`)
+              .join(", ");
+            attributesText = `, ${attributesList}`;
+          }
+
+          // Construir mensaje completo
+          return `${
+            error.baseProductName || error.productName
+          }${attributesText}, solicitaste ${
+            error.requestedQuantity
+          } pero solo hay ${error.availableStock} disponible${
+            error.availableStock !== 1 ? "s" : ""
+          }`;
+        });
+
+        return NextResponse.json(
+          {
+            error: "Stock insuficiente",
+            message: `No hay suficiente stock para los siguientes productos: ${errorMessages.join(
+              "; "
+            )}`,
+            details: stockValidation.errors,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     const url = `${apiUrl}/wp-json/wc/v3/orders`;
     const oauthParams = generateOAuthSignature(url, "POST");

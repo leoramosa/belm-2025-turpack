@@ -1071,7 +1071,25 @@ export default function CheckoutPage() {
       };
 
       // Crear orden usando el servicio
-      const wcOrder = await createOrder(orderData);
+      // El backend validará el stock antes de crear la orden
+      let wcOrder;
+      try {
+        wcOrder = await createOrder(orderData);
+      } catch (error) {
+        // Si el error es de stock insuficiente, mostrar mensaje claro
+        if (
+          error instanceof Error &&
+          (error.message.includes("Stock insuficiente") ||
+            error.message.includes("stock") ||
+            error.message.includes("Stock"))
+        ) {
+          throw new Error(
+            error.message ||
+              "Uno o más productos no tienen suficiente stock disponible. Por favor, revisa tu carrito."
+          );
+        }
+        throw error;
+      }
 
       if (!wcOrder.id) {
         throw new Error("No se recibió ID de orden de WooCommerce");
@@ -1660,7 +1678,21 @@ export default function CheckoutPage() {
 
           // Si llegamos aquí, la redirección ya se inició
           return;
-        } catch {
+        } catch (error) {
+          // Manejar errores de stock insuficiente
+          if (
+            error instanceof Error &&
+            (error.message.includes("Stock insuficiente") ||
+              error.message.includes("stock") ||
+              error.message.includes("Stock"))
+          ) {
+            setOrderError(
+              error.message ||
+                "Uno o más productos no tienen suficiente stock disponible. Por favor, revisa tu carrito y actualiza las cantidades."
+            );
+            setIsProcessing(false);
+            return;
+          }
           // El error ya se estableció en setOrderError dentro de pagarConIzipay
           return;
         }
@@ -1701,13 +1733,34 @@ export default function CheckoutPage() {
       };
 
       // Crear la orden SOLO para métodos NO-Izipay
-      const order = (await createOrder(orderPayload)) as {
-        id: number;
-        status: string;
-        total: string;
-        payment_method_title: string;
-        order_key: string;
-      };
+      let order;
+      try {
+        order = (await createOrder(orderPayload)) as {
+          id: number;
+          status: string;
+          total: string;
+          payment_method_title: string;
+          order_key: string;
+        };
+      } catch (error) {
+        // Manejar errores de stock insuficiente
+        if (
+          error instanceof Error &&
+          (error.message.includes("Stock insuficiente") ||
+            error.message.includes("stock") ||
+            error.message.includes("Stock"))
+        ) {
+          setOrderError(
+            error.message ||
+              "Uno o más productos no tienen suficiente stock disponible. Por favor, revisa tu carrito y actualiza las cantidades."
+          );
+          setIsProcessing(false);
+          return;
+        }
+        // Re-lanzar otros errores para que se manejen en el catch general
+        throw error;
+      }
+
       // Si el método de pago es cualquier Mercado Pago, redirigir a Mercado Pago
       if (paymentMethod?.id?.startsWith("woo-mercado-pago")) {
         await pagarConMercadoPago({
@@ -2883,7 +2936,7 @@ export default function CheckoutPage() {
                     </div>
                   </form>
                   {orderError && (
-                    <div className="izipay-status error">{orderError}</div>
+                    <div className="izipay-status error mt-4">{orderError}</div>
                   )}
                   {orderSuccess && (
                     <div className="izipay-status success">{orderSuccess}</div>

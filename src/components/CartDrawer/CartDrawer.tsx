@@ -7,12 +7,20 @@ import { getItemImageSrc } from "@/utils/cart";
 import { X, ShoppingBag, Trash2, Plus, Minus } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function CartDrawer() {
   const isOpen = useUIStore((s) => s.isCartOpen);
   const close = useUIStore((s) => s.closeCart);
   const router = useRouter();
-  const { cart, removeFromCart, clearCart, addToCart } = useCartStore();
+  const {
+    cart,
+    removeFromCart,
+    clearCart,
+    addToCart,
+    incrementQuantity,
+    getAvailableStock,
+  } = useCartStore();
 
   // Suma total
   const getTotal = () =>
@@ -35,8 +43,41 @@ export default function CartDrawer() {
       const { decrementQuantity } = useCartStore.getState();
       decrementQuantity(item.slug, item.selectedAttributes || {});
     } else if (delta === 1) {
-      // Aumentar cantidad usando addToCart
-      addToCart(item, item.selectedAttributes || {});
+      // Obtener stock disponible (esto se recalcula reactivamente)
+      const availableStock = getAvailableStock(
+        item,
+        item.selectedAttributes || {}
+      );
+
+      // Validar stock antes de incrementar
+      if (availableStock !== null && item.quantity >= availableStock) {
+        toast.error(
+          `No se puede agregar más de ${availableStock} producto${
+            availableStock !== 1 ? "s" : ""
+          } de este artículo`
+        );
+        return;
+      }
+
+      // Aumentar cantidad usando incrementQuantity
+      const success = incrementQuantity(
+        item.slug,
+        item.selectedAttributes || {}
+      );
+      if (!success) {
+        // Re-obtener el stock en caso de que haya cambiado
+        const currentStock = getAvailableStock(
+          item,
+          item.selectedAttributes || {}
+        );
+        if (currentStock !== null) {
+          toast.error(
+            `No se puede agregar más de ${currentStock} producto${
+              currentStock !== 1 ? "s" : ""
+            } de este artículo`
+          );
+        }
+      }
     }
   };
 
@@ -153,12 +194,27 @@ export default function CartDrawer() {
                           <span className="w-8 text-center text-sm font-medium">
                             {item.quantity}
                           </span>
-                          <button
-                            onClick={() => handleQuantity(item, 1)}
-                            className="p-1 hover:bg-gray-200 rounded-full transition disabled:opacity-50"
-                          >
-                            <Plus size={14} className="text-gray-600" />
-                          </button>
+                          {(() => {
+                            // Calcular stock disponible reactivamente para cada item
+                            const availableStock = getAvailableStock(
+                              item,
+                              item.selectedAttributes || {}
+                            );
+                            const isDisabled =
+                              availableStock !== null &&
+                              (availableStock === 0 ||
+                                item.quantity >= availableStock);
+
+                            return (
+                              <button
+                                onClick={() => handleQuantity(item, 1)}
+                                disabled={isDisabled}
+                                className="p-1 hover:bg-gray-200 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Plus size={14} className="text-gray-600" />
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>

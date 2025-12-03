@@ -401,6 +401,10 @@ function mapWordpressProductToProduct(
     shortDescription: product.short_description,
     sku: product.sku ?? null,
     stockStatus: product.stock_status ?? null,
+    stockQuantity:
+      product.manage_stock && product.stock_quantity !== undefined
+        ? product.stock_quantity
+        : null,
     pricing,
     images,
     categories:
@@ -716,6 +720,10 @@ function mapVariationResponseToProductVariation(
     price: toNumberOrNull(variation.price),
     regularPrice: toNumberOrNull(variation.regular_price),
     salePrice: toNumberOrNull(variation.sale_price),
+    stockQuantity:
+      variation.manage_stock && variation.stock_quantity !== undefined
+        ? variation.stock_quantity
+        : null,
     image: variation.image
       ? {
           id: variation.image.id,

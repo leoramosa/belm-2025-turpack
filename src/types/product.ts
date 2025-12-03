@@ -50,6 +50,7 @@ export interface ProductVariation {
   salePrice: number | null;
   image: ProductImage | null;
   attributes: ProductVariationAttribute[];
+  stockQuantity?: number | null; // Cantidad disponible en inventario para esta variación
 }
 
 export interface ProductPricing {
@@ -84,6 +85,7 @@ export interface IProduct {
   shortDescription: string;
   sku?: string | null;
   stockStatus: string | null;
+  stockQuantity?: number | null; // Cantidad disponible en inventario (no se muestra visualmente)
   pricing: ProductPricing;
   images: ProductImage[];
   categories: IProductCategory[];
@@ -102,6 +104,8 @@ export interface WordpressProductResponse {
   short_description: string;
   sku?: string;
   stock_status: string | null;
+  stock_quantity?: number | null;
+  manage_stock?: boolean;
   price?: string;
   regular_price?: string;
   sale_price?: string;
@@ -143,6 +147,8 @@ export interface WordpressVariationResponse {
   price?: string | null;
   regular_price?: string | null;
   sale_price?: string | null;
+  stock_quantity?: number | null;
+  manage_stock?: boolean;
   image?: {
     id: number;
     src: string;

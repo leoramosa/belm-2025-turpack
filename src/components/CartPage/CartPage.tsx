@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCartStore } from "@/store/useCartStore";
 import { getItemImageSrc } from "@/utils/cart";
+import { toast } from "sonner";
 import {
   FiArrowLeft as ArrowLeft,
   FiX as X,
@@ -23,6 +24,7 @@ export default function CartPage() {
     clearCart,
     incrementQuantity,
     decrementQuantity,
+    getAvailableStock,
   } = useCartStore();
   // const [isLoading, setIsLoading] = useState(false);
 
@@ -161,13 +163,52 @@ export default function CartPage() {
                                 {item.quantity}
                               </span>
                               <button
-                                onClick={() =>
-                                  incrementQuantity(
+                                onClick={() => {
+                                  const availableStock = getAvailableStock(
+                                    item,
+                                    item.selectedAttributes || {}
+                                  );
+                                  if (
+                                    availableStock !== null &&
+                                    item.quantity >= availableStock
+                                  ) {
+                                    toast.error(
+                                      `No se puede agregar más de ${availableStock} producto${
+                                        availableStock !== 1 ? "s" : ""
+                                      } de este artículo`
+                                    );
+                                    return;
+                                  }
+                                  const success = incrementQuantity(
                                     item.slug,
                                     item.selectedAttributes || {}
-                                  )
-                                }
-                                className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                                  );
+                                  if (!success) {
+                                    const stock = getAvailableStock(
+                                      item,
+                                      item.selectedAttributes || {}
+                                    );
+                                    if (stock !== null) {
+                                      toast.error(
+                                        `No se puede agregar más de ${stock} producto${
+                                          stock !== 1 ? "s" : ""
+                                        } de este artículo`
+                                      );
+                                    }
+                                  }
+                                }}
+                                disabled={(() => {
+                                  const availableStock = getAvailableStock(
+                                    item,
+                                    item.selectedAttributes || {}
+                                  );
+                                  return (
+                                    availableStock !== null &&
+                                    (availableStock === 0 ||
+                                      item.quantity >= availableStock)
+                                  );
+                                })()}
+                                className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Plus size={16} className="text-gray-600" />
                               </button>

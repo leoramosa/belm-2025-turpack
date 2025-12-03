@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { IoGridOutline, IoListOutline } from "react-icons/io5";
 
 import { ProductCard } from "@/components/Product/ProductCard";
@@ -123,6 +123,7 @@ export function ProductGridClient({
 }: ProductGridClientProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setProducts = useProductStore(
     (state: ProductState) => state.setProducts
   );
@@ -174,13 +175,25 @@ export function ProductGridClient({
     }
   }, [products, setProducts]);
 
-  // Sincronizar searchQuery cuando cambia initialSearchQuery (desde URL)
+  // Sincronizar searchQuery con initialSearchQuery cuando cambia (desde URL)
+  // Esto asegura que el input muestre el query correcto inicialmente
   useEffect(() => {
-    if (initialSearchQuery !== searchQuery) {
-      setSearchQuery(initialSearchQuery);
+    if (pathname === "/search") {
+      if (initialSearchQuery) {
+        // Inicializar con el query de la URL
+        setSearchQuery(initialSearchQuery);
+        // Limpiar el input después de un delay muy corto para que se muestren los productos primero
+        const timer = setTimeout(() => {
+          setSearchQuery("");
+        }, 100);
+        return () => clearTimeout(timer);
+      } else {
+        // Si no hay query en la URL, limpiar el input
+        setSearchQuery("");
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSearchQuery]);
+  }, [pathname, initialSearchQuery]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -195,24 +208,34 @@ export function ProductGridClient({
     // Usar productList del store (que se actualiza con los productos recibidos)
     // pero si está vacío, usar los productos recibidos directamente
     const sourceProducts = productList.length > 0 ? productList : products;
+
+    const isSearchPage = pathname === "/search";
+    const hasInitialSearchQuery = Boolean(
+      initialSearchQuery && initialSearchQuery.trim() !== ""
+    );
+
+    // CRÍTICO: Si estamos en /search y hay initialSearchQuery, los productos YA vienen filtrados del servidor
+    // NO aplicar NINGÚN filtro de búsqueda, solo aplicar otros filtros (categoría, precio, etc.)
+    const skipSearchFilters = isSearchPage && hasInitialSearchQuery;
+
     const filtered = sourceProducts.filter((product) => {
-      // Search filter (from sidebar)
-      if (filters.search) {
+      // Search filter (from sidebar) - NO aplicar si hay initialSearchQuery
+      if (!skipSearchFilters && filters.search) {
         const searchLower = filters.search.toLowerCase();
         const matchesSearch =
           product.name.toLowerCase().includes(searchLower) ||
-          product.shortDescription.toLowerCase().includes(searchLower) ||
-          product.description.toLowerCase().includes(searchLower);
+          product.shortDescription?.toLowerCase().includes(searchLower) ||
+          product.description?.toLowerCase().includes(searchLower);
         if (!matchesSearch) return false;
       }
 
-      // Search filter (from top bar)
-      if (searchQuery) {
+      // Search filter (from top bar) - NO aplicar si hay initialSearchQuery
+      if (!skipSearchFilters && searchQuery && searchQuery.trim() !== "") {
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch =
           product.name.toLowerCase().includes(searchLower) ||
-          product.shortDescription.toLowerCase().includes(searchLower) ||
-          product.description.toLowerCase().includes(searchLower);
+          product.shortDescription?.toLowerCase().includes(searchLower) ||
+          product.description?.toLowerCase().includes(searchLower);
         if (!matchesSearch) return false;
       }
 
@@ -321,7 +344,15 @@ export function ProductGridClient({
     });
 
     return sorted;
-  }, [productList, products, filters, searchQuery, sortBy]);
+  }, [
+    productList,
+    products,
+    filters,
+    searchQuery,
+    sortBy,
+    pathname,
+    initialSearchQuery,
+  ]);
 
   // Resetear a página 1 cuando cambian los filtros importantes o los productos filtrados
   useEffect(() => {
@@ -388,7 +419,32 @@ export function ProductGridClient({
               type="text"
               placeholder="Buscar productos..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                const newQuery = e.target.value;
+                setSearchQuery(newQuery);
+                // Si estamos en la página de búsqueda, actualizar la URL inmediatamente
+                if (pathname === "/search") {
+                  // Usar replace para evitar agregar entradas al historial
+                  if (newQuery.trim()) {
+                    router.replace(
+                      `/search?q=${encodeURIComponent(newQuery.trim())}`
+                    );
+                  } else {
+                    router.replace("/search");
+                  }
+                }
+              }}
+              onKeyDown={(e) => {
+                // Si presiona Enter, navegar a la página de búsqueda
+                if (e.key === "Enter" && pathname !== "/search") {
+                  e.preventDefault();
+                  if (searchQuery.trim()) {
+                    router.push(
+                      `/search?q=${encodeURIComponent(searchQuery.trim())}`
+                    );
+                  }
+                }
+              }}
               className="w-full pl-10 pr-4 py-3 bg-white rounded-2xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-300"
             />
           </div>

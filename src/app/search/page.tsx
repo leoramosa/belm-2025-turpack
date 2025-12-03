@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { ProductGridClient } from "@/components/Product/ProductGridClient";
+import Link from "next/link";
+import { ProductCard } from "@/components/Product/ProductCard";
 import { fetchProducts } from "@/services/products";
 import type { IProduct } from "@/types/product";
 
@@ -15,13 +16,13 @@ export async function generateMetadata({
 
   if (!query) {
     return {
-      title: "Búsqueda | Tienda Store",
+      title: "Búsqueda | BELM",
       description: "Busca productos en nuestra tienda",
     };
   }
 
   return {
-    title: `Búsqueda: ${query} | Tienda Store`,
+    title: `Búsqueda: ${query} | BELM`,
     description: `Resultados de búsqueda para "${query}"`,
   };
 }
@@ -33,37 +34,33 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   let products: IProduct[] = [];
 
   try {
-    // Obtener todos los productos y filtrarlos por búsqueda
-    products = await fetchProducts({
-      search: searchQuery,
-      fetchAll: true,
-    });
+    if (searchQuery.trim()) {
+      // Buscar productos con el query
+      products = await fetchProducts({
+        search: searchQuery,
+        fetchAll: true,
+      });
+    } else {
+      // Si no hay query, mostrar todos los productos
+      products = await fetchProducts({
+        fetchAll: true,
+      });
+    }
   } catch (error) {
     console.error("Error loading search products:", error);
   }
 
-  // Si no hay término de búsqueda, mostrar todos los productos
-  if (!searchQuery.trim()) {
-    try {
-      // Cargar todos los productos cuando no hay búsqueda
-      products = await fetchProducts({
-        fetchAll: true,
-      });
-    } catch (error) {
-      console.error("Error loading all products:", error);
-    }
-  }
-
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-zinc-900 mb-2">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-primary mb-2">
             {searchQuery.trim()
               ? "Resultados de búsqueda"
               : "Explorar productos"}
           </h1>
-          <p className="text-zinc-600">
+          <p className="text-gray-600">
             {searchQuery.trim() ? (
               products.length > 0 ? (
                 <>
@@ -85,31 +82,59 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </p>
         </div>
 
+        {/* Botones de navegación */}
+        <div className="mb-6 flex flex-wrap gap-4">
+          <Link
+            href="/shop"
+            className="px-6 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-xl transition-colors duration-200"
+          >
+            Ver todos los productos
+          </Link>
+          <Link
+            href="/"
+            className="px-6 py-3 bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white font-medium rounded-xl transition-colors duration-200"
+          >
+            Ir a la tienda
+          </Link>
+        </div>
+
+        {/* Productos */}
         {products.length > 0 ? (
-          <ProductGridClient
-            products={products}
-            disableAutoCategoryFilter={false}
-            initialSearchQuery={searchQuery}
-          />
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                viewMode="grid"
+                showCategoryBadge={true}
+              />
+            ))}
+          </div>
         ) : (
           <section className="mx-auto flex w-full max-w-6xl flex-col items-center gap-6 px-4 py-16 text-center">
-            <div className="rounded-3xl border border-dashed border-zinc-300 p-10 dark:border-zinc-700">
+            <div className="rounded-3xl border border-dashed border-gray-300 p-10">
               <div className="text-6xl mb-4">🔍</div>
-              <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-2xl font-semibold text-gray-900">
                 No se encontraron productos
               </h2>
-              <p className="mt-2 max-w-xl text-balance text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="mt-2 max-w-xl text-balance text-sm text-gray-600">
                 No encontramos productos que coincidan con &ldquo;
                 {searchQuery}&rdquo;. Intenta con otros términos de búsqueda o
                 explora nuestras categorías.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-                <a
+                <Link
                   href="/shop"
                   className="px-6 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-xl transition-colors duration-200"
                 >
                   Ver todos los productos
-                </a>
+                </Link>
+                <Link
+                  href="/"
+                  className="px-6 py-3 bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white font-medium rounded-xl transition-colors duration-200"
+                >
+                  Ir a la tienda
+                </Link>
               </div>
             </div>
           </section>

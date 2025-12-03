@@ -160,7 +160,7 @@ export default function ProductDetail({
     }
   }, [product.description, processedDescription]);
 
-  const { addToCart } = useCartStore();
+  const { addToCart, cart } = useCartStore();
   const { addProduct } = useRecentlyViewedStore();
   const { openCart } = useUIStore();
   const router = useRouter();
@@ -215,6 +215,54 @@ export default function ProductDetail({
   };
 
   const defaultVariationForPricing = getDefaultVariationForPricing();
+
+  // Obtener el stock disponible del producto o variación seleccionada
+  const getAvailableStock = useMemo(() => {
+    // Si hay una variación seleccionada, usar su stock
+    if (
+      selectedVariation?.stockQuantity !== null &&
+      selectedVariation?.stockQuantity !== undefined
+    ) {
+      return selectedVariation.stockQuantity;
+    }
+    // Si no hay variación seleccionada pero hay una default, usar su stock
+    if (
+      defaultVariationForPricing?.stockQuantity !== null &&
+      defaultVariationForPricing?.stockQuantity !== undefined
+    ) {
+      return defaultVariationForPricing.stockQuantity;
+    }
+    // Usar el stock del producto base
+    return product.stockQuantity ?? null;
+  }, [selectedVariation, defaultVariationForPricing, product.stockQuantity]);
+
+  // Obtener la cantidad actual en el carrito para este producto/variación
+  const getCurrentCartQuantity = useMemo(() => {
+    const cartItem = cart.find(
+      (item) =>
+        item.slug === product.slug &&
+        JSON.stringify(item.selectedAttributes || {}) ===
+          JSON.stringify(selectedAttributes || {})
+    );
+    return cartItem ? cartItem.quantity : 0;
+  }, [cart, product.slug, selectedAttributes]);
+
+  // Calcular la cantidad máxima que se puede agregar
+  const maxQuantity = useMemo(() => {
+    if (getAvailableStock === null) return null; // Sin límite si no hay stock definido
+    return Math.max(0, getAvailableStock - getCurrentCartQuantity);
+  }, [getAvailableStock, getCurrentCartQuantity]);
+
+  // Ajustar la cantidad local si excede el máximo disponible
+  useEffect(() => {
+    if (maxQuantity !== null && quantity > maxQuantity) {
+      setQuantity(maxQuantity);
+    }
+    // Si la variación seleccionada no tiene stock, resetear cantidad a 0
+    if (maxQuantity !== null && maxQuantity === 0) {
+      setQuantity(0);
+    }
+  }, [maxQuantity, quantity]);
 
   // 🆕 GALERÍA ORDENADA SEGÚN ATRIBUTOS DE COLOR CON useMemo
   const galleryImages = useMemo(() => {
@@ -422,6 +470,37 @@ export default function ProductDetail({
       return;
     }
 
+    // 🆕 Validar que la variación seleccionada tenga stock
+    if (selectedVariation) {
+      const variationStock = selectedVariation.stockQuantity;
+      if (
+        variationStock !== null &&
+        variationStock !== undefined &&
+        variationStock === 0
+      ) {
+        toast.error(
+          "Esta variación no tiene stock disponible. Por favor, selecciona otra opción."
+        );
+        return;
+      }
+    }
+
+    // Validar stock disponible
+    if (maxQuantity !== null && (maxQuantity === 0 || quantity > maxQuantity)) {
+      if (maxQuantity === 0) {
+        toast.error(
+          "Esta variación no tiene stock disponible. Por favor, selecciona otra opción."
+        );
+      } else {
+        toast.error(
+          `No se puede agregar más de ${maxQuantity} producto${
+            maxQuantity !== 1 ? "s" : ""
+          } de este artículo`
+        );
+      }
+      return;
+    }
+
     setIsAddingToCart(true);
 
     try {
@@ -429,7 +508,17 @@ export default function ProductDetail({
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       for (let i = 0; i < quantity; i++) {
-        addToCart(product, selectedAttributes);
+        const success = addToCart(product, selectedAttributes);
+        if (!success) {
+          // Si falla al agregar, mostrar error y salir
+          toast.error(
+            `No se puede agregar más de ${maxQuantity} producto${
+              maxQuantity !== 1 ? "s" : ""
+            } de este artículo`
+          );
+          setIsAddingToCart(false);
+          return;
+        }
       }
 
       toast.success(
@@ -462,11 +551,52 @@ export default function ProductDetail({
       return;
     }
 
+    // 🆕 Validar que la variación seleccionada tenga stock
+    if (selectedVariation) {
+      const variationStock = selectedVariation.stockQuantity;
+      if (
+        variationStock !== null &&
+        variationStock !== undefined &&
+        variationStock === 0
+      ) {
+        toast.error(
+          "Esta variación no tiene stock disponible. Por favor, selecciona otra opción."
+        );
+        return;
+      }
+    }
+
+    // Validar stock disponible
+    if (maxQuantity !== null && (maxQuantity === 0 || quantity > maxQuantity)) {
+      if (maxQuantity === 0) {
+        toast.error(
+          "Esta variación no tiene stock disponible. Por favor, selecciona otra opción."
+        );
+      } else {
+        toast.error(
+          `No se puede agregar más de ${maxQuantity} producto${
+            maxQuantity !== 1 ? "s" : ""
+          } de este artículo`
+        );
+      }
+      return;
+    }
+
     setIsAddingToCart(true);
 
     try {
       for (let i = 0; i < quantity; i++) {
-        addToCart(product, selectedAttributes);
+        const success = addToCart(product, selectedAttributes);
+        if (!success) {
+          // Si falla al agregar, mostrar error y salir
+          toast.error(
+            `No se puede agregar más de ${maxQuantity} producto${
+              maxQuantity !== 1 ? "s" : ""
+            } de este artículo`
+          );
+          setIsAddingToCart(false);
+          return;
+        }
       }
 
       toast.success("Producto agregado al carrito", {
@@ -997,16 +1127,81 @@ export default function ProductDetail({
                             : false;
                           const isColor = isColorAttr;
 
+                          // 🆕 Encontrar la variación que corresponde a esta opción
+                          // Para esto, simulamos la selección de esta opción y buscamos la variación
+                          const tempSelectedAttributes = {
+                            ...selectedAttributes,
+                            [attr.id]: option.name,
+                          };
+                          const variationForThisOption =
+                            product.variations?.find((variation) =>
+                              variation.attributes.every(
+                                (variationAttr) =>
+                                  tempSelectedAttributes[variationAttr.id] ===
+                                  variationAttr.option
+                              )
+                            );
+
+                          // 🆕 Verificar si esta variación tiene stock disponible
+                          const hasStock =
+                            variationForThisOption?.stockQuantity === null ||
+                            variationForThisOption?.stockQuantity ===
+                              undefined ||
+                            (variationForThisOption.stockQuantity !== null &&
+                              variationForThisOption.stockQuantity > 0);
+
+                          // 🆕 Verificar si esta variación está en el carrito
+                          const cartItemForThisVariation = cart.find(
+                            (item) =>
+                              item.slug === product.slug &&
+                              JSON.stringify(item.selectedAttributes || {}) ===
+                                JSON.stringify(tempSelectedAttributes)
+                          );
+                          const cartQuantity = cartItemForThisVariation
+                            ? cartItemForThisVariation.quantity
+                            : 0;
+
+                          // 🆕 Calcular stock disponible considerando el carrito
+                          const availableStockForThisOption =
+                            variationForThisOption?.stockQuantity !== null &&
+                            variationForThisOption?.stockQuantity !== undefined
+                              ? Math.max(
+                                  0,
+                                  variationForThisOption.stockQuantity -
+                                    cartQuantity
+                                )
+                              : null;
+
+                          const isOutOfStock =
+                            variationForThisOption?.stockQuantity !== null &&
+                            variationForThisOption?.stockQuantity !==
+                              undefined &&
+                            availableStockForThisOption !== null &&
+                            availableStockForThisOption === 0;
+
                           return (
                             <button
                               key={option.id || option.name}
-                              onClick={() =>
+                              onClick={() => {
+                                if (isOutOfStock) {
+                                  toast.error(
+                                    `La variación "${option.name}" no tiene stock disponible`
+                                  );
+                                  return;
+                                }
                                 setSelectedAttributes((prev) => ({
                                   ...prev,
                                   [attr.id]: option.name,
-                                }))
-                              }
-                              className={`relative group transition-all duration-300 hover:scale-105 active:scale-95 ${
+                                }));
+                                // Resetear cantidad a 1 cuando se cambia la variación
+                                setQuantity(1);
+                              }}
+                              disabled={isOutOfStock}
+                              className={`relative group transition-all duration-300 ${
+                                isOutOfStock
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : "hover:scale-105 active:scale-95"
+                              } ${
                                 isColor
                                   ? "w-10 h-10 lg:w-12 lg:h-12 rounded-full border-2"
                                   : "px-6 py-3 rounded-2xl border-2 font-medium"
@@ -1015,6 +1210,10 @@ export default function ProductDetail({
                                   ? isColor
                                     ? "border-primary shadow-lg scale-110"
                                     : "border-primary bg-primary text-white shadow-lg"
+                                  : isOutOfStock
+                                  ? isColor
+                                    ? "border-gray-200"
+                                    : "border-gray-200 text-gray-400"
                                   : isColor
                                   ? "border-gray-300 hover:border-gray-400"
                                   : "border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -1054,6 +1253,12 @@ export default function ProductDetail({
                               >
                                 <Check className="w-3 h-3" />
                               </div>
+                              {/* 🆕 Indicador de sin stock */}
+                              {isOutOfStock && !isSelected && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80 rounded-full">
+                                  <X className="w-4 h-4 text-gray-500" />
+                                </div>
+                              )}
                             </button>
                           );
                         })}
@@ -1080,8 +1285,33 @@ export default function ProductDetail({
                     {quantity}
                   </span>
                   <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="p-3 bg-accent rounded-r-xl hover:bg-secondary transition-colors duration-200 cursor-pointer"
+                    onClick={() => {
+                      if (maxQuantity !== null && quantity >= maxQuantity) {
+                        toast.error(
+                          `No se puede agregar más de ${maxQuantity} producto${
+                            maxQuantity !== 1 ? "s" : ""
+                          } de este artículo`
+                        );
+                        return;
+                      }
+                      setQuantity((prev) => {
+                        // Asegurarse de no exceder el máximo
+                        if (maxQuantity !== null && prev + 1 > maxQuantity) {
+                          return maxQuantity;
+                        }
+                        return prev + 1;
+                      });
+                    }}
+                    disabled={
+                      maxQuantity !== null &&
+                      (maxQuantity === 0 || quantity >= maxQuantity)
+                    }
+                    className={`p-3 bg-accent rounded-r-xl transition-colors duration-200 ${
+                      maxQuantity !== null &&
+                      (maxQuantity === 0 || quantity >= maxQuantity)
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-secondary cursor-pointer"
+                    }`}
                   >
                     <Plus className="w-5 h-5 text-gray-600" />
                   </button>
@@ -1110,12 +1340,22 @@ export default function ProductDetail({
                   disabled={
                     !allAttributesSelected ||
                     isAddingToCart ||
-                    product.stockStatus !== "instock"
+                    product.stockStatus !== "instock" ||
+                    (maxQuantity !== null &&
+                      (maxQuantity === 0 ||
+                        quantity === 0 ||
+                        quantity > maxQuantity))
                   }
                   className={`flex-1 flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 ${
                     allAttributesSelected &&
                     !isAddingToCart &&
-                    product.stockStatus === "instock"
+                    product.stockStatus === "instock" &&
+                    !(
+                      maxQuantity !== null &&
+                      (maxQuantity === 0 ||
+                        quantity === 0 ||
+                        quantity > maxQuantity)
+                    )
                       ? "border-2 border-primary text-primary hover:bg-primary/90 hover:text-white shadow-lg hover:shadow-xl"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
@@ -1138,12 +1378,22 @@ export default function ProductDetail({
                 disabled={
                   !allAttributesSelected ||
                   isAddingToCart ||
-                  product.stockStatus !== "instock"
+                  product.stockStatus !== "instock" ||
+                  (maxQuantity !== null &&
+                    (maxQuantity === 0 ||
+                      quantity === 0 ||
+                      quantity > maxQuantity))
                 }
                 className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-102 active:scale-98 ${
                   allAttributesSelected &&
                   !isAddingToCart &&
-                  product.stockStatus === "instock"
+                  product.stockStatus === "instock" &&
+                  !(
+                    maxQuantity !== null &&
+                    (maxQuantity === 0 ||
+                      quantity === 0 ||
+                      quantity > maxQuantity)
+                  )
                     ? "bg-primary text-white hover:bg-primary shadow-lg hover:shadow-xl"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                 }`}
