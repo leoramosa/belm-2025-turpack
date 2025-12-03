@@ -253,11 +253,25 @@ export default function OrderTrackPage() {
                 </div>
 
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600">Estado:</span>
-                    <span className="font-semibold text-green-600">
-                      {getStatusLabel(currentOrder.status)}
-                    </span>
+                    {(() => {
+                      const status = statusMap[currentOrder.status] || {
+                        label: currentOrder.status,
+                        color: "bg-gray-100 text-gray-700 border-gray-300",
+                        icon: (
+                          <Clock size={16} className="text-gray-500 mr-1" />
+                        ),
+                      };
+                      return (
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border ${status.color}`}
+                        >
+                          {status.icon}
+                          {status.label}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Fecha:</span>
