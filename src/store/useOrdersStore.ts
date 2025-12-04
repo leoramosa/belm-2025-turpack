@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { StateCreator } from "zustand";
+import { PersistOptions } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { IOrder } from "@/interface/IOrder";
 import { fetchOrderById } from "@/services/orders";
@@ -20,11 +22,22 @@ interface OrdersState {
   setCurrentOrder: (order: IOrder) => void;
 }
 
+type PersistedState = {
+  orders: IOrder[];
+  currentOrder: IOrder | null;
+  lastLoaded: number | null;
+};
+
+type MyPersist = (
+  config: StateCreator<OrdersState>,
+  options: PersistOptions<OrdersState, PersistedState>
+) => StateCreator<OrdersState>;
+
 // Tiempo de cache: 5 minutos (300000 ms)
 const CACHE_DURATION = 5 * 60 * 1000;
 
-export const useOrdersStore = create<OrdersState>()(
-  persist(
+export const useOrdersStore = create<OrdersState>(
+  (persist as MyPersist)(
     (set, get) => ({
       orders: [],
       currentOrder: null,

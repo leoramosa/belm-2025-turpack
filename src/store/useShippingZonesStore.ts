@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { StateCreator } from "zustand";
+import { PersistOptions } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import {
   IShippingZone,
@@ -6,8 +8,18 @@ import {
   IShippingMethod,
 } from "@/interface/IShipping";
 
-export const useShippingZonesStore = create<IShippingZonesState>()(
-  persist(
+type PersistedState = {
+  zones: IShippingZone[];
+  lastUpdated: number;
+};
+
+type MyPersist = (
+  config: StateCreator<IShippingZonesState>,
+  options: PersistOptions<IShippingZonesState, PersistedState>
+) => StateCreator<IShippingZonesState>;
+
+export const useShippingZonesStore = create<IShippingZonesState>(
+  (persist as MyPersist)(
     (set, get) => ({
       zones: [],
       isLoading: false,

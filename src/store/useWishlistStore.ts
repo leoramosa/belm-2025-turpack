@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { StateCreator } from "zustand";
+import { PersistOptions } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { IProduct } from "@/types/product";
 import { WishlistSyncService } from "@/services/wishlistSync";
@@ -13,6 +15,15 @@ interface WishlistState {
   getWishlistCount: () => number;
   isInWishlist: (productId: string | number) => boolean;
 }
+
+type PersistedState = {
+  items: IProduct[];
+};
+
+type MyPersist = (
+  config: StateCreator<WishlistState>,
+  options: PersistOptions<WishlistState, PersistedState>
+) => StateCreator<WishlistState>;
 
 // Normalizar ID a número para comparaciones consistentes
 const normalizeProductId = (id: string | number): number => {
@@ -32,8 +43,8 @@ const dedupeById = (products: IProduct[]): IProduct[] => {
   });
 };
 
-export const useWishlistStore = create<WishlistState>()(
-  persist(
+export const useWishlistStore = create<WishlistState>(
+  (persist as MyPersist)(
     (set, get) => ({
       items: [],
       lastLocalChange: null,

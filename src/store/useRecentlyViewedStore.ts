@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { StateCreator } from "zustand";
+import { PersistOptions } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { IProduct } from "@/types/product";
 
@@ -11,10 +13,26 @@ interface RecentlyViewedState {
   hasProduct: (productId: string) => boolean;
 }
 
-const MAX_PRODUCTS = 6; // Mantener 7 para que al filtrar el producto actual siempre queden 6
+type PersistedState = {
+  products: Array<{
+    id: number;
+    name: string;
+    slug: string;
+    pricing: IProduct["pricing"];
+    images: IProduct["images"];
+    shortDescription: string;
+  }>;
+};
 
-export const useRecentlyViewedStore = create<RecentlyViewedState>()(
-  persist(
+type MyPersist = (
+  config: StateCreator<RecentlyViewedState>,
+  options: PersistOptions<RecentlyViewedState, PersistedState>
+) => StateCreator<RecentlyViewedState>;
+
+const MAX_PRODUCTS = 6; // Mantener 6 productos recientes
+
+export const useRecentlyViewedStore = create<RecentlyViewedState>(
+  (persist as MyPersist)(
     (set, get) => ({
       products: [],
 

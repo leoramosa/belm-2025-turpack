@@ -1,6 +1,8 @@
 "use client";
 
 import { create } from "zustand";
+import { StateCreator } from "zustand";
+import { DevtoolsOptions } from "zustand/middleware";
 import { devtools } from "zustand/middleware";
 
 import { IProduct } from "@/types/product";
@@ -15,6 +17,11 @@ export interface ProductState {
   clear: () => void;
 }
 
+type MyDevtools = (
+  config: StateCreator<ProductState>,
+  options?: DevtoolsOptions
+) => StateCreator<ProductState>;
+
 const initialState: Pick<
   ProductState,
   "products" | "selectedProduct" | "lastUpdated"
@@ -24,8 +31,8 @@ const initialState: Pick<
   lastUpdated: null,
 };
 
-export const useProductStore = create<ProductState>()(
-  devtools<ProductState>(
+export const useProductStore = create<ProductState>(
+  (devtools as MyDevtools)(
     (set, get) => ({
       ...initialState,
       setProducts: (products: IProduct[]) =>

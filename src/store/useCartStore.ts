@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { StateCreator } from "zustand";
+import { PersistOptions } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { IProduct } from "@/types/product";
 import { Coupon, CouponDiscount } from "@/services/coupons";
@@ -42,8 +44,15 @@ interface CartState {
   ) => number | null; // Retorna el stock disponible para un producto/variación
 }
 
-export const useCartStore = create<CartState>()(
-  persist(
+type PersistedState = CartState;
+
+type MyPersist = (
+  config: StateCreator<CartState>,
+  options: PersistOptions<CartState, PersistedState>
+) => StateCreator<CartState>;
+
+export const useCartStore = create<CartState>(
+  (persist as MyPersist)(
     (set, get) => ({
       cart: [],
       appliedCoupon: null,

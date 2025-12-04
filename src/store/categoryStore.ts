@@ -1,6 +1,8 @@
 "use client";
 
 import { create } from "zustand";
+import { StateCreator } from "zustand";
+import { DevtoolsOptions } from "zustand/middleware";
 import { devtools } from "zustand/middleware";
 
 import { IProductCategoryNode } from "@/types/ICategory";
@@ -13,13 +15,18 @@ interface CategoryState {
   findBySlug: (slug: string) => IProductCategoryNode | null;
 }
 
+type MyDevtools = (
+  config: StateCreator<CategoryState>,
+  options?: DevtoolsOptions
+) => StateCreator<CategoryState>;
+
 const initialState: Pick<CategoryState, "categories" | "lastUpdated"> = {
   categories: [],
   lastUpdated: null,
 };
 
-export const useCategoryStore = create<CategoryState>()(
-  devtools(
+export const useCategoryStore = create<CategoryState>(
+  (devtools as MyDevtools)(
     (set, get) => ({
       ...initialState,
       setCategories: (categories) =>
