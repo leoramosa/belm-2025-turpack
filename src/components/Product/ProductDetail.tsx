@@ -1097,6 +1097,7 @@ export default function ProductDetail({
                   lineHeight: "1.7",
                   textAlign: "justify",
                 }}
+                suppressHydrationWarning
                 dangerouslySetInnerHTML={{
                   __html: shortDescriptionHtml,
                 }}
@@ -1451,6 +1452,7 @@ export default function ProductDetail({
                   lineHeight: "1.7",
                   textAlign: "justify",
                 }}
+                suppressHydrationWarning
                 dangerouslySetInnerHTML={{
                   __html: shortDescriptionHtml,
                 }}
@@ -1568,6 +1570,7 @@ export default function ProductDetail({
                 paddingLeft: "1rem",
                 paddingRight: "1rem",
               }}
+              suppressHydrationWarning
               dangerouslySetInnerHTML={{
                 __html: processedDescription,
               }}

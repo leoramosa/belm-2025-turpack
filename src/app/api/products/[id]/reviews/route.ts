@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
     const productId = parseInt(id);
-    if (isNaN(productId)) {
+    if (isNaN(productId) || productId <= 0) {
       return NextResponse.json(
         { error: "ID de producto inválido" },
         { status: 400 }
@@ -18,8 +18,11 @@ export async function GET(
 
     // Obtener parámetros de query
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const perPage = parseInt(searchParams.get("per_page") || "10");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const perPage = Math.min(
+      100,
+      Math.max(1, parseInt(searchParams.get("per_page") || "10"))
+    );
     const status =
       (searchParams.get("status") as
         | "approved"
@@ -28,26 +31,61 @@ export async function GET(
         | "trash"
         | "all") || "approved";
 
-    const reviewsResponse = await fetchProductReviews(
-      productId,
-      page,
-      perPage,
-      status
-    );
+    try {
+      const reviewsResponse = await fetchProductReviews(
+        productId,
+        page,
+        perPage,
+        status
+      );
 
-    return NextResponse.json(reviewsResponse, {
-      headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
-      },
-    });
+      return NextResponse.json(reviewsResponse, {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      });
+    } catch (fetchError) {
+      // Si el producto no tiene reviews o no existe, devolver respuesta vacía en lugar de error
+      if (
+        fetchError instanceof Error &&
+        (fetchError.message.includes("404") ||
+          fetchError.message.includes("not found") ||
+          fetchError.message.includes("No reviews"))
+      ) {
+        return NextResponse.json(
+          {
+            reviews: [],
+            total: 0,
+            totalPages: 0,
+            currentPage: page,
+          },
+          {
+            headers: {
+              "Cache-Control":
+                "public, s-maxage=300, stale-while-revalidate=600",
+            },
+          }
+        );
+      }
+      throw fetchError;
+    }
   } catch (error) {
     console.error("API Route - Error fetching product reviews:", error);
+
+    // Log más detallado en producción para debugging
+    const errorMessage =
+      error instanceof Error ? error.message : "Error desconocido";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    // En producción, no exponer detalles internos
+    const isProduction = process.env.NODE_ENV === "production";
+
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Error interno del servidor al cargar los comentarios",
+        error: isProduction
+          ? "Error al cargar los comentarios. Por favor, intente más tarde."
+          : errorMessage,
+        ...(isProduction ? {} : { details: errorStack }),
       },
       { status: 500 }
     );

@@ -479,6 +479,7 @@ export default function ProductReviews({
                   </div>
                   <div
                     className="text-gray-700"
+                    suppressHydrationWarning
                     dangerouslySetInnerHTML={{ __html: review.review }}
                   />
                 </div>

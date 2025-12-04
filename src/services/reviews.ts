@@ -61,24 +61,90 @@ export async function fetchProductReviews(
 
   console.log(`Fetching reviews from: ${url}`);
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: authHeader,
-      "Content-Type": "application/json",
-    },
-  });
+  // Agregar timeout para evitar que la petición se cuelgue
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
 
-  console.log(`Response status: ${response.status}`);
+  let wooReviews: any[] = [];
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`WooCommerce API error: ${response.status}`, errorText);
-    throw new Error(`WooCommerce API error: ${response.status} - ${errorText}`);
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    console.log(`Response status: ${response.status}`);
+
+    if (!response.ok) {
+      // Si es 404, el producto no tiene reviews, devolver array vacío
+      if (response.status === 404) {
+        return {
+          reviews: [],
+          total: 0,
+          totalPages: 0,
+          currentPage: page,
+        };
+      }
+
+      const errorText = await response.text().catch(() => "Unknown error");
+      console.error(`WooCommerce API error: ${response.status}`, errorText);
+      throw new Error(
+        `WooCommerce API error: ${response.status} - ${errorText}`
+      );
+    }
+
+    // Validar que la respuesta sea JSON válido
+    try {
+      wooReviews = await response.json();
+    } catch (jsonError) {
+      console.error("Error parsing reviews JSON:", jsonError);
+      // Si no es JSON válido, devolver array vacío
+      return {
+        reviews: [],
+        total: 0,
+        totalPages: 0,
+        currentPage: page,
+      };
+    }
+
+    if (!Array.isArray(wooReviews)) {
+      console.warn("Reviews response is not an array, returning empty array");
+      return {
+        reviews: [],
+        total: 0,
+        totalPages: 0,
+        currentPage: page,
+      };
+    }
+
+    console.log(`Found ${wooReviews.length} reviews from WooCommerce`);
+  } catch (fetchError) {
+    clearTimeout(timeoutId);
+
+    // Si es un error de timeout o red, devolver array vacío
+    if (
+      fetchError instanceof Error &&
+      (fetchError.name === "AbortError" ||
+        fetchError.message.includes("fetch failed") ||
+        fetchError.message.includes("network"))
+    ) {
+      console.warn(
+        "Network error fetching reviews, returning empty array:",
+        fetchError.message
+      );
+      return {
+        reviews: [],
+        total: 0,
+        totalPages: 0,
+        currentPage: page,
+      };
+    }
+    throw fetchError;
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const wooReviews: any[] = await response.json();
-  console.log(`Found ${wooReviews.length} reviews from WooCommerce`);
 
   // Mapear reviews de WooCommerce a nuestro formato
   const reviews: IProductReview[] = wooReviews.map((wooReview) => ({
