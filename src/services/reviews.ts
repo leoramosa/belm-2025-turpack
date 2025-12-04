@@ -34,6 +34,25 @@ interface WordPressComment {
   };
 }
 
+// Interfaz para la respuesta de reviews de WooCommerce API
+interface WooCommerceReviewResponse {
+  id: number;
+  product_id: number;
+  status: string;
+  reviewer: string;
+  reviewer_email: string;
+  review: string;
+  rating: number;
+  verified?: boolean;
+  date_created: string;
+  date_created_gmt: string;
+  reviewer_avatar_urls?: {
+    "24"?: string;
+    "48"?: string;
+    "96"?: string;
+  };
+}
+
 // Función para obtener reviews de un producto específico
 export async function fetchProductReviews(
   productId: number,
@@ -65,10 +84,11 @@ export async function fetchProductReviews(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
 
-  let wooReviews: any[] = [];
+  let wooReviews: WooCommerceReviewResponse[] = [];
+  let response: Response | null = null;
 
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       headers: {
         Authorization: authHeader,
         "Content-Type": "application/json",
@@ -147,27 +167,38 @@ export async function fetchProductReviews(
   }
 
   // Mapear reviews de WooCommerce a nuestro formato
-  const reviews: IProductReview[] = wooReviews.map((wooReview) => ({
-    id: wooReview.id,
-    product_id: wooReview.product_id,
-    status: wooReview.status,
-    reviewer: wooReview.reviewer,
-    reviewer_email: wooReview.reviewer_email,
-    review: wooReview.review,
-    rating: wooReview.rating,
-    verified: wooReview.verified || false,
-    date_created: wooReview.date_created,
-    date_created_gmt: wooReview.date_created_gmt,
-    reviewer_avatar_urls: {
-      "24": wooReview.reviewer_avatar_urls?.["24"] || "",
-      "48": wooReview.reviewer_avatar_urls?.["48"] || "",
-      "96": wooReview.reviewer_avatar_urls?.["96"] || "",
-    },
-  }));
+  const reviews: IProductReview[] = wooReviews.map((wooReview) => {
+    // Validar y convertir el status a un tipo válido
+    const validStatus: "approved" | "hold" | "spam" | "trash" =
+      wooReview.status === "approved" ||
+      wooReview.status === "hold" ||
+      wooReview.status === "spam" ||
+      wooReview.status === "trash"
+        ? wooReview.status
+        : "hold"; // Default a "hold" si el status no es válido
+
+    return {
+      id: wooReview.id,
+      product_id: wooReview.product_id,
+      status: validStatus,
+      reviewer: wooReview.reviewer,
+      reviewer_email: wooReview.reviewer_email,
+      review: wooReview.review,
+      rating: wooReview.rating,
+      verified: wooReview.verified || false,
+      date_created: wooReview.date_created,
+      date_created_gmt: wooReview.date_created_gmt,
+      reviewer_avatar_urls: {
+        "24": wooReview.reviewer_avatar_urls?.["24"] || "",
+        "48": wooReview.reviewer_avatar_urls?.["48"] || "",
+        "96": wooReview.reviewer_avatar_urls?.["96"] || "",
+      },
+    };
+  });
 
   // Obtener información de paginación de los headers
-  const total = parseInt(response.headers.get("X-WP-Total") || "0");
-  const totalPages = parseInt(response.headers.get("X-WP-TotalPages") || "0");
+  const total = parseInt(response?.headers.get("X-WP-Total") || "0");
+  const totalPages = parseInt(response?.headers.get("X-WP-TotalPages") || "0");
 
   return {
     reviews,
