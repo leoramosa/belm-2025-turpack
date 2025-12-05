@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: "Carrito de Compras - Belm",
     description:
       "Revisa los productos en tu carrito de compras en Belm. Modifica cantidades y procede al checkout.",
-    url: "https://belm.pe/cart",
+    url: "https://www.belm.pe/cart",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/cart",
+    canonical: "https://www.belm.pe/cart",
   },
 };
 

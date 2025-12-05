@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     title: "Políticas y Términos - Belm",
     description:
       "Conoce nuestras políticas de privacidad, términos y condiciones en Belm.",
-    url: "https://belm.pe/politicas",
+    url: "https://www.belm.pe/politicas",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -33,6 +33,6 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/politicas",
+    canonical: "https://www.belm.pe/politicas",
   },
 };

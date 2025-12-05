@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: "Ofertas especiales - Belm",
     description:
       "Descubre nuestras mejores ofertas y promociones. Productos con descuentos especiales.",
-    url: "https://belm.pe/ofertas-especiales",
+    url: "https://www.belm.pe/ofertas-especiales",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/ofertas-especiales",
+    canonical: "https://www.belm.pe/ofertas-especiales",
   },
 };
 

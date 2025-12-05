@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: "Tienda - Belm",
     description:
       "Descubre todos nuestros productos premium en la tienda de Belm. Filtra por categoría, precio y características.",
-    url: "https://belm.pe/shop",
+    url: "https://www.belm.pe/shop",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/shop",
+    canonical: "https://www.belm.pe/shop",
   },
 };
 

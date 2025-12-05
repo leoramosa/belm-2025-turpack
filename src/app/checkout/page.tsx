@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     title: "Finalizar Compra - Belm",
     description:
       "Completa tu compra de forma segura en Belm. Proceso 100% seguro.",
-    url: "https://belm.pe/checkout",
+    url: "https://www.belm.pe/checkout",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/checkout",
+    canonical: "https://www.belm.pe/checkout",
   },
 };
 

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: "Gracias por tu Compra - Belm",
     description:
       "¡Tu compra en Belm ha sido confirmada! Te hemos enviado un email con los detalles.",
-    url: "https://belm.pe/thank-you",
+    url: "https://www.belm.pe/thank-you",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/thank-you",
+    canonical: "https://www.belm.pe/thank-you",
   },
 };
 

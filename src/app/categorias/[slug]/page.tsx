@@ -109,7 +109,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://belm.pe/categorias/${slug}`,
+      url: `https://www.belm.pe/categorias/${slug}`,
       images: [
         {
           url: category.image?.src || "/belm-rs.jpg",
@@ -128,7 +128,7 @@ export async function generateMetadata({
       images: [category.image?.src || "/belm-rs.jpg"],
     },
     alternates: {
-      canonical: `https://belm.pe/categorias/${slug}`,
+      canonical: `https://www.belm.pe/categorias/${slug}`,
     },
   };
 }

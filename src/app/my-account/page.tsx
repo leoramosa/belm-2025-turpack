@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     title: "Mi Cuenta - Belm",
     description:
       "Gestiona tu cuenta en Belm. Actualiza tu información personal y revisa tus pedidos.",
-    url: "https://belm.pe/my-account",
+    url: "https://www.belm.pe/my-account",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/my-account",
+    canonical: "https://www.belm.pe/my-account",
   },
 };
 

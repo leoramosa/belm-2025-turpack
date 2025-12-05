@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: "Lo más vendido - Belm",
     description:
       "Descubre nuestros productos más populares y vendidos. Los favoritos de nuestros clientes.",
-    url: "https://belm.pe/lo-mas-vendido",
+    url: "https://www.belm.pe/lo-mas-vendido",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/lo-mas-vendido",
+    canonical: "https://www.belm.pe/lo-mas-vendido",
   },
 };
 

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: "Mis Pedidos - Belm",
     description:
       "Revisa el historial de tus pedidos en Belm. Ve el estado y detalles de todos tus pedidos.",
-    url: "https://belm.pe/orders",
+    url: "https://www.belm.pe/orders",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/orders",
+    canonical: "https://www.belm.pe/orders",
   },
 };
 

@@ -98,7 +98,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://belm.pe/productos/${slug}`,
+      url: `https://www.belm.pe/productos/${slug}`,
       images: [
         {
           url: imageUrl,
@@ -117,7 +117,7 @@ export async function generateMetadata({
       images: [imageUrl],
     },
     alternates: {
-      canonical: `https://belm.pe/productos/${slug}`,
+      canonical: `https://www.belm.pe/productos/${slug}`,
     },
     other: {
       "product:price:amount": price.toString(),

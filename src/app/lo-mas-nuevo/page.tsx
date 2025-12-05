@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: "Lo más nuevo - Belm",
     description:
       "Descubre nuestros productos más recientes con las últimas tendencias y ofertas.",
-    url: "https://belm.pe/lo-mas-nuevo",
+    url: "https://www.belm.pe/lo-mas-nuevo",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/lo-mas-nuevo",
+    canonical: "https://www.belm.pe/lo-mas-nuevo",
   },
 };
 

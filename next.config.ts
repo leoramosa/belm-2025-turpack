@@ -43,6 +43,15 @@ const nextConfig = {
   images: {
     remotePatterns,
   },
+  async redirects() {
+    return [
+      {
+        source: "/orders/track",
+        destination: "/order-track",
+        permanent: true, // 308 redirect permanente
+      },
+    ];
+  },
 } satisfies NextConfig;
 
 export default nextConfig;

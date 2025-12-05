@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     title: "Iniciar Sesión - Belm",
     description:
       "Accede a tu cuenta en Belm para una experiencia de compra personalizada.",
-    url: "https://belm.pe/login",
+    url: "https://www.belm.pe/login",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/login",
+    canonical: "https://www.belm.pe/login",
   },
 };
 

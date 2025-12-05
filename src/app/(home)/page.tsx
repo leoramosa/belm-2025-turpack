@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     title: "BELM: Skincare | Maquillaje | Accesorios",
     description:
       "En BELM, creemos que la belleza es más que un simple producto, es un acto de amor propio y una forma de brillar con autenticidad. Nos especializamos en la cosmética coreana y marcas globales reconocidas, ofreciéndote una selección cuidadosamente de productos de skincare, maquillaje y accesorios para que descubras tu mejor versión.",
-    url: "https://belm.pe",
+    url: "https://www.belm.pe",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     images: ["/belm-rs.jpg"],
   },
   alternates: {
-    canonical: "https://belm.pe",
+    canonical: "https://www.belm.pe",
   },
 };
 

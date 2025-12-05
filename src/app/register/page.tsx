@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     title: "Crear Cuenta - Belm",
     description:
       "Crea tu cuenta en Belm y disfruta de una experiencia de compra personalizada con ofertas exclusivas.",
-    url: "https://belm.pe/register",
+    url: "https://www.belm.pe/register",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/register",
+    canonical: "https://www.belm.pe/register",
   },
 };
 

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: "Lista de Deseos - Belm",
     description:
       "Guarda tus productos favoritos en tu lista de deseos en Belm. Accede a ellos desde cualquier dispositivo.",
-    url: "https://belm.pe/wishlist",
+    url: "https://www.belm.pe/wishlist",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/wishlist",
+    canonical: "https://www.belm.pe/wishlist",
   },
 };
 

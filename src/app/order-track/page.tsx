@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: "Rastrear Pedido - Belm",
     description:
       "Rastrea el estado de tu pedido en Belm. Ingresa tu número de pedido para ver el estado actual.",
-    url: "https://belm.pe/order-track",
+    url: "https://www.belm.pe/order-track",
     images: [
       {
         url: "/belm-rs.jpg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://belm.pe/order-track",
+    canonical: "https://www.belm.pe/order-track",
   },
 };
 
