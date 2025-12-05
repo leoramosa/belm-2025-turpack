@@ -34,7 +34,7 @@ export default async function RootLayout({
   const categories = await fetchProductCategoriesTree();
 
   return (
-    <html lang="en">
+    <html lang="es">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

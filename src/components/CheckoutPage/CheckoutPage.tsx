@@ -801,7 +801,7 @@ export default function CheckoutPage() {
           address: z
             .string()
             .min(1, "La dirección es requerida")
-            .min(10, "La dirección debe tener al menos 10 caracteres"),
+            .min(5, "La dirección debe tener al menos 10 caracteres"),
           city: z.string().min(1, "La ciudad es requerida"),
           state: z.string().min(1, "La provincia es requerida"),
           provincia:
