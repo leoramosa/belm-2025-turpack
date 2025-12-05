@@ -119,6 +119,20 @@ PoliticaDetailProps) {
       }
     );
 
+    // 7. Corregir errores ortográficos comunes
+    // tí → ti (sin tilde, cuando se refiere al pronombre personal)
+    // Usar regex con límites de palabra para evitar cambiar palabras que contengan "tí"
+    content = content.replace(/\btí\b/gi, "ti");
+
+    // n° → n.° (agregar punto antes del símbolo de grado ordinal)
+    content = content.replace(/\bn°\b/gi, "n.°");
+    // También corregir variantes con espacios: n ° → n.°
+    content = content.replace(/\bn\s+°/gi, "n.°");
+
+    // Corregir otros errores comunes de ordinales
+    content = content.replace(/\b(\d+)°\b/gi, "$1.°");
+    content = content.replace(/\b(\d+)\s+°/gi, "$1.°");
+
     return content;
   }, [post.content?.rendered]);
 
