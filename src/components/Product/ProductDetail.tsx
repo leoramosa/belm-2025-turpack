@@ -145,6 +145,21 @@ export default function ProductDetail({
       return match;
     });
 
+    // Reemplazar enlaces de belm.pe (sin www) a www.belm.pe para evitar redirecciones internas
+    html = html.replace(
+      /https?:\/\/(?:www\.)?belm\.pe(\/[^"'\s<>]*)?/gi,
+      (match) => {
+        // Si ya tiene www, dejarlo igual
+        if (match.includes("www.belm.pe")) {
+          return match;
+        }
+        // Si no tiene www, agregarlo
+        return match.replace(/https?:\/\/belm\.pe/gi, (url) => {
+          return url.replace("belm.pe", "www.belm.pe");
+        });
+      }
+    );
+
     return html;
   }, [product.description]);
 

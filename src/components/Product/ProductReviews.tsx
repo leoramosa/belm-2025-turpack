@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   IProductReviewsResponse,
   ICreateProductReview,
@@ -9,6 +9,24 @@ import { Star, Calendar, MessageSquare, Send, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
+
+// Función helper para procesar enlaces en el contenido HTML
+function processReviewContent(content: string): string {
+  // Reemplazar enlaces de belm.pe (sin www) a www.belm.pe para evitar redirecciones internas
+  return content.replace(
+    /https?:\/\/(?:www\.)?belm\.pe(\/[^"'\s<>]*)?/gi,
+    (match) => {
+      // Si ya tiene www, dejarlo igual
+      if (match.includes("www.belm.pe")) {
+        return match;
+      }
+      // Si no tiene www, agregarlo
+      return match.replace(/https?:\/\/belm\.pe/gi, (url) => {
+        return url.replace("belm.pe", "www.belm.pe");
+      });
+    }
+  );
+}
 
 interface ProductReviewsProps {
   productId: number;
@@ -480,7 +498,9 @@ export default function ProductReviews({
                   <div
                     className="text-gray-700"
                     suppressHydrationWarning
-                    dangerouslySetInnerHTML={{ __html: review.review }}
+                    dangerouslySetInnerHTML={{
+                      __html: processReviewContent(review.review),
+                    }}
                   />
                 </div>
               ))}

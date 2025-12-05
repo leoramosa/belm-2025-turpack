@@ -2,6 +2,7 @@
 
 import { IPost } from "@/interface/IPost";
 import { stripHtml } from "@/services/posts";
+import { useMemo } from "react";
 // import PoliticaCard from "./PoliticaCard";
 // import Link from "next/link";
 // import { ArrowLeft, Calendar, Clock, FileText, Share2 } from "lucide-react";
@@ -17,7 +18,109 @@ export default function PoliticaDetail({
 }: // relatedPosts, // Removido porque no se usa
 PoliticaDetailProps) {
   const cleanTitle = stripHtml(post.title.rendered);
-  const cleanContent = post.content?.rendered || "";
+
+  // Procesar el contenido HTML para corregir problemas SEO
+  const cleanContent = useMemo(() => {
+    let content = post.content?.rendered || "";
+
+    // 1. Reemplazar enlaces de belm.pe (sin www) a www.belm.pe para evitar redirecciones internas
+    content = content.replace(
+      /https?:\/\/(?:www\.)?belm\.pe(\/[^"'\s<>]*)?/gi,
+      (match) => {
+        // Si ya tiene www, dejarlo igual
+        if (match.includes("www.belm.pe")) {
+          return match;
+        }
+        // Si no tiene www, agregarlo
+        return match.replace(/https?:\/\/belm\.pe/gi, (url) => {
+          return url.replace("belm.pe", "www.belm.pe");
+        });
+      }
+    );
+
+    // 2. Eliminar etiquetas <strong> y <b> vacías
+    content = content.replace(/<strong\s*><\/strong>/gi, "");
+    content = content.replace(/<b\s*><\/b>/gi, "");
+    content = content.replace(/<strong\s*\/>/gi, "");
+    content = content.replace(/<b\s*\/>/gi, "");
+
+    // 3. Convertir <b> a <strong> (mejor semántica)
+    content = content.replace(/<b\b([^>]*)>/gi, "<strong$1>");
+    content = content.replace(/<\/b>/gi, "</strong>");
+
+    // 4. Procesar <strong> con contenido simple (sin HTML anidado)
+    content = content.replace(
+      /<strong([^>]*)>([^<]+)<\/strong>/gi,
+      (match, attrs, text) => {
+        const trimmedText = text.trim();
+
+        // Si está vacío, eliminar la etiqueta
+        if (trimmedText.length === 0) {
+          return "";
+        }
+
+        // Si el texto es muy largo (>70 caracteres), remover la etiqueta strong pero mantener el texto
+        if (trimmedText.length > 70) {
+          return trimmedText;
+        }
+
+        return match;
+      }
+    );
+
+    // 5. Procesar <strong> con contenido anidado (puede tener HTML interno)
+    content = content.replace(
+      /<strong([^>]*)>([\s\S]*?)<\/strong>/gi,
+      (match, attrs, innerContent) => {
+        // Extraer solo el texto (sin HTML interno) para verificar longitud
+        const textOnly = innerContent.replace(/<[^>]*>/g, "").trim();
+
+        // Si no hay texto, eliminar la etiqueta
+        if (textOnly.length === 0) {
+          return innerContent;
+        }
+
+        // Si el texto es muy largo (>70 caracteres), remover la etiqueta strong pero mantener el contenido
+        if (textOnly.length > 70) {
+          return innerContent;
+        }
+
+        return match;
+      }
+    );
+
+    // 6. Detectar y eliminar texto duplicado en negritas
+    // Primero, recopilar todos los textos en negritas
+    const strongTexts = new Map<string, number>();
+    content.replace(/<strong[^>]*>([^<]+)<\/strong>/gi, (match, text) => {
+      const normalizedText = text.trim().toLowerCase();
+      strongTexts.set(
+        normalizedText,
+        (strongTexts.get(normalizedText) || 0) + 1
+      );
+      return match;
+    });
+
+    // Eliminar etiquetas strong duplicadas (mantener solo la primera ocurrencia)
+    const seenTexts = new Set<string>();
+    content = content.replace(
+      /<strong[^>]*>([^<]+)<\/strong>/gi,
+      (match, text) => {
+        const normalizedText = text.trim().toLowerCase();
+        if (
+          seenTexts.has(normalizedText) &&
+          (strongTexts.get(normalizedText) || 0) > 1
+        ) {
+          // Si ya vimos este texto y está duplicado, mantener solo el texto sin la etiqueta
+          return text.trim();
+        }
+        seenTexts.add(normalizedText);
+        return match;
+      }
+    );
+
+    return content;
+  }, [post.content?.rendered]);
 
   return (
     <article className="py-20 bg-gradient-to-br from-gray-50 to-white">
