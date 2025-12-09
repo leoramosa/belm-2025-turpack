@@ -13,6 +13,7 @@ import RecentlyViewedProducts from "./RecentlyViewedProducts";
 import ProductRecommendations from "./ProductRecommendations";
 import WishlistButton from "./WishlistButton";
 import ProductReviews from "./ProductReviews";
+import ShareProduct from "./ShareProduct";
 
 // import { motion, AnimatePresence } from "framer-motion"; // Removido para usar solo Tailwind
 import { toast } from "sonner";
@@ -1048,10 +1049,18 @@ export default function ProductDetail({
               </div>
             )}
 
-            {/* Título */}
-            <h1 className="text-xl mb-2 lg:text-4xl font-bold text-gray-900 leading-tight">
-              {product.name}
-            </h1>
+            {/* Título y compartir */}
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <h1 className="text-xl lg:text-4xl font-bold text-gray-900 leading-tight flex-1">
+                {product.name}
+              </h1>
+              <ShareProduct
+                productName={product.name}
+                productUrl={`/productos/${product.slug}`}
+                productImage={product.images?.[0]?.src}
+                className="flex-shrink-0"
+              />
+            </div>
 
             {/* Rating y reviews */}
             <div className="flex items-center mb-2">
@@ -1525,7 +1534,7 @@ export default function ProductDetail({
                 </div>
                 <div>
                   <div className="font-semibold text-gray-900 text-sm">
-                    7 Dias de devolucion
+                    7 Días de devolucion
                   </div>
                   <div className="text-gray-600 text-xs">
                     Si el producto no esta como se describio

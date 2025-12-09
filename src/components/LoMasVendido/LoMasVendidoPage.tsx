@@ -13,7 +13,7 @@ export default function LoMasVendidoPage({ products }: LoMasVendidoPageProps) {
       {/* Header fuera de ProductGridClient para evitar duplicación */}
       <div className="mb-8">
         <h1 className="text-4xl md:text-5xl font-bold mb-2 text-primary text-center pt-10">
-          Lo más vendido
+          Lo más vendido - Productos Populares en Belm
         </h1>
         <p className="text-gray-600 text-lg text-center">
           Descubre nuestros productos más populares y vendidos. Los favoritos de
