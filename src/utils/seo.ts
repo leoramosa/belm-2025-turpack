@@ -290,7 +290,7 @@ export function generateCategoryTitle(
 ): string {
   // Construir título con palabras clave que aparecerán en el contenido
   // Formato: "Categoría | Productos Premium | Belm"
-  let title = `${categoryName} | Productos Premium | ${brand}`;
+  const title = `${categoryName} | Productos Premium | ${brand}`;
 
   return optimizeTitle(title, brand);
 }
