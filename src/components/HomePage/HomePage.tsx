@@ -28,7 +28,12 @@ const HomePage = ({
   initialDynamicShowcases,
 }: HomePageProps) => {
   return (
-    <div className=" bg-gradient-to-br from-purple-50 via-white to-purple-50 overflow-hidden">
+    <div className=" bg-linear-to-br from-purple-50 via-white to-purple-50 overflow-hidden">
+      {/* SEO H1 - Palabras clave del título deben aparecer en el contenido */}
+      <h1 className="sr-only">
+        BELM: Skincare, Maquillaje y Accesorios - Tu tienda de belleza premium
+      </h1>
+
       {/* Hero Banner Section */}
       <HeroBanner initialData={initialBannerData} />
 

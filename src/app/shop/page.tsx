@@ -2,10 +2,11 @@ import { ProductGridClient } from "@/components/Product/ProductGridClient";
 import { fetchProducts } from "@/services/products";
 import type { Metadata } from "next";
 import type { IProduct } from "@/types/product";
+import { generatePageTitle } from "@/utils/seo";
 
 // Metadata específica para la página Shop
 export const metadata: Metadata = {
-  title: "Tienda",
+  title: generatePageTitle("Tienda", "Belm", "Productos Premium"),
   description:
     "Descubre todos nuestros productos premium en la tienda de Belm. Filtra por categoría, precio y características. Envío gratis a todo el Perú.",
   keywords: [

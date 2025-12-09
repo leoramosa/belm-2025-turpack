@@ -1,10 +1,11 @@
 import LoMasNuevoPage from "@/components/LoMasNuevo/LoMasNuevoPage";
 import { fetchNewProducts } from "@/services/products";
 import type { Metadata } from "next";
+import { generatePageTitle } from "@/utils/seo";
 
 // Metadata específica para la página Lo más nuevo
 export const metadata: Metadata = {
-  title: "Lo más nuevo - Belm",
+  title: generatePageTitle("Lo más nuevo", "Belm", "Productos Nuevos"),
   description:
     "Descubre nuestros productos más recientes con las últimas tendencias y ofertas. Productos nuevos agregados recientemente a nuestra tienda.",
   keywords: [

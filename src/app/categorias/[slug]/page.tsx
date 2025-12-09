@@ -7,7 +7,10 @@ import { fetchProductCategoriesTree } from "@/services/categories";
 import { fetchProducts } from "@/services/products";
 import type { IProductCategoryNode } from "@/types/ICategory";
 import type { IProduct } from "@/types/product";
-import { generateCategoryMetaDescription } from "@/utils/seo";
+import {
+  generateCategoryMetaDescription,
+  generateCategoryTitle,
+} from "@/utils/seo";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -42,11 +45,18 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         /* Si no hay subcategorías, mostrar el título aquí */
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-2 text-primary text-center pt-10">
-            {category.name}
+            {category.name} - Productos Premium en Belm
           </h1>
-          {category.description && (
+          {category.description ? (
             <p className="text-gray-600 text-lg text-center">
               {category.description.replace(/<[^>]*>/g, " ").trim()}
+            </p>
+          ) : (
+            <p className="text-gray-600 text-lg text-center">
+              Explora nuestra selección de productos de{" "}
+              {category.name.toLowerCase()} premium. Encuentra los mejores
+              productos de {category.name.toLowerCase()} con envío gratis en
+              Perú.
             </p>
           )}
         </div>
@@ -63,10 +73,10 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           key={`empty-${category.id}`}
           className="mx-auto flex w-full max-w-5xl flex-col items-center gap-4 px-4 py-20 text-center"
         >
-          <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+          <h2 className="text-2xl font-semibold ">
             No hay productos en esta categoría
           </h2>
-          <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="max-w-2xl text-sm text-zinc-600 ">
             Te recomendamos volver al catálogo principal o explorar otras
             categorías.
           </p>
@@ -89,7 +99,8 @@ export async function generateMetadata({
     };
   }
 
-  const title = `${category.name} | Tienda Store`;
+  // Optimizar título para SEO (50-60 caracteres óptimo)
+  const title = generateCategoryTitle(category.name, "Belm");
   const rawDescription = category.description
     ?.replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")

@@ -7,6 +7,7 @@ import Navbar from "@/components/shared/Navbar";
 import CartDrawer from "@/components/CartDrawer/CartDrawer";
 import Footer from "@/components/shared/Footer";
 import GlobalLoader from "@/components/shared/GlobalLoader";
+import { generatePageTitle } from "@/utils/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,8 +20,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tienda Store",
+  title: generatePageTitle("Belm", "Belm", "Productos de Belleza"),
   description: "Catálogo headless conectado a WordPress",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/favicon.ico",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Belm",
+  },
 };
 
 export const dynamic = "force-dynamic";

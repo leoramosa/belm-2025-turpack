@@ -8,6 +8,7 @@ import type { IProduct } from "@/types/product";
 import {
   optimizeMetaDescription,
   generateProductMetaDescription,
+  generateProductTitle,
 } from "@/utils/seo";
 
 interface ProductPageProps {
@@ -69,7 +70,8 @@ export async function generateMetadata({
     };
   }
 
-  const title = `${product.name} | Tienda Belm`;
+  // Optimizar título para SEO (50-60 caracteres óptimo)
+  const title = generateProductTitle(product.name, "Belm");
   const rawDescription = extractPlainText(
     product.shortDescription || product.description
   );

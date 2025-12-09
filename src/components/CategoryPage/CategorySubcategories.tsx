@@ -114,11 +114,24 @@ export default function CategorySubcategories({
   return (
     <section className="max-w-7xl mx-auto px-2 py-10">
       <div className="container mx-auto ">
-        {/* Título centrado */}
+        {/* Título centrado - H1 para SEO cuando es categoría principal */}
         <div className="text-center mb-8">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
-            {currentTitle}
-          </h2>
+          {!selectedCategory && parentCategoryName ? (
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+              {parentCategoryName} - Productos Premium en Belm
+            </h1>
+          ) : (
+            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
+              {currentTitle}
+            </h2>
+          )}
+          {!selectedCategory && parentCategoryName && (
+            <p className="text-gray-600 text-lg mt-2">
+              Explora nuestra selección de productos de{" "}
+              {parentCategoryName.toLowerCase()} premium. Encuentra los mejores
+              productos con envío gratis en Perú.
+            </p>
+          )}
           {selectedCategory && (
             <button
               onClick={handleBack}

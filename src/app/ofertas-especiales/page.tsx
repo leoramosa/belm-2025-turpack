@@ -1,10 +1,11 @@
 import OfertasEspecialesPage from "@/components/OfertasEspeciales/OfertasEspecialesPage";
 import { fetchSaleProducts } from "@/services/products";
 import type { Metadata } from "next";
+import { generatePageTitle } from "@/utils/seo";
 
 // Metadata específica para la página Ofertas especiales
 export const metadata: Metadata = {
-  title: "Ofertas especiales - Belm",
+  title: generatePageTitle("Ofertas especiales", "Belm", "Descuentos"),
   description:
     "Descubre nuestras mejores ofertas y promociones. Productos con descuentos especiales y precios únicos.",
   keywords: [

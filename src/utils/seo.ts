@@ -12,6 +12,17 @@ export const SEO_META_DESCRIPTION = {
 } as const;
 
 /**
+ * Constantes para títulos SEO
+ * - Longitud óptima: 50-60 caracteres (aproximadamente 580 píxeles)
+ * - Google muestra aproximadamente 50-60 caracteres en resultados
+ */
+export const SEO_TITLE = {
+  MIN_LENGTH: 30, // Mínimo recomendado
+  OPTIMAL_LENGTH: 55, // Óptimo (con margen de seguridad)
+  MAX_LENGTH: 60, // Máximo recomendado
+} as const;
+
+/**
  * Optimiza una metadescripción para SEO
  * - Asegura un mínimo de 120 caracteres
  * - Limita a máximo 160 caracteres
@@ -119,4 +130,197 @@ export function generateCategoryMetaDescription(
   }
 
   return optimizeMetaDescription(description);
+}
+
+/**
+ * Optimiza un título para SEO
+ * - Longitud óptima: 50-60 caracteres
+ * - Evita palabras repetidas
+ * - Trunca inteligentemente sin cortar palabras
+ *
+ * @param title - El título original
+ * @param brand - Nombre de la marca (opcional, se agrega al final)
+ * @returns Título optimizado
+ */
+export function optimizeTitle(title: string, brand: string = "Belm"): string {
+  const { MIN_LENGTH, OPTIMAL_LENGTH, MAX_LENGTH } = SEO_TITLE;
+
+  // Limpiar el título
+  let optimized = title.replace(/\s+/g, " ").trim();
+
+  // Remover palabras repetidas consecutivas
+  optimized = removeRepeatedWords(optimized);
+
+  // Si el título es muy corto, agregar contexto
+  if (optimized.length < MIN_LENGTH) {
+    // Si no tiene marca, agregarla
+    if (!optimized.toLowerCase().includes(brand.toLowerCase())) {
+      optimized = `${optimized} | ${brand}`;
+    } else {
+      // Si ya tiene marca pero es corto, agregar más contexto
+      optimized = `${optimized} - Productos Premium`;
+    }
+  }
+
+  // Si el título es muy largo, truncarlo inteligentemente
+  if (optimized.length > MAX_LENGTH) {
+    // Intentar truncar antes del separador (| o -)
+    const separators = [" | ", " - "];
+    let truncated = optimized;
+
+    for (const separator of separators) {
+      const parts = optimized.split(separator);
+      if (parts.length > 1) {
+        // Mantener la parte principal y truncar
+        const mainPart = parts[0].trim();
+        const brandPart = parts[parts.length - 1].trim();
+
+        if (
+          mainPart.length <=
+          OPTIMAL_LENGTH - brandPart.length - separator.length
+        ) {
+          truncated = `${mainPart}${separator}${brandPart}`;
+          break;
+        }
+      }
+    }
+
+    // Si aún es muy largo, truncar la parte principal
+    if (truncated.length > MAX_LENGTH) {
+      const lastSeparator = separators.find((sep) => truncated.includes(sep));
+      if (lastSeparator) {
+        const parts = truncated.split(lastSeparator);
+        const mainPart = parts[0];
+        const brandPart = parts[parts.length - 1];
+
+        // Truncar la parte principal
+        const maxMainLength =
+          OPTIMAL_LENGTH - brandPart.length - lastSeparator.length;
+        const truncatedMain = truncateAtWord(mainPart, maxMainLength);
+        truncated = `${truncatedMain}${lastSeparator}${brandPart}`;
+      } else {
+        // Si no hay separador, truncar directamente
+        truncated = truncateAtWord(truncated, OPTIMAL_LENGTH);
+      }
+    }
+
+    optimized = truncated;
+  }
+
+  // Asegurar que no sea muy corto después de truncar
+  if (optimized.length < MIN_LENGTH && !optimized.includes(brand)) {
+    optimized = `${optimized} | ${brand}`;
+  }
+
+  return optimized.trim();
+}
+
+/**
+ * Remueve palabras repetidas consecutivas del texto
+ */
+function removeRepeatedWords(text: string): string {
+  const words = text.split(/\s+/);
+  const filtered: string[] = [];
+  let lastWord = "";
+
+  for (const word of words) {
+    const normalizedWord = word.toLowerCase();
+    if (normalizedWord !== lastWord.toLowerCase()) {
+      filtered.push(word);
+      lastWord = word;
+    }
+  }
+
+  return filtered.join(" ");
+}
+
+/**
+ * Trunca un texto en el último espacio antes del límite para evitar cortar palabras
+ */
+function truncateAtWord(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  const truncated = text.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+
+  if (lastSpace > SEO_TITLE.MIN_LENGTH) {
+    return truncated.substring(0, lastSpace) + "...";
+  }
+
+  return truncated.substring(0, maxLength - 3) + "...";
+}
+
+/**
+ * Genera un título optimizado para productos
+ * Estructura: Nombre del producto (truncado si es necesario) | Marca
+ */
+export function generateProductTitle(
+  productName: string,
+  brand: string = "Belm"
+): string {
+  // Limpiar el nombre del producto
+  let cleanName = productName.replace(/\s+/g, " ").trim();
+
+  // Remover palabras repetidas
+  cleanName = removeRepeatedWords(cleanName);
+
+  // Si el nombre es muy largo, truncarlo antes de agregar la marca
+  const maxNameLength = SEO_TITLE.OPTIMAL_LENGTH - brand.length - 3; // 3 para " | "
+
+  if (cleanName.length > maxNameLength) {
+    cleanName = truncateAtWord(cleanName, maxNameLength);
+  }
+
+  const title = `${cleanName} | ${brand}`;
+
+  // Asegurar que el título final esté optimizado
+  return optimizeTitle(title, brand);
+}
+
+/**
+ * Genera un título optimizado para categorías
+ * Estructura: Nombre de categoría | Productos Premium | Marca
+ * Asegura que las palabras clave aparezcan en el contenido
+ */
+export function generateCategoryTitle(
+  categoryName: string,
+  brand: string = "Belm"
+): string {
+  // Construir título con palabras clave que aparecerán en el contenido
+  // Formato: "Categoría | Productos Premium | Belm"
+  let title = `${categoryName} | Productos Premium | ${brand}`;
+
+  return optimizeTitle(title, brand);
+}
+
+/**
+ * Genera un título optimizado para páginas generales
+ */
+export function generatePageTitle(
+  pageName: string,
+  brand: string = "Belm",
+  context?: string
+): string {
+  let title = pageName.trim();
+
+  // Verificar si ya incluye la marca
+  const hasBrand = title.toLowerCase().includes(brand.toLowerCase());
+
+  // Si es muy corto, agregar contexto
+  if (title.length < SEO_TITLE.MIN_LENGTH) {
+    if (context && !hasBrand) {
+      title = `${pageName} | ${context} | ${brand}`;
+    } else if (!hasBrand) {
+      title = `${pageName} | ${brand}`;
+    } else if (context) {
+      title = `${pageName} | ${context}`;
+    }
+  } else if (!hasBrand) {
+    // Si no tiene marca y es suficientemente largo, agregar solo la marca
+    title = `${pageName} | ${brand}`;
+  }
+
+  return optimizeTitle(title, brand);
 }

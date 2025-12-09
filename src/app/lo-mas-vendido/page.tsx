@@ -1,10 +1,11 @@
 import LoMasVendidoPage from "@/components/LoMasVendido/LoMasVendidoPage";
 import { fetchBestSellerProducts } from "@/services/products";
 import type { Metadata } from "next";
+import { generatePageTitle } from "@/utils/seo";
 
 // Metadata específica para la página Lo más vendido
 export const metadata: Metadata = {
-  title: "Lo más vendido - Belm",
+  title: generatePageTitle("Lo más vendido", "Belm", "Productos Populares"),
   description:
     "Descubre nuestros productos más populares y vendidos. Los favoritos de nuestros clientes con las mejores calificaciones.",
   keywords: [

@@ -56,6 +56,9 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
   },
+  // Remover cabecera X-Powered-By por seguridad y SEO
+  // Esto elimina la cabecera X-Powered-By: Next.js de todas las respuestas
+  poweredByHeader: false,
   async redirects() {
     return [
       {

@@ -20,7 +20,8 @@ import type { Metadata } from "next";
 
 // Metadata específica para la página Home
 export const metadata: Metadata = {
-  title: "Home - BELM: Skincare | Maquillaje | Accesorios",
+  title:
+    "BELM: Skincare, Maquillaje y Accesorios - Tu Tienda de Belleza Premium",
   description:
     "En BELM, creemos que la belleza es más que un simple producto, es un acto de amor propio y una forma de brillar con autenticidad. Nos especializamos en la cosmética coreana y marcas globales reconocidas, ofreciéndote una selección cuidadosamente de productos de skincare, maquillaje y accesorios para que descubras tu mejor versión.",
   keywords: [

@@ -81,7 +81,7 @@ export default function Footer() {
   const socialLinks = [
     {
       icon: FiInstagram,
-      href: " https://instagram.com/belmperu",
+      href: "https://instagram.com/belmperu",
       label: "Instagram",
       target: "_blank",
     },
@@ -222,8 +222,10 @@ export default function Footer() {
                   {socialLinks.map((social) => (
                     <a
                       key={social.label}
-                      href={social.href}
+                      href={social.href.trim()}
                       target={social.target}
+                      rel="noopener noreferrer"
+                      aria-label={social.label}
                       className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-gray-600 hover:bg-secondary hover:text-white hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 shadow-sm"
                     >
                       <social.icon className="w-5 h-5" />
@@ -273,6 +275,7 @@ export default function Footer() {
                 <a
                   href="https://digiltek.com/"
                   target="_blank"
+                  rel="noopener noreferrer nofollow"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Digiltek
