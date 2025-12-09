@@ -23,6 +23,16 @@ export const SEO_TITLE = {
 } as const;
 
 /**
+ * Constantes para textos ancla SEO
+ * - Longitud máxima recomendada: 100-120 caracteres
+ * - Debe ser descriptivo pero conciso
+ */
+export const SEO_ANCHOR_TEXT = {
+  MAX_LENGTH: 100, // Máximo recomendado (con margen de seguridad)
+  OPTIMAL_LENGTH: 80, // Óptimo
+} as const;
+
+/**
  * Optimiza una metadescripción para SEO
  * - Asegura un mínimo de 120 caracteres
  * - Limita a máximo 160 caracteres
@@ -323,4 +333,55 @@ export function generatePageTitle(
   }
 
   return optimizeTitle(title, brand);
+}
+
+/**
+ * Genera un texto ancla optimizado para enlaces internos
+ * - Máximo 100 caracteres
+ * - Debe ser descriptivo y contener palabras clave relevantes
+ * - Trunca inteligentemente sin cortar palabras
+ *
+ * @param productName - Nombre del producto
+ * @param categoryName - Nombre de la categoría (opcional)
+ * @returns Texto ancla optimizado
+ */
+export function generateAnchorText(
+  productName: string,
+  categoryName?: string
+): string {
+  const { MAX_LENGTH, OPTIMAL_LENGTH } = SEO_ANCHOR_TEXT;
+
+  // Limpiar el nombre del producto
+  let anchorText = productName.trim().replace(/\s+/g, " ");
+
+  // Si el nombre es muy largo, truncarlo
+  if (anchorText.length > MAX_LENGTH) {
+    // Intentar truncar en un punto lógico (después de palabras clave importantes)
+    const words = anchorText.split(" ");
+
+    // Si tiene categoría, intentar incluirla
+    if (categoryName && categoryName.length < 30) {
+      const categoryPart = categoryName.trim();
+      const maxProductLength = MAX_LENGTH - categoryPart.length - 3; // 3 para " - "
+
+      if (maxProductLength > 20) {
+        // Truncar el nombre del producto y agregar la categoría
+        const truncatedName = truncateAtWord(productName, maxProductLength);
+        anchorText = `${truncatedName} - ${categoryPart}`;
+
+        // Si aún es muy largo, truncar más
+        if (anchorText.length > MAX_LENGTH) {
+          anchorText = truncateAtWord(anchorText, OPTIMAL_LENGTH);
+        }
+      } else {
+        // Si no hay espacio, solo usar el nombre truncado
+        anchorText = truncateAtWord(productName, OPTIMAL_LENGTH);
+      }
+    } else {
+      // Sin categoría, solo truncar el nombre
+      anchorText = truncateAtWord(productName, OPTIMAL_LENGTH);
+    }
+  }
+
+  return anchorText.trim();
 }

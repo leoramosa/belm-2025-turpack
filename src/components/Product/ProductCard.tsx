@@ -15,6 +15,7 @@ import { extractColorValue, isColorAttribute } from "@/utils/productAttributes";
 import { useSelectCategories } from "@/store/categoryStore";
 import { IProductCategoryNode } from "@/types/ICategory";
 import WishlistButton from "./WishlistButton";
+import { generateAnchorText } from "@/utils/seo";
 
 interface ProductCardProps {
   product: IProduct;
@@ -227,10 +228,19 @@ export function ProductCard({
   const formattedPrice = formatPrice(displayPrice, currency);
   const formattedRegularPrice = formatPrice(displayRegularPrice, currency);
 
+  // Generar texto ancla optimizado para SEO
+  const anchorText = generateAnchorText(product.name, rootCategory?.name);
+
   // Vista horizontal (lista)
   if (viewMode === "list") {
     return (
-      <Link className="cursor-pointer" href={`/productos/${product.slug}`}>
+      <Link
+        className="cursor-pointer"
+        href={`/productos/${product.slug}`}
+        aria-label={anchorText}
+      >
+        {/* Texto ancla optimizado para SEO (oculto visualmente pero visible para motores de búsqueda) */}
+        <span className="sr-only">{anchorText}</span>
         <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col md:flex-row gap-6 transition hover:shadow-lg">
           {/* Image Section */}
           <div className="relative h-48 w-full overflow-hidden rounded-t-2xl md:h-auto md:w-56 md:rounded-l-2xl md:rounded-tr-none">
@@ -458,7 +468,13 @@ export function ProductCard({
 
   // Vista vertical (grid) - por defecto
   return (
-    <Link className="cursor-pointer" href={`/productos/${product.slug}`}>
+    <Link
+      className="cursor-pointer"
+      href={`/productos/${product.slug}`}
+      aria-label={anchorText}
+    >
+      {/* Texto ancla optimizado para SEO (oculto visualmente pero visible para motores de búsqueda) */}
+      <span className="sr-only">{anchorText}</span>
       <div className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-md transition hover:shadow-lg">
         {/* Image Section */}
         <div className="relative object-cover aspect-square w-full overflow-hidden rounded-t-2xl">
