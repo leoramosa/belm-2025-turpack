@@ -2724,6 +2724,7 @@ export default function CheckoutPage() {
                                           alt="Mercado Pago"
                                           fill
                                           className="object-contain"
+                                          unoptimized
                                         />
                                       </div>
                                     )}
@@ -2735,6 +2736,7 @@ export default function CheckoutPage() {
                                           alt="Mercado Pago"
                                           fill
                                           className="object-contain"
+                                          unoptimized
                                         />
                                       </div>
                                     )}
@@ -2766,6 +2768,7 @@ export default function CheckoutPage() {
                                             alt="Yape"
                                             fill
                                             className="object-contain"
+                                            unoptimized
                                           />
                                         </div>
                                         <span className="text-xs text-green-700 font-medium">
@@ -2781,6 +2784,7 @@ export default function CheckoutPage() {
                                             alt="PagoEfectivo"
                                             fill
                                             className="object-contain"
+                                            unoptimized
                                           />
                                         </div>
                                         <span className="text-xs text-blue-700 font-medium">
@@ -2842,6 +2846,7 @@ export default function CheckoutPage() {
                                             alt="Visa"
                                             fill
                                             className="object-contain"
+                                            unoptimized
                                           />
                                         </div>
                                         <span className="text-xs text-green-700 font-medium">
@@ -2857,6 +2862,7 @@ export default function CheckoutPage() {
                                             alt="MasterCard"
                                             fill
                                             className="object-contain"
+                                            unoptimized
                                           />
                                         </div>
                                         <span className="text-xs text-[#b57200] font-medium">
@@ -2871,6 +2877,7 @@ export default function CheckoutPage() {
                                             alt="MasterCard"
                                             fill
                                             className="object-contain"
+                                            unoptimized
                                           />
                                         </div>
                                         <span className="text-xs text-[#4d74a3] font-medium">
@@ -2885,6 +2892,7 @@ export default function CheckoutPage() {
                                             alt="Dinners Club"
                                             fill
                                             className="object-contain"
+                                            unoptimized
                                           />
                                         </div>
                                         <span className="text-xs text-gray-700 font-medium">

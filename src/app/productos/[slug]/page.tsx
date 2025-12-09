@@ -5,6 +5,10 @@ import ProductDetail from "@/components/Product/ProductDetail";
 import { fetchProductBySlug, fetchProducts } from "@/services/products";
 import { fetchProductCategoriesTree } from "@/services/categories";
 import type { IProduct } from "@/types/product";
+import {
+  optimizeMetaDescription,
+  generateProductMetaDescription,
+} from "@/utils/seo";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -66,16 +70,24 @@ export async function generateMetadata({
   }
 
   const title = `${product.name} | Tienda Belm`;
-  const description = extractPlainText(
+  const rawDescription = extractPlainText(
     product.shortDescription || product.description
   );
+
+  // Optimizar metadescripción para SEO
+  // Mínimo: 120 caracteres, Óptimo: 150-160 caracteres, Máximo: 160 caracteres
+  const categoryName = product.categories?.[0]?.name;
+  const price = product.pricing.salePrice ?? product.pricing.price ?? 0;
+
+  const description = rawDescription
+    ? optimizeMetaDescription(rawDescription)
+    : generateProductMetaDescription(product.name, categoryName, price);
 
   // Obtener la imagen principal
   const primaryImage = product.images?.[0];
   const imageUrl = primaryImage?.src || "/belm-rs.jpg";
 
-  // Obtener precios
-  const price = product.pricing.salePrice ?? product.pricing.price ?? 0;
+  // Obtener precios (reutilizando la variable price ya declarada)
   const regularPrice =
     product.pricing.regularPrice ?? product.pricing.price ?? 0;
   const hasDiscount =

@@ -42,6 +42,19 @@ if (!remotePatterns.length) {
 const nextConfig = {
   images: {
     remotePatterns,
+    // Optimización de caché: 31 días (2678400 segundos)
+    // Reduce transformaciones y escrituras en caché
+    minimumCacheTTL: 2678400,
+    // Usar solo WebP en lugar de AVIF + WebP para reducir transformaciones
+    // WebP tiene mejor compatibilidad y reduce costos
+    formats: ["image/webp"],
+    // Calidades permitidas: reducir el rango para menos transformaciones
+    // 75 es un buen balance entre calidad y tamaño
+    qualities: [75, 90],
+    // Tamaños de imagen optimizados para reducir transformaciones
+    // Ajustados según dispositivos comunes
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
   },
   async redirects() {
     return [

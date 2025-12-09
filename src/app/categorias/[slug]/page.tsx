@@ -7,6 +7,7 @@ import { fetchProductCategoriesTree } from "@/services/categories";
 import { fetchProducts } from "@/services/products";
 import type { IProductCategoryNode } from "@/types/ICategory";
 import type { IProduct } from "@/types/product";
+import { generateCategoryMetaDescription } from "@/utils/seo";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -89,11 +90,16 @@ export async function generateMetadata({
   }
 
   const title = `${category.name} | Tienda Store`;
-  const description =
-    category.description
-      ?.replace(/<[^>]*>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim() ?? `Explora productos de la categoría ${category.name}.`;
+  const rawDescription = category.description
+    ?.replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Optimizar metadescripción para SEO
+  const description = generateCategoryMetaDescription(
+    category.name,
+    rawDescription
+  );
 
   return {
     title,
