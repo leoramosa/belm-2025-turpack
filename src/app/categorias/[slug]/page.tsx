@@ -53,10 +53,10 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             </p>
           ) : (
             <p className="text-gray-600 text-lg text-center">
-              Explora nuestra selección de productos de{" "}
-              {category.name.toLowerCase()} premium. Encuentra los mejores
-              productos de {category.name.toLowerCase()} con envío gratis en
-              Perú.
+              Explora nuestra selección de <strong>productos premium</strong> de{" "}
+              {category.name.toLowerCase()} en <strong>Belm</strong>. Encuentra
+              los mejores productos de {category.name.toLowerCase()} con envío
+              gratis en Perú.
             </p>
           )}
         </div>

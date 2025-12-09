@@ -246,6 +246,7 @@ const DynamicProductShowcase: React.FC<DynamicProductShowcaseProps> = ({
                       <ProductCard
                         product={product}
                         viewMode="grid"
+                        context="home"
                         customBadge={
                           categoryName
                             ? {

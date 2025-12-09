@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { IProduct } from "@/types/product";
 import { ProductCard } from "@/components/Product/ProductCard";
+import { getSectionIntroText } from "@/utils/contentVariation";
 // Imports removidos - ahora usamos API route
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
@@ -87,9 +88,18 @@ const NewProducts = ({ products: initialProducts }: NewProductsProps) => {
       <div className="container mx-auto px-4 relative">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
-            Lo más nuevo
-          </h2>
+          <div>
+            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
+              Lo más nuevo
+            </h2>
+            {/* Texto introductorio único para evitar contenido duplicado - incluye palabras clave del H1 */}
+            <p className="text-gray-600 text-sm mt-1 hidden lg:block">
+              {getSectionIntroText("new")} En <strong>BELM</strong>, tu tienda
+              de belleza premium, encontrarás productos de{" "}
+              <strong>skincare</strong>, <strong>maquillaje</strong> y{" "}
+              <strong>accesorios</strong> de las mejores marcas.
+            </p>
+          </div>
           <Link
             href="/lo-mas-nuevo"
             className="border border-primary text-white bg-primary lg:px-6 lg:py-3 px-4 py-2 rounded-lg hover:bg-primary-dark hover:text-white transition-colors duration-300"
@@ -130,6 +140,7 @@ const NewProducts = ({ products: initialProducts }: NewProductsProps) => {
                 <ProductCard
                   product={product}
                   viewMode="grid"
+                  context="home"
                   customBadge={{
                     text: "NUEVO",
                     className: "bg-green-500",

@@ -118,7 +118,7 @@ export default function CategorySubcategories({
         <div className="text-center mb-8">
           {!selectedCategory && parentCategoryName ? (
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-              {parentCategoryName} - Productos Premium en Belm
+              {parentCategoryName}
             </h1>
           ) : (
             <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
@@ -127,9 +127,9 @@ export default function CategorySubcategories({
           )}
           {!selectedCategory && parentCategoryName && (
             <p className="text-gray-600 text-lg mt-2">
-              Explora nuestra selección de productos de{" "}
-              {parentCategoryName.toLowerCase()} premium. Encuentra los mejores
-              productos con envío gratis en Perú.
+              Explora nuestra selección de <strong>productos premium</strong> de{" "}
+              {parentCategoryName.toLowerCase()} en <strong>Belm</strong>.
+              Encuentra los mejores productos con envío gratis en Perú.
             </p>
           )}
           {selectedCategory && (

@@ -720,11 +720,27 @@ export function ProductGridClient({
 
                   const discountPercentage = calculateDiscountPercentage();
 
+                  // Determinar contexto según la página
+                  const getContext = ():
+                    | "home"
+                    | "category"
+                    | "recommendation"
+                    | "related"
+                    | "default" => {
+                    if (isLoMasNuevoPage) return "default";
+                    if (isLoMasVendidoPage) return "default";
+                    if (isOfertasEspecialesPage) return "default";
+                    if (pathname?.startsWith("/categorias")) return "category";
+                    if (pathname === "/shop") return "default";
+                    return "default";
+                  };
+
                   return (
                     <ProductCard
                       key={product.id}
                       product={product}
                       viewMode="grid"
+                      context={getContext()}
                       customBadge={
                         isLoMasNuevoPage
                           ? {
@@ -811,11 +827,27 @@ export function ProductGridClient({
 
                   const discountPercentage = calculateDiscountPercentage();
 
+                  // Determinar contexto según la página
+                  const getContext = ():
+                    | "home"
+                    | "category"
+                    | "recommendation"
+                    | "related"
+                    | "default" => {
+                    if (isLoMasNuevoPage) return "default";
+                    if (isLoMasVendidoPage) return "default";
+                    if (isOfertasEspecialesPage) return "default";
+                    if (pathname?.startsWith("/categorias")) return "category";
+                    if (pathname === "/shop") return "default";
+                    return "default";
+                  };
+
                   return (
                     <ProductCard
                       key={product.id}
                       product={product}
                       viewMode="list"
+                      context={getContext()}
                       customBadge={
                         isLoMasNuevoPage
                           ? {

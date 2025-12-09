@@ -259,7 +259,10 @@ const FeaturedCategories = ({ initialData }: FeaturedCategoriesProps) => {
             Nuestras Categorías
           </h2>
           <p className="text-md text-gray-600 animate-fade-in-up animation-delay-400">
-            Descubre nuestra línea completa de cuidado personal
+            Descubre nuestra línea completa de cuidado personal. En{" "}
+            <strong>BELM</strong>, tu tienda de belleza premium, encontrarás{" "}
+            <strong>skincare</strong>, <strong>maquillaje</strong> y{" "}
+            <strong>accesorios</strong> de las mejores marcas.
           </p>
         </div>
 

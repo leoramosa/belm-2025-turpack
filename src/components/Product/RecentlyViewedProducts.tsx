@@ -73,6 +73,7 @@ export default function RecentlyViewedProducts({
               <ProductCard
                 product={product}
                 viewMode="grid"
+                context="related"
                 hideWishlistButton={true}
               />
 

@@ -49,11 +49,12 @@ export default async function Shop() {
   const customHeader = (
     <div key="shop-header" className="mb-8">
       <h1 className="text-4xl md:text-5xl font-bold mb-2 text-primary text-center pt-10">
-        Tienda
+        Tienda - Belm
       </h1>
       <p className="text-gray-600 text-lg text-center">
-        Descubre nuestra selección de productos con los mejores atributos y
-        precios.
+        Descubre nuestra selección de <strong>productos premium</strong> en{" "}
+        <strong>Belm</strong> con los mejores atributos y precios. Explora
+        nuestro catálogo completo de productos de belleza premium.
       </p>
     </div>
   );

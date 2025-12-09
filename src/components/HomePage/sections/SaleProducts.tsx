@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { IProduct } from "@/types/product";
 import { ProductCard } from "@/components/Product/ProductCard";
+import { getSectionIntroText } from "@/utils/contentVariation";
 // Removido import de servicios - ahora usamos API routes
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
@@ -79,9 +80,15 @@ const SaleProducts = ({ products: initialProducts }: SaleProductsProps) => {
       <div className="container relative mx-auto px-4">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
-            Ofertas especiales
-          </h2>
+          <div>
+            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
+              Ofertas especiales
+            </h2>
+            {/* Texto introductorio único para evitar contenido duplicado */}
+            <p className="text-gray-600 text-sm mt-1 hidden lg:block">
+              {getSectionIntroText("sale")}
+            </p>
+          </div>
           <Link
             href="/ofertas-especiales"
             className="border border-primary text-white bg-primary lg:px-6 lg:py-3 px-4 py-2 rounded-lg hover:bg-primary-dark hover:text-white transition-colors duration-300"
@@ -158,6 +165,7 @@ const SaleProducts = ({ products: initialProducts }: SaleProductsProps) => {
                 <ProductCard
                   product={product}
                   viewMode="grid"
+                  context="home"
                   customBadge={{
                     text: "Oferta",
                     className: "bg-orange-500",

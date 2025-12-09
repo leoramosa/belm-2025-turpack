@@ -16,6 +16,7 @@ import { useSelectCategories } from "@/store/categoryStore";
 import { IProductCategoryNode } from "@/types/ICategory";
 import WishlistButton from "./WishlistButton";
 import { generateAnchorText } from "@/utils/seo";
+import { getContextualProductDescription } from "@/utils/contentVariation";
 
 interface ProductCardProps {
   product: IProduct;
@@ -29,6 +30,7 @@ interface ProductCardProps {
   wishlistMode?: boolean; // Si es true, muestra botón de remover en lugar de wishlist button
   onRemoveFromWishlist?: (productId: string | number) => void; // Callback para remover de wishlist
   hideWishlistButton?: boolean; // Si es true, oculta completamente el botón de wishlist
+  context?: "home" | "category" | "recommendation" | "related" | "default"; // Contexto para variar contenido y evitar duplicación SEO
 }
 
 function findCategoryInTree(
@@ -91,6 +93,7 @@ export function ProductCard({
   wishlistMode = false,
   onRemoveFromWishlist,
   hideWishlistButton = false,
+  context = "default",
 }: ProductCardProps) {
   const primaryImage = product.images[0] ?? null;
   const { pricing } = product;
@@ -230,6 +233,13 @@ export function ProductCard({
 
   // Generar texto ancla optimizado para SEO
   const anchorText = generateAnchorText(product.name, rootCategory?.name);
+
+  // Generar descripción contextual para evitar contenido duplicado
+  const contextualDescription = getContextualProductDescription(
+    product.name,
+    product.shortDescription || product.description || "",
+    context
+  );
 
   // Vista horizontal (lista)
   if (viewMode === "list") {
@@ -378,11 +388,9 @@ export function ProductCard({
                 {product.name}
               </h3>
 
-              {/* Description */}
+              {/* Description - Variada según contexto para evitar duplicación SEO */}
               <p className="text-gray-600 text-xs lg:text-sm mb-2 line-clamp-2">
-                {extractPlainText(
-                  product.shortDescription || product.description
-                )}
+                {contextualDescription}
               </p>
 
               {/* Colors */}
@@ -611,9 +619,9 @@ export function ProductCard({
             {product.name}
           </h3>
 
-          {/* Description */}
+          {/* Description - Variada según contexto para evitar duplicación SEO */}
           <p className="text-gray-600 text-xs lg:text-sm mb-2 line-clamp-2">
-            {extractPlainText(product.shortDescription || product.description)}
+            {contextualDescription}
           </p>
 
           {/* Pricing */}

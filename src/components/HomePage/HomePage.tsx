@@ -29,10 +29,16 @@ const HomePage = ({
 }: HomePageProps) => {
   return (
     <div className=" bg-linear-to-br from-purple-50 via-white to-purple-50 overflow-hidden">
-      {/* SEO H1 - Palabras clave del título deben aparecer en el contenido */}
+      {/* SEO H1 y contenido oculto - Palabras clave del título deben aparecer en el contenido visible */}
       <h1 className="sr-only">
         BELM: Skincare, Maquillaje y Accesorios - Tu tienda de belleza premium
       </h1>
+      <p className="sr-only">
+        BELM es tu tienda de belleza premium en Perú. Encuentra una selección
+        cuidadosa de productos de skincare, maquillaje y accesorios de las
+        mejores marcas. Descubre cosmética coreana y productos premium para
+        realzar tu belleza natural.
+      </p>
 
       {/* Hero Banner Section */}
       <HeroBanner initialData={initialBannerData} />

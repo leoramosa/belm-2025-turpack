@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { IProduct } from "@/types/product";
 import { ProductCard } from "@/components/Product/ProductCard";
+import { getSectionIntroText } from "@/utils/contentVariation";
 
 // Removido import de servicios - ahora usamos API routes
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -87,9 +88,15 @@ const BestSeller = ({ products: initialProducts }: BestSellerProps) => {
       <div className="container relative mx-auto px-4">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
-            Lo más vendido
-          </h2>
+          <div>
+            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
+              Lo más vendido
+            </h2>
+            {/* Texto introductorio único para evitar contenido duplicado */}
+            <p className="text-gray-600 text-sm mt-1 hidden lg:block">
+              {getSectionIntroText("bestseller")}
+            </p>
+          </div>
           <Link
             href="/lo-mas-vendido"
             className="border border-primary text-white bg-primary lg:px-6 lg:py-3 px-4 py-2 rounded-lg hover:bg-primary-dark hover:text-white transition-colors duration-300"
@@ -130,6 +137,7 @@ const BestSeller = ({ products: initialProducts }: BestSellerProps) => {
                 <ProductCard
                   product={product}
                   viewMode="grid"
+                  context="home"
                   customBadge={{
                     text: "Más Vendido",
                     className: "bg-yellow-500",
