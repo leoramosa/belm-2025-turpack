@@ -45,7 +45,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         /* Si no hay subcategorías, mostrar el título aquí */
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-2 text-primary text-center pt-10">
-            {category.name} - Productos Premium en Belm
+            {category.name} - Productos Premium de Belleza en Belm
           </h1>
           {category.description ? (
             <p className="text-gray-600 text-lg text-center">

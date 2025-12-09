@@ -20,10 +20,9 @@ import type { Metadata } from "next";
 
 // Metadata específica para la página Home
 export const metadata: Metadata = {
-  title:
-    "BELM: Skincare, Maquillaje y Accesorios - Tu Tienda de Belleza Premium",
+  title: "BELM: Skincare, Maquillaje y Accesorios | Belm",
   description:
-    "En BELM, creemos que la belleza es más que un simple producto, es un acto de amor propio y una forma de brillar con autenticidad. Nos especializamos en la cosmética coreana y marcas globales reconocidas, ofreciéndote una selección cuidadosamente de productos de skincare, maquillaje y accesorios para que descubras tu mejor versión.",
+    "BELM: Tu tienda de belleza premium en Perú. Productos de skincare, maquillaje y accesorios de las mejores marcas. Cosmética coreana y productos premium con envío gratis.",
   keywords: [
     "inicio",
     "productos premium",
@@ -35,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "BELM: Skincare | Maquillaje | Accesorios",
     description:
-      "En BELM, creemos que la belleza es más que un simple producto, es un acto de amor propio y una forma de brillar con autenticidad. Nos especializamos en la cosmética coreana y marcas globales reconocidas, ofreciéndote una selección cuidadosamente de productos de skincare, maquillaje y accesorios para que descubras tu mejor versión.",
+      "BELM: Tu tienda de belleza premium en Perú. Productos de skincare, maquillaje y accesorios de las mejores marcas. Cosmética coreana y productos premium con envío gratis.",
     url: "https://www.belm.pe",
     images: [
       {

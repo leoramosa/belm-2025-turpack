@@ -4,22 +4,25 @@
 
 /**
  * Constantes para metadescripciones SEO
+ * - Límite de píxeles: 1000 píxeles máximo
+ * - Aproximadamente 150-155 caracteres para evitar exceder el límite
  */
 export const SEO_META_DESCRIPTION = {
   MIN_LENGTH: 120, // Mínimo recomendado
-  OPTIMAL_LENGTH: 155, // Óptimo (con margen de seguridad)
-  MAX_LENGTH: 160, // Máximo que muestra Google
+  OPTIMAL_LENGTH: 150, // Óptimo (más conservador para evitar exceder 1000px)
+  MAX_LENGTH: 155, // Máximo recomendado (reducido para evitar exceder límite de píxeles)
 } as const;
 
 /**
  * Constantes para títulos SEO
- * - Longitud óptima: 50-60 caracteres (aproximadamente 580 píxeles)
+ * - Longitud óptima: 50-55 caracteres (aproximadamente 580 píxeles máximo)
  * - Google muestra aproximadamente 50-60 caracteres en resultados
+ * - Límite estricto para evitar truncamiento en resultados de búsqueda
  */
 export const SEO_TITLE = {
   MIN_LENGTH: 30, // Mínimo recomendado
-  OPTIMAL_LENGTH: 55, // Óptimo (con margen de seguridad)
-  MAX_LENGTH: 60, // Máximo recomendado
+  OPTIMAL_LENGTH: 50, // Óptimo (más conservador para evitar exceder 580px)
+  MAX_LENGTH: 55, // Máximo recomendado (reducido para evitar exceder límite de píxeles)
 } as const;
 
 /**
@@ -103,27 +106,57 @@ export function optimizeMetaDescription(
 
 /**
  * Genera una metadescripción automática para productos
+ * Optimizada para no exceder 1000 píxeles (≈155 caracteres)
  */
 export function generateProductMetaDescription(
   productName: string,
   categoryName?: string,
   price?: number
 ): string {
+  // Construir descripción de forma más concisa
   let description = `${productName}. `;
 
   if (categoryName) {
-    description += `${categoryName} premium. `;
+    description += `${categoryName} premium en Belm. `;
+  } else {
+    description += `Producto premium en Belm. `;
   }
-
-  description += `Encuentra los mejores productos de belleza en Belm. `;
 
   if (price && price > 0) {
     description += `Precio: S/ ${price.toFixed(2)}. `;
   }
 
-  description += `Envío gratis en Perú. Compra ahora.`;
+  description += `Envío gratis en Perú.`;
 
-  return optimizeMetaDescription(description);
+  // Optimizar y verificar límite
+  let optimized = optimizeMetaDescription(description);
+
+  // Verificación adicional: si aún es muy largo, truncar más agresivamente
+  if (optimized.length > SEO_META_DESCRIPTION.MAX_LENGTH) {
+    // Intentar mantener las partes más importantes
+    const parts = optimized.split(". ");
+    let truncated = "";
+
+    for (const part of parts) {
+      if (
+        (truncated + part + ". ").length <=
+        SEO_META_DESCRIPTION.MAX_LENGTH - 3
+      ) {
+        truncated += part + ". ";
+      } else {
+        break;
+      }
+    }
+
+    if (truncated.length > SEO_META_DESCRIPTION.MIN_LENGTH) {
+      optimized = truncated.trim() + "...";
+    } else {
+      optimized =
+        optimized.substring(0, SEO_META_DESCRIPTION.MAX_LENGTH).trim() + "...";
+    }
+  }
+
+  return optimized;
 }
 
 /**
@@ -139,7 +172,17 @@ export function generateCategoryMetaDescription(
     description = `Explora ${categoryName} en Belm. Productos premium de belleza con envío gratis en Perú. Encuentra los mejores productos de ${categoryName} al mejor precio.`;
   }
 
-  return optimizeMetaDescription(description);
+  // Asegurar que no exceda el límite de píxeles (1000px ≈ 155 caracteres)
+  const optimized = optimizeMetaDescription(description);
+
+  // Verificación adicional: si aún es muy largo, truncar más
+  if (optimized.length > SEO_META_DESCRIPTION.MAX_LENGTH) {
+    return (
+      optimized.substring(0, SEO_META_DESCRIPTION.MAX_LENGTH).trim() + "..."
+    );
+  }
+
+  return optimized;
 }
 
 /**
@@ -277,6 +320,7 @@ export function generateProductTitle(
   cleanName = removeRepeatedWords(cleanName);
 
   // Si el nombre es muy largo, truncarlo antes de agregar la marca
+  // Usar un límite más estricto para evitar exceder 580 píxeles
   const maxNameLength = SEO_TITLE.OPTIMAL_LENGTH - brand.length - 3; // 3 para " | "
 
   if (cleanName.length > maxNameLength) {
@@ -285,14 +329,31 @@ export function generateProductTitle(
 
   const title = `${cleanName} | ${brand}`;
 
-  // Asegurar que el título final esté optimizado
-  return optimizeTitle(title, brand);
+  // Asegurar que el título final esté optimizado y no exceda el límite
+  let optimized = optimizeTitle(title, brand);
+
+  // Verificación adicional: si aún es muy largo, truncar más agresivamente
+  if (optimized.length > SEO_TITLE.MAX_LENGTH) {
+    const parts = optimized.split(" | ");
+    if (parts.length > 1) {
+      const mainPart = parts[0];
+      const brandPart = parts[parts.length - 1];
+      const maxMainLength = SEO_TITLE.OPTIMAL_LENGTH - brandPart.length - 3;
+      const truncatedMain = truncateAtWord(mainPart, maxMainLength);
+      optimized = `${truncatedMain} | ${brandPart}`;
+    } else {
+      optimized = truncateAtWord(optimized, SEO_TITLE.OPTIMAL_LENGTH);
+    }
+  }
+
+  return optimized;
 }
 
 /**
  * Genera un título optimizado para categorías
  * Estructura: Nombre de categoría | Productos Premium | Marca
  * Asegura que las palabras clave aparezcan en el contenido
+ * Optimizado para no exceder 580 píxeles
  */
 export function generateCategoryTitle(
   categoryName: string,
@@ -300,7 +361,16 @@ export function generateCategoryTitle(
 ): string {
   // Construir título con palabras clave que aparecerán en el contenido
   // Formato: "Categoría | Productos Premium | Belm"
-  const title = `${categoryName} | Productos Premium | ${brand}`;
+  // Si es muy largo, simplificar a "Categoría | Belm"
+  let title = `${categoryName} | Productos Premium | ${brand}`;
+
+  // Verificar longitud estimada (aproximadamente 10-12 píxeles por carácter)
+  const estimatedPixels = title.length * 11;
+
+  if (estimatedPixels > 580 || title.length > SEO_TITLE.MAX_LENGTH) {
+    // Simplificar si es muy largo
+    title = `${categoryName} | ${brand}`;
+  }
 
   return optimizeTitle(title, brand);
 }
