@@ -1524,7 +1524,7 @@ export default function ProductDetail({
                   <div className="font-semibold text-gray-900 text-sm">
                     Garantia por los 12 meses
                   </div>
-                  <div className="text-gray-600 text-xs">Garantía anual</div>
+                  <div className="text-gray-600 text-xd">Garantía anual</div>
                 </div>
               </div>
 
