@@ -62,26 +62,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </div>
       )}
 
-      {filteredProducts.length ? (
-        <ProductGridClient
-          key={`products-${category.id}`}
-          products={filteredProducts}
-          disableAutoCategoryFilter={true}
-        />
-      ) : (
-        <section
-          key={`empty-${category.id}`}
-          className="mx-auto flex w-full max-w-5xl flex-col items-center gap-4 px-4 py-20 text-center"
-        >
-          <h2 className="text-2xl font-semibold ">
-            No hay productos en esta categoría
-          </h2>
-          <p className="max-w-2xl text-sm text-zinc-600 ">
-            Te recomendamos volver al catálogo principal o explorar otras
-            categorías.
-          </p>
-        </section>
-      )}
+      <ProductGridClient
+        key={`products-${category.id}`}
+        products={filteredProducts}
+        disableAutoCategoryFilter={true}
+      />
     </div>
   );
 }

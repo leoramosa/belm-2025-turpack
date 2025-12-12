@@ -588,12 +588,14 @@ export function ProductGridClient({
             </div>
           </div>
         </div>
-        {/* Contador de productos */}
-        <div className="mt-4">
-          <p className="text-sm text-gray-600">
-            Mostrando {filteredProducts.length} de {products.length} productos
-          </p>
-        </div>
+        {/* Contador de productos - Solo mostrar si hay productos */}
+        {filteredProducts.length > 0 && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-600">
+              Mostrando {filteredProducts.length} de {products.length} productos
+            </p>
+          </div>
+        )}
       </div>
       <div className="flex flex-col gap-8 lg:flex-row">
         {/* Sidebar - Filters (Desktop) */}
@@ -769,8 +771,31 @@ export function ProductGridClient({
                   );
                 })
               ) : (
-                <div className="col-span-full py-12 text-center">
-                  <p className="text-zinc-500">No se encontraron productos</p>
+                <div className="col-span-full py-16 text-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <svg
+                      className="w-16 h-16 text-zinc-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                      />
+                    </svg>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        No se encontraron productos
+                      </h3>
+                      <p className="text-sm text-zinc-600 max-w-md">
+                        Intenta ajustar los filtros o buscar con otros términos
+                        para encontrar lo que buscas.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -876,21 +901,47 @@ export function ProductGridClient({
                   );
                 })
               ) : (
-                <div className="py-12 text-center">
-                  <p className="text-zinc-500">No se encontraron productos</p>
+                <div className="py-16 text-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <svg
+                      className="w-16 h-16 text-zinc-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                      />
+                    </svg>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        No se encontraron productos
+                      </h3>
+                      <p className="text-sm text-zinc-600 max-w-md">
+                        Intenta ajustar los filtros o buscar con otros términos
+                        para encontrar lo que buscas.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          <ProductPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            itemsPerPage={itemsPerPage}
-            totalItems={productList.length}
-            filteredItems={filteredProducts.length}
-          />
+          {/* Paginación - Solo mostrar si hay productos */}
+          {filteredProducts.length > 0 && (
+            <ProductPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={productList.length}
+              filteredItems={filteredProducts.length}
+            />
+          )}
         </div>
       </div>
     </section>
