@@ -241,13 +241,14 @@ export function ProductCard({
     context
   );
 
-  // Vista horizontal (lista)
+  // Vista horizontal (lista) - marcada para no indexarse como contenido duplicado
   if (viewMode === "list") {
     return (
       <Link
         className="cursor-pointer"
         href={`/productos/${product.slug}`}
         aria-label={anchorText}
+        data-noindex="true"
       >
         {/* Texto ancla optimizado para SEO (oculto visualmente pero visible para motores de búsqueda) */}
         <span className="sr-only">{anchorText}</span>
@@ -476,12 +477,15 @@ export function ProductCard({
     );
   }
 
-  // Vista vertical (grid) - por defecto
+  // Vista vertical (grid) - por defecto (versión principal para SEO)
   return (
     <Link
       className="cursor-pointer"
       href={`/productos/${product.slug}`}
       aria-label={anchorText}
+      itemProp="item"
+      itemScope
+      itemType="https://schema.org/Product"
     >
       {/* Texto ancla optimizado para SEO (oculto visualmente pero visible para motores de búsqueda) */}
       <span className="sr-only">{anchorText}</span>

@@ -670,7 +670,11 @@ export function ProductGridClient({
 
           {/* Products Grid/List */}
           {viewMode === "grid" ? (
-            <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+              itemScope
+              itemType="https://schema.org/ItemList"
+            >
               {paginatedProducts.length > 0 ? (
                 paginatedProducts.map((product: IProduct) => {
                   // Detectar si estamos en la ruta /lo-mas-nuevo, /lo-mas-vendido o /ofertas-especiales
@@ -800,7 +804,7 @@ export function ProductGridClient({
               )}
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-6" data-noindex="true">
               {paginatedProducts.length > 0 ? (
                 paginatedProducts.map((product: IProduct) => {
                   // Detectar si estamos en la ruta /lo-mas-nuevo, /lo-mas-vendido o /ofertas-especiales
