@@ -118,7 +118,7 @@ export default function CategorySubcategories({
         <div className="text-center mb-8">
           {!selectedCategory && parentCategoryName ? (
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-              {parentCategoryName} - Productos Premium en Belm
+              {parentCategoryName}
             </h1>
           ) : (
             <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
