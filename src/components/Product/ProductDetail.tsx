@@ -1113,17 +1113,18 @@ export default function ProductDetail({
 
             <hr className="my-4 border-gray-300 lg:hidden" />
 
-            {/* Descripción corta */}
+            {/* Descripción corta - Desktop (versión principal para SEO) */}
             {product.shortDescription && (
               <div
                 className="hidden lg:block text-gray-700 leading-relaxed w-full [&_p]:text-justify [&_p]:mb-6 [&_p]:first-child:mt-0 [&_p]:last-child:mb-0 [&_p]:w-full"
-                style={{
-                  lineHeight: "1.7",
-                  textAlign: "justify",
-                }}
+                itemProp="description"
                 suppressHydrationWarning
                 dangerouslySetInnerHTML={{
                   __html: shortDescriptionHtml,
+                }}
+                style={{
+                  lineHeight: "1.7",
+                  textAlign: "justify",
                 }}
               />
             )}
@@ -1468,17 +1469,18 @@ export default function ProductDetail({
               </button>
             </div>
 
-            {/* Descripción corta */}
+            {/* Descripción corta - Mobile (oculta para SEO para evitar duplicación) */}
             {product.shortDescription && (
               <div
                 className="border-t lg:hidden border-gray-200 pt-5 text-gray-700 leading-relaxed w-full [&_p]:text-justify [&_p]:mb-6 [&_p]:first-child:mt-0 [&_p]:last-child:mb-0 [&_p]:w-full"
-                style={{
-                  lineHeight: "1.7",
-                  textAlign: "justify",
-                }}
+                data-noindex="true"
                 suppressHydrationWarning
                 dangerouslySetInnerHTML={{
                   __html: shortDescriptionHtml,
+                }}
+                style={{
+                  lineHeight: "1.7",
+                  textAlign: "justify",
                 }}
               />
             )}
