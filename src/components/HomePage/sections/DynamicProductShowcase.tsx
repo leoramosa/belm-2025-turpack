@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { IProduct } from "@/types/product";
 import { IProductCategory } from "@/types/ICategory";
 import { ProductCard } from "@/components/Product/ProductCard";
@@ -33,6 +33,7 @@ const DynamicProductShowcase: React.FC<DynamicProductShowcaseProps> = ({
   products: initialProducts,
   categoryData: initialCategoryData,
 }) => {
+  const router = useRouter();
   // Exactamente como NewProducts
   const [products, setProducts] = useState<IProduct[]>(initialProducts || []);
   const [categoryData, setCategoryData] = useState<IProductCategory | null>(
@@ -158,42 +159,15 @@ const DynamicProductShowcase: React.FC<DynamicProductShowcaseProps> = ({
                     Descubre nuestra selección premium
                   </p>
                 </div>
-                <Link
-                  href={`/categorias/${categoryData?.slug || categorySlug}`}
+                <button
+                  onClick={() =>
+                    router.push(
+                      `/categorias/${categoryData?.slug || categorySlug}`
+                    )
+                  }
+                  className="absolute bottom-6 right-6 text-xs md:text-sm lg:hidden  text-primary bg-white flex items-center  justify-center xl:w-auto rounded-lg border border-primary  px-3 py-3 hover:bg-primary hover:text-white transition-colors"
                 >
-                  <button className="absolute bottom-6 right-6 text-xs md:text-sm lg:hidden  text-primary bg-white flex items-center  justify-center xl:w-auto rounded-lg border border-primary  px-3 py-3 ">
-                    Ver Más
-                    <svg
-                      className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Section - Product Slider (superpuesto sobre la imagen) */}
-          <div className="w-full lg:px-10 lg:w-[70%] flex flex-col-reverse lg:flex-col animate-fade-in-right">
-            {/* Header with "Ver más" link */}
-            <div className="flex justify-center w-full xl:w-auto lg:justify-end items-center px-4 mb-8">
-              <h3 className="text-2xl font-bold text-primary capitalize animate-fade-in-up animation-delay-300 hidden ">
-                {categoryName}
-              </h3>
-
-              <Link
-                href={`/categorias/${categoryData?.slug || categorySlug}`}
-                className=" items-center hidden lg:flex w-full lg:w-auto text-center font-medium transition-colors animate-fade-in-right animation-delay-400"
-              >
-                <button className="transition-colors cursor-pointer duration-300 flex items-center w-full justify-center xl:w-auto rounded-2xl bg-primary px-4 py-3 border border-primary text-white hover:bg-primary-dark hover:text-white hover:border hover:border-primary">
-                  Ver más
+                  Ver Más
                   <svg
                     className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"
                     fill="currentColor"
@@ -206,7 +180,39 @@ const DynamicProductShowcase: React.FC<DynamicProductShowcaseProps> = ({
                     />
                   </svg>
                 </button>
-              </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Section - Product Slider (superpuesto sobre la imagen) */}
+          <div className="w-full lg:px-10 lg:w-[70%] flex flex-col-reverse lg:flex-col animate-fade-in-right">
+            {/* Header with "Ver más" link */}
+            <div className="flex justify-center w-full xl:w-auto lg:justify-end items-center px-4 mb-8">
+              <h3 className="text-2xl font-bold text-primary capitalize animate-fade-in-up animation-delay-300 hidden ">
+                {categoryName}
+              </h3>
+
+              <button
+                onClick={() =>
+                  router.push(
+                    `/categorias/${categoryData?.slug || categorySlug}`
+                  )
+                }
+                className="hidden lg:flex items-center justify-center w-full lg:w-auto text-center font-medium transition-colors animate-fade-in-right animation-delay-400 cursor-pointer duration-300 xl:w-auto rounded-2xl bg-primary px-4 py-3 border border-primary text-white hover:bg-primary-dark hover:text-white hover:border hover:border-primary"
+              >
+                Ver más
+                <svg
+                  className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
             </div>
 
             {/* Product Slider con Swiper */}
