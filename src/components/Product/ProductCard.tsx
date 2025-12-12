@@ -389,9 +389,11 @@ export function ProductCard({
               </h3>
 
               {/* Description - Variada según contexto para evitar duplicación SEO */}
-              <p className="text-gray-600 text-xs lg:text-sm mb-2 line-clamp-2">
-                {contextualDescription}
-              </p>
+              {context !== "recommendation" && context !== "related" && (
+                <p className="text-gray-600 text-xs lg:text-sm mb-2 line-clamp-1">
+                  {contextualDescription}
+                </p>
+              )}
 
               {/* Colors */}
               {visibleColors.length > 0 && (
@@ -620,9 +622,11 @@ export function ProductCard({
           </h3>
 
           {/* Description - Variada según contexto para evitar duplicación SEO */}
-          <p className="text-gray-600 text-xs lg:text-sm mb-2 line-clamp-2">
-            {contextualDescription}
-          </p>
+          {context !== "recommendation" && context !== "related" && (
+            <p className="text-gray-600 text-xs lg:text-sm mb-2 line-clamp-1">
+              {contextualDescription}
+            </p>
+          )}
 
           {/* Pricing */}
           <div className="flex items-end gap-2 mb-2">
