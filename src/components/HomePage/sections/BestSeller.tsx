@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { IProduct } from "@/types/product";
 import { ProductCard } from "@/components/Product/ProductCard";
 import { getSectionIntroText } from "@/utils/contentVariation";
@@ -19,6 +19,7 @@ interface BestSellerProps {
 }
 
 const BestSeller = ({ products: initialProducts }: BestSellerProps) => {
+  const router = useRouter();
   const [products, setProducts] = useState<IProduct[]>(initialProducts || []);
   const [loading, setLoading] = useState(!initialProducts);
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
@@ -97,12 +98,12 @@ const BestSeller = ({ products: initialProducts }: BestSellerProps) => {
               {getSectionIntroText("bestseller")}
             </p>
           </div>
-          <Link
-            href="/lo-mas-vendido"
-            className="border border-primary text-white bg-primary lg:px-6 lg:py-3 px-4 py-2 rounded-lg hover:bg-primary-dark hover:text-white transition-colors duration-300"
+          <button
+            onClick={() => router.push("/lo-mas-vendido")}
+            className="border border-primary text-white bg-primary lg:px-6 lg:py-3 px-4 py-2 rounded-lg hover:bg-primary-dark hover:text-white transition-colors duration-300 cursor-pointer"
           >
             Ver Más
-          </Link>
+          </button>
         </div>
 
         {/* Swiper */}
