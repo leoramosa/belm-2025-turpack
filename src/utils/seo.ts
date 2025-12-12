@@ -21,8 +21,8 @@ export const SEO_META_DESCRIPTION = {
  */
 export const SEO_TITLE = {
   MIN_LENGTH: 30, // Mínimo recomendado
-  OPTIMAL_LENGTH: 50, // Óptimo (más conservador para evitar exceder 580px)
-  MAX_LENGTH: 55, // Máximo recomendado (reducido para evitar exceder límite de píxeles)
+  OPTIMAL_LENGTH: 45, // Óptimo (más conservador para evitar exceder 580px)
+  MAX_LENGTH: 45, // Máximo recomendado (reducido para evitar exceder límite de píxeles)
 } as const;
 
 /**
