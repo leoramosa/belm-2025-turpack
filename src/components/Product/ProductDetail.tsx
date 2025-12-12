@@ -1534,7 +1534,7 @@ export default function ProductDetail({
                 </div>
                 <div>
                   <div className="font-semibold text-gray-900 text-sm">
-                    7 Días de devolucion
+                    7 Días de devolucion.
                   </div>
                   <div className="text-gray-600 text-xs">
                     Si el producto no esta como se describio
