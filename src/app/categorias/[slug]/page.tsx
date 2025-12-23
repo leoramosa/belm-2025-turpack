@@ -43,7 +43,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 				/>
 			) : (
 				/* Si no hay subcategorías, mostrar el título aquí */
-				<div className="mb-8">
+				<div className="text-center mb-8">
 					<h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
 						{category.name}
 					</h1>
