@@ -86,7 +86,7 @@ const SaleProducts = ({ products: initialProducts }: SaleProductsProps) => {
 							Ofertas especiales
 						</h2>
 						{/* Texto introductorio único para evitar contenido duplicado */}
-						<p className="text-gray-600 text-sm mt-1 hidden lg:block">
+						<p className="text-gray-600 text-md mt-1 hidden lg:block">
 							Aprovecha nuestros beneficios de temporada y llévate lo último en
 							tendencias por mucho menos, ¡No dejes pasar estos elegidos!
 						</p>

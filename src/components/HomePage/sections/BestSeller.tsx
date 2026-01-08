@@ -94,7 +94,7 @@ const BestSeller = ({ products: initialProducts }: BestSellerProps) => {
 							Lo más vendido
 						</h2>
 						{/* Texto introductorio único para evitar contenido duplicado */}
-						<p className="text-gray-600 text-sm mt-1 hidden lg:block">
+						<p className="text-gray-600 text-md mt-1 hidden lg:block">
 							Te presentamos los top en ventas que nuestra comunidad ama y
 							recomienda una y otra vez, ¡Descubre por qué son los favoritos!
 						</p>

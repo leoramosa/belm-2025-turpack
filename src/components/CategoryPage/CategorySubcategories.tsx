@@ -127,7 +127,7 @@ export default function CategorySubcategories({
 					)}
 					{!selectedCategory && parentCategoryName && (
 						<p className="text-gray-600 text-lg mt-2">
-							Tu belleza, tu estilo y lo mejor del mundo en un solo lugar
+							Skincare, Belleza y moda ; lo mejor del mundo en un solo lugar
 						</p>
 					)}
 					{selectedCategory && (

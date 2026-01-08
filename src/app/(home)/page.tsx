@@ -22,7 +22,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
 	title: 'BELM: Tu Tienda Online de Skincare, Belleza y Moda en Perú',
 	description:
-		'¿Buscas lo mejor en Skincare, Belleza y moda? Explora BELM, tu tienda especializada en Perú, con las marcas más amadas del mundo. ¡Descubre tu mejor versión hoy!',
+		'Buscas lo mejor en Skincare, Belleza y moda, explora BELM, tu tienda especializada en Perú, con las marcas más amadas del mundo. ¡Descubre tu mejor versión hoy!',
 	keywords: [
 		'inicio',
 		'productos premium',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 	openGraph: {
 		title: 'BELM: Tu Tienda Online de Skincare, Belleza y Moda en Perú',
 		description:
-			'¿Buscas lo mejor en Skincare, Belleza y moda? Explora BELM, tu tienda especializada en Perú, con las marcas más amadas del mundo. ¡Descubre tu mejor versión hoy!',
+			'Buscas lo mejor en Skincare, Belleza y moda, explora BELM, tu tienda especializada en Perú, con las marcas más amadas del mundo. ¡Descubre tu mejor versión hoy!',
 		url: 'https://www.belm.pe',
 		images: [
 			{

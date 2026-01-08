@@ -94,7 +94,7 @@ const NewProducts = ({ products: initialProducts }: NewProductsProps) => {
 							Lo más nuevo
 						</h2>
 						{/* Texto introductorio único para evitar contenido duplicado - incluye palabras clave del H1 */}
-						<p className="text-gray-600 text-sm mt-1 hidden lg:block">
+						<p className="text-gray-600 text-md mt-1 hidden lg:block">
 							Descubre tus nuevos favoritos, te traemos lanzamientos exclusivos
 							de skincare, belleza y moda de las marcas más amadas del mundo.
 						</p>
