@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { isColorAttribute, extractColorValue } from '@/utils/productAttributes';
+import { isColorAttribute, extractColorValue, getBrandFromProduct } from '@/utils/productAttributes';
 import { IProductCategoryNode } from '@/types/ICategory';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import RecentlyViewedProducts from './RecentlyViewedProducts';
@@ -241,6 +241,16 @@ export default function ProductDetail({
 	};
 
 	const defaultVariationForPricing = getDefaultVariationForPricing();
+
+	// Obtener la marca del producto: primero desde brands (si viene de la API), sino desde atributos
+	const productBrand = useMemo(() => {
+		// Si viene directamente en brands desde WooCommerce
+		if (product.brands && product.brands.length > 0) {
+			return product.brands[0].name;
+		}
+		// Fallback: buscar en atributos
+		return getBrandFromProduct(product.attributes);
+	}, [product.brands, product.attributes]);
 
 	// Obtener el stock disponible del producto o variación seleccionada
 	const getAvailableStock = useMemo(() => {
@@ -1049,17 +1059,29 @@ export default function ProductDetail({
 							</div>
 						)}
 
-						{/* Título y compartir */}
-						<div className="flex items-start justify-between gap-4 mb-2">
-							<h1 className="text-xl lg:text-3xl font-bold text-gray-900 leading-tight flex-1">
-								{product.name}
-							</h1>
-							<ShareProduct
-								productName={product.name}
-								productUrl={`/productos/${product.slug}`}
-								productImage={product.images?.[0]?.src}
-								className="flex-shrink-0"
-							/>
+						{/* Marca, Título y compartir */}
+						<div className="mb-2">
+							{/* Marca arriba del título */}
+							{productBrand && (
+								<div className="mb-2">
+									<span className="text-sm lg:text-base text-gray-600 font-medium">
+										{productBrand}
+									</span>
+								</div>
+							)}
+							
+							{/* Título y compartir */}
+							<div className="flex items-start justify-between gap-4">
+								<h1 className="text-xl lg:text-3xl font-bold text-gray-900 leading-tight flex-1">
+									{product.name}
+								</h1>
+								<ShareProduct
+									productName={product.name}
+									productUrl={`/productos/${product.slug}`}
+									productImage={product.images?.[0]?.src}
+									className="flex-shrink-0"
+								/>
+							</div>
 						</div>
 
 						{/* Rating y reviews */}

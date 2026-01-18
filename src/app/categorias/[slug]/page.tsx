@@ -47,16 +47,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 					<h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
 						{category.name}
 					</h1>
-					{category.description ? (
-						<p className="text-gray-600 text-lg text-center">
-							{category.description.replace(/<[^>]*>/g, ' ').trim()}
-						</p>
-					) : (
-						<p className="text-gray-600 text-lg text-center">
-							Explora nuestra selección de <strong>productos premium</strong> de{' '}
-							{category.name.toLowerCase()}.
-						</p>
-					)}
 				</div>
 			)}
 

@@ -41,6 +41,34 @@ export function createAttributeOptionKey(
   return `${attribute.slug}-${option.slug ?? option.id ?? option.name}`;
 }
 
+export function isBrandAttribute(attribute: ProductAttribute): boolean {
+  const slug = attribute.slug.toLowerCase();
+  const name = attribute.name.toLowerCase();
+
+  return (
+    slug.includes("brand") ||
+    slug.includes("marca") ||
+    name.includes("brand") ||
+    name.includes("marca") ||
+    slug === "pa_brand" ||
+    slug === "brand"
+  );
+}
+
+export function getBrandFromProduct(
+  attributes: ProductAttribute[] | undefined
+): string | null {
+  if (!attributes || attributes.length === 0) return null;
+
+  const brandAttribute = attributes.find(isBrandAttribute);
+  if (!brandAttribute || !brandAttribute.options || brandAttribute.options.length === 0) {
+    return null;
+  }
+
+  // Retornar la primera opción de marca (normalmente solo hay una)
+  return brandAttribute.options[0].name;
+}
+
 export function getContrastingTextColor(
   color: string | null | undefined
 ): "#000000" | "#ffffff" {

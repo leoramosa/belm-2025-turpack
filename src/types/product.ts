@@ -66,6 +66,12 @@ export interface IProductTag {
   slug: string;
 }
 
+export interface IProductBrand {
+  id: number;
+  name: string;
+  slug: string;
+}
+
 export interface IProductAttributeGlobal {
   id: number;
   name: string;
@@ -92,6 +98,7 @@ export interface IProduct {
   attributes: ProductAttribute[];
   variations: ProductVariation[];
   tags?: IProductTag[];
+  brands?: IProductBrand[];
 }
 
 export interface WordpressProductResponse {
@@ -117,6 +124,16 @@ export interface WordpressProductResponse {
     name?: string;
   }>;
   categories?: Array<{
+    id: number;
+    name: string;
+    slug: string;
+  }>;
+  tags?: Array<{
+    id: number;
+    name: string;
+    slug: string;
+  }>;
+  brands?: Array<{
     id: number;
     name: string;
     slug: string;

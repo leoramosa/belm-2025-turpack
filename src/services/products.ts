@@ -413,6 +413,18 @@ function mapWordpressProductToProduct(
         name: category.name,
         slug: category.slug,
       })) ?? [],
+    tags:
+      product.tags?.map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug,
+      })) ?? [],
+    brands:
+      product.brands?.map((brand) => ({
+        id: brand.id,
+        name: brand.name,
+        slug: brand.slug,
+      })) ?? [],
     attributes: mapWordpressAttributes(product.attributes),
     variations: [],
   };
