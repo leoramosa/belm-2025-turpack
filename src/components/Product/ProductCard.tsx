@@ -621,21 +621,21 @@ export function ProductCard({
         {/* Content Section */}
         <div className="p-4 flex flex-col justify-between grow">
           {/* Product Name */}
-          <h3 className="font-semibold text-sm lg:text-[16px] mb-1 line-clamp-1 cursor-pointer">
+          <h3 className="text-sm lg:text-[14px] mb-1 line-clamp-2 cursor-pointer">
             {product.name}
           </h3>
 
           {/* Description - Variada según contexto para evitar duplicación SEO */}
-          {context !== "recommendation" && context !== "related" && (
+          {/* {context !== "recommendation" && context !== "related" && (
             <p className="text-gray-600 text-xs lg:text-sm mb-2 line-clamp-1">
               {contextualDescription}
             </p>
-          )}
+          )} */}
 
           {/* Pricing */}
           <div className="flex items-end gap-2 mb-2">
             {formattedPrice ? (
-              <span className="text-primary font-bold text-md lg:text-xl">
+              <span className="text-primary font-bold text-md lg:text-[16px]">
                 {formattedPrice}
               </span>
             ) : (

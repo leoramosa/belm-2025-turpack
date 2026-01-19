@@ -691,6 +691,7 @@ export function ProductGridClient({
                   }}
                   disableAutoCategoryFilter={disableAutoCategoryFilter}
                   isMobile={true}
+                  onFilterApplied={() => setIsFiltersOpen(false)}
                 />
               </div>
             </div>

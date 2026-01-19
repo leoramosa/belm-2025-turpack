@@ -8,6 +8,7 @@ import CartDrawer from "@/components/CartDrawer/CartDrawer";
 import Footer from "@/components/shared/Footer";
 import GlobalLoader from "@/components/shared/GlobalLoader";
 import { generatePageTitle } from "@/utils/seo";
+import  WhatsAppButton  from "@/components/shared/WhatsAppButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,9 +55,11 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Navbar categories={categories} />
+        
         <main>{children}</main>
         <CartDrawer />
         <Footer />
+        <WhatsAppButton />
         <GlobalLoader />
         <Toaster position="top-center" richColors closeButton duration={4000} />
       </body>

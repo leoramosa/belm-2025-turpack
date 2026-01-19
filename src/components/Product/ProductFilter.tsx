@@ -27,6 +27,7 @@ interface ProductFilterProps {
   onFiltersChange: (filters: ProductFilters) => void;
   disableAutoCategoryFilter?: boolean;
   isMobile?: boolean;
+  onFilterApplied?: () => void; // Callback para cerrar modal móvil cuando se aplica un filtro
 }
 
 function getAllCategoriesFlat(
@@ -305,6 +306,7 @@ export function ProductFilter({
   onFiltersChange,
   disableAutoCategoryFilter = false,
   isMobile = false,
+  onFilterApplied,
 }: ProductFilterProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -1034,6 +1036,10 @@ export function ProductFilter({
                     handleFilterChange({ selectedBrand: null });
                     setIsBrandOpen(false);
                     setPreviousBrand(null);
+                    // Cerrar modal móvil si está en modo móvil
+                    if (isMobile && onFilterApplied) {
+                      onFilterApplied();
+                    }
                   }}
                   className={`w-full px-4 py-2 text-left text-sm transition ${
                     !filters.selectedBrand
@@ -1051,6 +1057,10 @@ export function ProductFilter({
                       handleFilterChange({ selectedBrand: brand });
                       setIsBrandOpen(false);
                       setPreviousBrand(null);
+                      // Cerrar modal móvil si está en modo móvil
+                      if (isMobile && onFilterApplied) {
+                        onFilterApplied();
+                      }
                     }}
                     className={`w-full px-4 py-2 text-left text-sm transition ${
                       filters.selectedBrand === brand

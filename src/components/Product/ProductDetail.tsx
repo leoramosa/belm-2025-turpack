@@ -1095,7 +1095,7 @@ export default function ProductDetail({
 									className="flex-shrink-0 m-0 cursor-pointer"
 								/>
 							</div>
-							<h1 className="text-xl lg:text-2xl font-bold text-gray-900 leading-tight flex-1">
+							<h1 className="text-xl lg:text-[18px] font-bold text-gray-900 leading-tight flex-1">
 									{product.name}
 								</h1>
 						</div>
@@ -1106,13 +1106,13 @@ export default function ProductDetail({
 						<div className="space-y-2 mb-2">
 							{hasDiscount ? (
 								<div className="flex items-baseline gap-3">
-									<span className="text-2xl lg:text-3xl text-primary font-bold">
+									<span className="text-2xl lg:text-[18px] text-primary font-bold">
 										S/. {currentSalePrice}
 									</span>
-									<span className="text-xl lg:text-xl text-gray-400 line-through">
+									<span className="text-xl lg:text-[16px] text-gray-400 line-through">
 										S/. {currentRegularPrice}
 									</span>
-									<span className="text-lg lg:text-lg text-red-500 font-semibold">
+									<span className="text-lg lg:text-[14px] text-red-500 font-semibold">
 										-{discountPercentage}%
 									</span>
 								</div>
