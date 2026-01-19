@@ -1059,31 +1059,6 @@ export default function ProductDetail({
 							</div>
 						)}
 
-						{/* Marca, Título y compartir */}
-						<div className="mb-2">
-							{/* Marca arriba del título */}
-							{productBrand && (
-								<div className="mb-2">
-									<span className="text-sm lg:text-base text-gray-600 font-medium">
-										{productBrand}
-									</span>
-								</div>
-							)}
-							
-							{/* Título y compartir */}
-							<div className="flex items-start justify-between gap-4">
-								<h1 className="text-xl lg:text-3xl font-bold text-gray-900 leading-tight flex-1">
-									{product.name}
-								</h1>
-								<ShareProduct
-									productName={product.name}
-									productUrl={`/productos/${product.slug}`}
-									productImage={product.images?.[0]?.src}
-									className="flex-shrink-0"
-								/>
-							</div>
-						</div>
-
 						{/* Rating y reviews */}
 						<div className="flex items-center mb-2">
 							<StarRating rating={0} count={0} />
@@ -1096,6 +1071,36 @@ export default function ProductDetail({
 								</a>
 							)}
 						</div>
+
+						{/* Marca, Título y compartir */}
+						<div className="mb-2">
+							{/* Marca arriba del título */}
+
+
+							
+							
+							{/* Título y compartir */}
+							<div className="flex itmes-center justify-between pb-3 gap-4">
+							{productBrand && (
+								<div className="m-0 flex items-end  ">
+									<span className=" text-primary  font-medium">
+										{productBrand}
+									</span>
+								</div>
+							)}
+								<ShareProduct
+									productName={product.name}
+									productUrl={`/productos/${product.slug}`}
+									productImage={product.images?.[0]?.src}
+									className="flex-shrink-0 m-0 cursor-pointer"
+								/>
+							</div>
+							<h1 className="text-xl lg:text-2xl font-bold text-gray-900 leading-tight flex-1">
+									{product.name}
+								</h1>
+						</div>
+
+						
 
 						{/* Precios */}
 						<div className="space-y-2 mb-2">

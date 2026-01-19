@@ -268,7 +268,7 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col-reverse md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="flex flex-col md:flex-row items-center space-x-2 text-sm text-gray-400">
-              <span>© 2024 Belm. Todos los derechos reservados.</span>
+              <span>© {new Date().getFullYear()} Belm. Todos los derechos reservados.</span>
 
               <span>
                 Desarrollado por &nbsp;

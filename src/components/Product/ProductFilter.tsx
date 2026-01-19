@@ -18,6 +18,7 @@ export interface ProductFilters {
   inStockOnly: boolean;
   selectedColors: string[];
   selectedTags: string[];
+  selectedBrand: string | null;
 }
 
 interface ProductFilterProps {
@@ -108,6 +109,42 @@ function getColorOptionsFromProducts(products: IProduct[]): Array<{
   return Array.from(colorMap.values());
 }
 
+// Obtener marcas únicas de los productos
+function getBrandsFromProducts(products: IProduct[]): string[] {
+  const brandSet = new Set<string>();
+
+  products.forEach((product) => {
+    // Primero buscar en brands (si viene de la API)
+    if (product.brands && product.brands.length > 0) {
+      product.brands.forEach((brand) => {
+        if (brand.name.trim()) {
+          brandSet.add(brand.name.trim());
+        }
+      });
+    } else {
+      // Fallback: buscar en atributos
+      product.attributes.forEach((attr) => {
+        const slug = attr.slug.toLowerCase();
+        const name = attr.name.toLowerCase();
+        if (
+          slug.includes("brand") ||
+          slug.includes("marca") ||
+          name.includes("brand") ||
+          name.includes("marca")
+        ) {
+          attr.options.forEach((option) => {
+            if (option.name.trim()) {
+              brandSet.add(option.name.trim());
+            }
+          });
+        }
+      });
+    }
+  });
+
+  return Array.from(brandSet).sort();
+}
+
 // Función helper para obtener hex de color por nombre (fallback)
 function getColorHexFromName(colorName: string): string {
   const colorMap: Record<string, string> = {
@@ -167,7 +204,7 @@ function RangeSlider({
   const maxPercent = ((localValues[1] - min) / (max - min)) * 100;
 
   return (
-    <div className="relative h-2">
+    <div className="relative h-2 z-9">
       {/* Track background */}
       <div className="absolute h-2 w-full rounded-full bg-zinc-200"></div>
 
@@ -275,9 +312,12 @@ export function ProductFilter({
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isSubcategoryOpen, setIsSubcategoryOpen] = useState(false);
   const [isSubSubcategoryOpen, setIsSubSubcategoryOpen] = useState(false);
+  const [isBrandOpen, setIsBrandOpen] = useState(false);
+  const [previousBrand, setPreviousBrand] = useState<string | null>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const subcategoryDropdownRef = useRef<HTMLDivElement>(null);
   const subSubcategoryDropdownRef = useRef<HTMLDivElement>(null);
+  const brandDropdownRef = useRef<HTMLDivElement>(null);
 
   // Obtener solo categorías padre (raíz) que tienen hijos
   const rootCategories = useMemo(
@@ -311,6 +351,12 @@ export function ProductFilter({
   // Obtener colores dinámicamente de los productos
   const colorOptions = useMemo(
     () => getColorOptionsFromProducts(products),
+    [products]
+  );
+
+  // Obtener marcas únicas de los productos
+  const brandOptions = useMemo(
+    () => getBrandsFromProducts(products),
     [products]
   );
 
@@ -435,16 +481,27 @@ export function ProductFilter({
       ) {
         setIsSubSubcategoryOpen(false);
       }
+      if (
+        brandDropdownRef.current &&
+        !brandDropdownRef.current.contains(event.target as Node)
+      ) {
+        // Restaurar el valor anterior si se cerró sin seleccionar
+        if (previousBrand !== null && filters.selectedBrand !== previousBrand) {
+          handleFilterChange({ selectedBrand: previousBrand });
+        }
+        setIsBrandOpen(false);
+        setPreviousBrand(null);
+      }
     };
 
-    if (isCategoryOpen || isSubcategoryOpen || isSubSubcategoryOpen) {
+    if (isCategoryOpen || isSubcategoryOpen || isSubSubcategoryOpen || isBrandOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isCategoryOpen, isSubcategoryOpen, isSubSubcategoryOpen]);
+  }, [isCategoryOpen, isSubcategoryOpen, isSubSubcategoryOpen, isBrandOpen, previousBrand, filters.selectedBrand]);
 
   // Encontrar la categoría seleccionada (buscar en rootCategories primero, luego en todo el árbol)
   const selectedCategory = useMemo(() => {
@@ -583,6 +640,14 @@ export function ProductFilter({
       });
     }
 
+    if (filters.selectedBrand) {
+      active.push({
+        key: "brand",
+        label: filters.selectedBrand,
+        value: filters.selectedBrand,
+      });
+    }
+
     return active;
   }, [filters, selectedSubcategory, selectedSubSubcategory]);
 
@@ -606,6 +671,7 @@ export function ProductFilter({
       inStockOnly: false,
       selectedColors: [],
       selectedTags: [],
+      selectedBrand: null,
     });
   };
 
@@ -618,7 +684,8 @@ export function ProductFilter({
     (filters.maxPrice !== null && filters.maxPrice !== priceRange.max) ||
     filters.inStockOnly ||
     filters.selectedColors.length > 0 ||
-    filters.selectedTags.length > 0;
+    filters.selectedTags.length > 0 ||
+    filters.selectedBrand !== null;
 
   // Contenido de los filtros (compartido entre desktop y mobile)
   const filtersContent = (
@@ -662,6 +729,8 @@ export function ProductFilter({
                           (t) => t !== filter.value
                         ),
                       });
+                    } else if (filter.key === "brand") {
+                      handleFilterChange({ selectedBrand: null });
                     }
                   }}
                   className="ml-1 text-green-600 hover:text-green-800"
@@ -785,6 +854,7 @@ export function ProductFilter({
         </div>
       </div>
 
+    
       {/* Subcategory */}
       {filters.category && subcategories.length > 0 && (
         <div className="">
@@ -920,6 +990,83 @@ export function ProductFilter({
           </div>
         </div>
       )}
+
+        {/* Brands */}
+        {brandOptions.length > 0 && (
+        <div className="">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Marca
+          </label>
+          <div className="relative" ref={brandDropdownRef}>
+            <button
+              type="button"
+              onClick={() => {
+                if (!isBrandOpen) {
+                  // Guardar el valor actual antes de abrir
+                  setPreviousBrand(filters.selectedBrand);
+                }
+                setIsBrandOpen(!isBrandOpen);
+              }}
+              className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 py-2 text-left text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <span>{filters.selectedBrand || "Todas"}</span>
+              <svg
+                className={`h-4 w-4 transition-transform ${
+                  isBrandOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            {isBrandOpen && (
+              <div className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg max-h-60 overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFilterChange({ selectedBrand: null });
+                    setIsBrandOpen(false);
+                    setPreviousBrand(null);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm transition ${
+                    !filters.selectedBrand
+                      ? "bg-blue-500 text-white"
+                      : "text-zinc-700 hover:bg-zinc-50"
+                  }`}
+                >
+                  Todas
+                </button>
+                {brandOptions.map((brand) => (
+                  <button
+                    key={brand}
+                    type="button"
+                    onClick={() => {
+                      handleFilterChange({ selectedBrand: brand });
+                      setIsBrandOpen(false);
+                      setPreviousBrand(null);
+                    }}
+                    className={`w-full px-4 py-2 text-left text-sm transition ${
+                      filters.selectedBrand === brand
+                        ? "bg-blue-500 text-white"
+                        : "text-zinc-700 hover:bg-zinc-50"
+                    }`}
+                  >
+                    {brand}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
 
       {/* Price Range */}
       <div className="">

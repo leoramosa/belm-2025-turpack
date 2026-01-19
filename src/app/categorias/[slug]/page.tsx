@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 
 import { ProductGridClient } from '@/components/Product/ProductGridClient';
 import CategorySubcategories from '@/components/CategoryPage/CategorySubcategories';
@@ -31,6 +32,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 	}
 
 	const filteredProducts = filterProductsByCategory(products, category);
+	const parentCategory = category.parentId
+		? findCategoryById(categories, category.parentId)
+		: null;
 
 	return (
 		<div className="min-h-screen ">
@@ -42,12 +46,24 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 					parentCategoryName={category.name}
 				/>
 			) : (
-				/* Si no hay subcategorías, mostrar el título aquí */
-				<div className="text-center mb-8">
-					<h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-						{category.name}
-					</h1>
-				</div>
+				/* Si no hay subcategorías, mostrar el título aquí con el mismo estilo */
+				<section className="max-w-7xl mx-auto px-2 py-10">
+					<div className="container mx-auto">
+						<div className="text-center mb-8">
+							<h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+								{category.name}
+							</h1>
+							{parentCategory && (
+								<Link
+									href={`/categorias/${parentCategory.slug}`}
+									className="mt-4 inline-block text-sm text-gray-600 hover:text-primary transition-colors underline"
+								>
+									← Volver
+								</Link>
+							)}
+						</div>
+					</div>
+				</section>
 			)}
 
 			<ProductGridClient
@@ -142,6 +158,26 @@ function findCategoryBySlug(
 
 		if (node.children && node.children.length > 0) {
 			const childMatch = findCategoryBySlug(node.children, slug, visited);
+			if (childMatch) {
+				return childMatch;
+			}
+		}
+	}
+	return null;
+}
+
+// Función auxiliar para encontrar categoría por ID
+function findCategoryById(
+	nodes: IProductCategoryNode[],
+	id: number
+): IProductCategoryNode | null {
+	for (const node of nodes) {
+		if (node.id === id) {
+			return node;
+		}
+
+		if (node.children && node.children.length > 0) {
+			const childMatch = findCategoryById(node.children, id);
 			if (childMatch) {
 				return childMatch;
 			}

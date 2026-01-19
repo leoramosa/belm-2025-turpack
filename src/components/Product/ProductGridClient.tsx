@@ -160,6 +160,7 @@ export function ProductGridClient({
     inStockOnly: false,
     selectedColors: [],
     selectedTags: [],
+    selectedBrand: null,
   });
 
   // NOTA: La sincronización de filtros de categoría con la URL ahora se maneja
@@ -307,6 +308,38 @@ export function ProductGridClient({
           );
         }
         if (!hasSelectedTag) return false;
+      }
+
+      // Brand filter - primero desde brands (API), sino desde atributos
+      if (filters.selectedBrand) {
+        let productBrandName: string | null = null;
+        
+        // Primero buscar en brands (si viene de la API)
+        if (product.brands && product.brands.length > 0) {
+          productBrandName = product.brands[0].name.trim();
+        } else {
+          // Fallback: buscar en atributos
+          for (const attr of product.attributes) {
+            const slug = attr.slug.toLowerCase();
+            const name = attr.name.toLowerCase();
+            if (
+              slug.includes("brand") ||
+              slug.includes("marca") ||
+              name.includes("brand") ||
+              name.includes("marca")
+            ) {
+              if (attr.options && attr.options.length > 0) {
+                productBrandName = attr.options[0].name.trim();
+                break;
+              }
+            }
+          }
+        }
+        
+        if (!productBrandName || 
+            productBrandName.toLowerCase().trim() !== filters.selectedBrand.toLowerCase().trim()) {
+          return false;
+        }
       }
 
       return true;
