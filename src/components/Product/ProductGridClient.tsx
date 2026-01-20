@@ -220,23 +220,53 @@ export function ProductGridClient({
     const skipSearchFilters = isSearchPage && hasInitialSearchQuery;
 
     const filtered = sourceProducts.filter((product) => {
+      // Helper para obtener la marca del producto
+      const getProductBrand = (product: IProduct): string | null => {
+        // Primero buscar en brands (si viene de la API)
+        if (product.brands && product.brands.length > 0) {
+          return product.brands[0].name;
+        }
+        // Fallback: buscar en atributos
+        for (const attr of product.attributes) {
+          const slug = attr.slug.toLowerCase();
+          const name = attr.name.toLowerCase();
+          if (
+            slug.includes("brand") ||
+            slug.includes("marca") ||
+            name.includes("brand") ||
+            name.includes("marca")
+          ) {
+            if (attr.options && attr.options.length > 0) {
+              return attr.options[0].name;
+            }
+          }
+        }
+        return null;
+      };
+
       // Search filter (from sidebar) - NO aplicar si hay initialSearchQuery
       if (!skipSearchFilters && filters.search) {
-        const searchLower = filters.search.toLowerCase();
+        const searchLower = filters.search.toLowerCase().trim();
+        const productBrand = getProductBrand(product);
+        const productBrandLower = productBrand ? productBrand.toLowerCase().trim() : "";
         const matchesSearch =
           product.name.toLowerCase().includes(searchLower) ||
           product.shortDescription?.toLowerCase().includes(searchLower) ||
-          product.description?.toLowerCase().includes(searchLower);
+          product.description?.toLowerCase().includes(searchLower) ||
+          (productBrandLower && (productBrandLower === searchLower || productBrandLower.includes(searchLower) || searchLower.includes(productBrandLower)));
         if (!matchesSearch) return false;
       }
 
       // Search filter (from top bar) - NO aplicar si hay initialSearchQuery
       if (!skipSearchFilters && searchQuery && searchQuery.trim() !== "") {
-        const searchLower = searchQuery.toLowerCase();
+        const searchLower = searchQuery.toLowerCase().trim();
+        const productBrand = getProductBrand(product);
+        const productBrandLower = productBrand ? productBrand.toLowerCase().trim() : "";
         const matchesSearch =
           product.name.toLowerCase().includes(searchLower) ||
           product.shortDescription?.toLowerCase().includes(searchLower) ||
-          product.description?.toLowerCase().includes(searchLower);
+          product.description?.toLowerCase().includes(searchLower) ||
+          (productBrandLower && (productBrandLower === searchLower || productBrandLower.includes(searchLower) || searchLower.includes(productBrandLower)));
         if (!matchesSearch) return false;
       }
 

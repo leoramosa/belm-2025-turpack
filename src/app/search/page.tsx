@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ProductCard } from "@/components/Product/ProductCard";
 import { fetchProducts } from "@/services/products";
 import type { IProduct } from "@/types/product";
+import { getBrandFromProduct } from "@/utils/productAttributes";
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string }>;
@@ -35,10 +36,39 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   try {
     if (searchQuery.trim()) {
-      // Buscar productos con el query
-      products = await fetchProducts({
-        search: searchQuery,
+      // Obtener TODOS los productos y filtrar en el cliente
+      // Esto asegura que busquemos también en marcas, ya que WooCommerce puede no buscarlas
+      const allProducts = await fetchProducts({
         fetchAll: true,
+      });
+      
+      // Filtrar por nombre, descripción y marcas en el cliente
+      const searchLower = searchQuery.toLowerCase().trim();
+      products = allProducts.filter((product) => {
+        // Buscar en nombre, descripción
+        const matchesNameOrDescription =
+          product.name.toLowerCase().includes(searchLower) ||
+          product.shortDescription?.toLowerCase().includes(searchLower) ||
+          product.description?.toLowerCase().includes(searchLower);
+        
+        // Buscar en marcas - comparación más flexible
+        let matchesBrand = false;
+        if (product.brands && product.brands.length > 0) {
+          matchesBrand = product.brands.some((brand) => {
+            const brandNameLower = brand.name.toLowerCase().trim();
+            // Coincidencia exacta o parcial
+            return brandNameLower === searchLower || brandNameLower.includes(searchLower) || searchLower.includes(brandNameLower);
+          });
+        } else {
+          // Fallback: buscar en atributos
+          const brandName = getBrandFromProduct(product.attributes);
+          if (brandName) {
+            const brandNameLower = brandName.toLowerCase().trim();
+            matchesBrand = brandNameLower === searchLower || brandNameLower.includes(searchLower) || searchLower.includes(brandNameLower);
+          }
+        }
+        
+        return matchesNameOrDescription || matchesBrand;
       });
     } else {
       // Si no hay query, mostrar todos los productos
