@@ -4,8 +4,10 @@ import Link from 'next/link';
 
 import { ProductGridClient } from '@/components/Product/ProductGridClient';
 import CategorySubcategories from '@/components/CategoryPage/CategorySubcategories';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import { fetchProductCategoriesTree } from '@/services/categories';
 import { fetchProducts } from '@/services/products';
+import { absoluteUrl } from '@/lib/site';
 import type { IProductCategoryNode } from '@/types/ICategory';
 import type { IProduct } from '@/types/product';
 import {
@@ -38,6 +40,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
 	return (
 		<div className="min-h-screen ">
+			<BreadcrumbJsonLd
+				items={[
+					{ name: 'Inicio', path: '/' },
+					{ name: category.name, path: `/categorias/${slug}` },
+				]}
+			/>
 			{/* Mostrar subcategorías si existen - CategorySubcategories maneja el título */}
 			{category.children && category.children.length > 0 ? (
 				<CategorySubcategories
@@ -101,40 +109,56 @@ export async function generateMetadata({
 		rawDescription
 	);
 
+	const canonical = absoluteUrl(`/categorias/${slug}`);
+	const categoryImageSrc = category.image?.src?.trim();
+	const hasRealCategoryImage = Boolean(
+		categoryImageSrc &&
+			!categoryImageSrc.includes('belm-rs.jpg') &&
+			(categoryImageSrc.startsWith('http://') ||
+				categoryImageSrc.startsWith('https://') ||
+				categoryImageSrc.startsWith('/'))
+	);
+
 	return {
 		title,
 		description,
-		keywords: [
-			category.name.toLowerCase(),
-			'productos',
-			'categoría',
-			'productos premium',
-			'envío gratis',
-			'Perú',
-		],
 		openGraph: {
 			title,
 			description,
-			url: `https://www.belm.pe/categorias/${slug}`,
-			images: [
-				{
-					url: category.image?.src || '/belm-rs.jpg',
-					width: 1200,
-					height: 630,
-					alt: category.name,
-				},
-			],
+			url: canonical,
 			type: 'website',
 			siteName: 'Belm',
+			...(hasRealCategoryImage && categoryImageSrc
+				? {
+						images: [
+							{
+								url: categoryImageSrc,
+								width: 1200,
+								height: 630,
+								alt: category.name,
+							},
+						],
+					}
+				: {}),
 		},
-		twitter: {
-			card: 'summary_large_image',
-			title,
-			description,
-			images: [category.image?.src || '/belm-rs.jpg'],
-		},
+		...(hasRealCategoryImage && categoryImageSrc
+			? {
+					twitter: {
+						card: 'summary_large_image',
+						title,
+						description,
+						images: [categoryImageSrc],
+					},
+				}
+			: {
+					twitter: {
+						card: 'summary_large_image',
+						title,
+						description,
+					},
+				}),
 		alternates: {
-			canonical: `https://www.belm.pe/categorias/${slug}`,
+			canonical,
 		},
 	};
 }

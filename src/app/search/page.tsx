@@ -4,6 +4,7 @@ import { ProductCard } from "@/components/Product/ProductCard";
 import { fetchProducts } from "@/services/products";
 import type { IProduct } from "@/types/product";
 import { getBrandFromProduct } from "@/utils/productAttributes";
+import { absoluteUrl } from "@/lib/site";
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string }>;
@@ -14,17 +15,34 @@ export async function generateMetadata({
 }: SearchPageProps): Promise<Metadata> {
   const params = await searchParams;
   const query = params.q || "";
+  const canonical = query
+    ? absoluteUrl(`/search?q=${encodeURIComponent(query)}`)
+    : absoluteUrl("/search");
 
   if (!query) {
     return {
       title: "Búsqueda | BELM",
       description: "Busca productos en nuestra tienda",
+      alternates: { canonical },
+      openGraph: {
+        title: "Búsqueda | BELM",
+        description: "Busca productos en nuestra tienda",
+        url: canonical,
+        siteName: "Belm",
+      },
     };
   }
 
   return {
     title: `Búsqueda: ${query} | BELM`,
     description: `Resultados de búsqueda para "${query}"`,
+    alternates: { canonical },
+    openGraph: {
+      title: `Búsqueda: ${query} | BELM`,
+      description: `Resultados de búsqueda para "${query}"`,
+      url: canonical,
+      siteName: "Belm",
+    },
   };
 }
 

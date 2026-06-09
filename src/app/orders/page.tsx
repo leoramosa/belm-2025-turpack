@@ -1,38 +1,24 @@
 import OrdersList from "@/components/Orders/OrdersList";
 import type { Metadata } from "next";
+import { absoluteUrl } from "@/lib/site";
 
-// Metadata específica para la página Orders
 export const metadata: Metadata = {
   title: "Mis Pedidos",
   description:
     "Revisa el historial de tus pedidos en Belm. Ve el estado, detalles y rastrea todos tus pedidos anteriores.",
-  keywords: [
-    "mis pedidos",
-    "historial pedidos",
-    "estado pedidos",
-    "pedidos anteriores",
-    "compras",
-  ],
   robots: {
-    index: false, // No indexar páginas privadas
+    index: false,
     follow: true,
   },
   openGraph: {
     title: "Mis Pedidos - Belm",
     description:
       "Revisa el historial de tus pedidos en Belm. Ve el estado y detalles de todos tus pedidos.",
-    url: "https://www.belm.pe/orders",
-    images: [
-      {
-        url: "/belm-rs.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Mis Pedidos - Belm",
-      },
-    ],
+    url: absoluteUrl("/orders"),
+    siteName: "Belm",
   },
   alternates: {
-    canonical: "https://www.belm.pe/orders",
+    canonical: absoluteUrl("/orders"),
   },
 };
 

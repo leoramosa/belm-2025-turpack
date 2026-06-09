@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import ProductDetail from "@/components/Product/ProductDetail";
+import ProductJsonLd from "@/components/Product/ProductJsonLd";
+import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
 import { fetchProductBySlug, fetchProducts } from "@/services/products";
 import { fetchProductCategoriesTree } from "@/services/categories";
 import type { IProduct } from "@/types/product";
 import {
-  optimizeMetaDescription,
-  generateProductMetaDescription,
-  generateProductTitle,
+	optimizeMetaDescription,
+	generateProductMetaDescription,
+	optimizeTitle,
 } from "@/utils/seo";
+import { absoluteUrl, SITE_URL } from "@/lib/site";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -27,7 +30,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  // Cargar recomendaciones de la misma categoría principal
   let recommendations: IProduct[] = [];
   try {
     const mainCategory = product.categories?.[0];
@@ -38,7 +40,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
         includeOutOfStock: false,
       });
 
-      // Filtrar el producto actual y limitar a 4
       recommendations = categoryProducts
         .filter((p) => p.id !== product.id)
         .slice(0, 4);
@@ -47,14 +48,27 @@ export default async function ProductPage({ params }: ProductPageProps) {
     console.error("Error loading recommendations:", error);
   }
 
+  const mainCat = product.categories?.[0];
+  const breadcrumbItems = [
+    { name: "Inicio", path: "/" },
+    ...(mainCat
+      ? [{ name: mainCat.name, path: `/categorias/${mainCat.slug}` }]
+      : []),
+    { name: product.name, path: `/productos/${product.slug}` },
+  ];
+
   return (
-    <div className="min-h-screen ">
-      <ProductDetail
-        product={product}
-        categories={categories}
-        recommendations={recommendations}
-      />
-    </div>
+    <>
+      <ProductJsonLd product={product} siteUrl={SITE_URL} />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      <div className="min-h-screen ">
+        <ProductDetail
+          product={product}
+          categories={categories}
+          recommendations={recommendations}
+        />
+      </div>
+    </>
   );
 }
 
@@ -70,26 +84,33 @@ export async function generateMetadata({
     };
   }
 
-  // Optimizar título para SEO (50-60 caracteres óptimo)
-  const title = generateProductTitle(product.name, "Belm");
+  const categoryName = product.categories?.[0]?.name;
+  const absoluteTitle = optimizeTitle(
+    categoryName
+      ? `${product.name} — ${categoryName} | Belm · Perú`
+      : `${product.name} | Belm · Perú`,
+    "Belm"
+  );
+
   const rawDescription = extractPlainText(
     product.shortDescription || product.description
   );
 
-  // Optimizar metadescripción para SEO
-  // Mínimo: 120 caracteres, Óptimo: 150-160 caracteres, Máximo: 160 caracteres
-  const categoryName = product.categories?.[0]?.name;
   const price = product.pricing.salePrice ?? product.pricing.price ?? 0;
 
   const description = rawDescription
     ? optimizeMetaDescription(rawDescription)
     : generateProductMetaDescription(product.name, categoryName, price);
 
-  // Obtener la imagen principal
   const primaryImage = product.images?.[0];
-  const imageUrl = primaryImage?.src || "/belm-rs.jpg";
+  const hasRealProductImage = Boolean(
+    primaryImage?.src?.trim() &&
+      !primaryImage.src.includes("belm-rs.jpg") &&
+      (primaryImage.src.startsWith("http://") ||
+        primaryImage.src.startsWith("https://") ||
+        primaryImage.src.startsWith("/"))
+  );
 
-  // Obtener precios (reutilizando la variable price ya declarada)
   const regularPrice =
     product.pricing.regularPrice ?? product.pricing.price ?? 0;
   const hasDiscount =
@@ -99,46 +120,57 @@ export async function generateMetadata({
     product.pricing.regularPrice > 0 &&
     product.pricing.salePrice < product.pricing.regularPrice;
 
+  const canonical = absoluteUrl(`/productos/${slug}`);
+
   return {
-    title,
+    title: { absolute: absoluteTitle },
     description,
-    keywords: [
-      product.name.toLowerCase(),
-      "producto premium",
-      "envío gratis",
-      "Perú",
-      ...(product.categories?.map((cat) => cat.name.toLowerCase()) || []),
-    ],
     openGraph: {
-      title,
+      title: absoluteTitle,
       description,
-      url: `https://www.belm.pe/productos/${slug}`,
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: product.name,
-        },
-      ],
-      type: "website",
+      url: canonical,
       siteName: "Belm",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [imageUrl],
-    },
+      type: "product",
+      ...(hasRealProductImage && primaryImage?.src
+        ? {
+            images: [
+              {
+                url: primaryImage.src,
+                width: 1200,
+                height: 630,
+                alt: product.name,
+              },
+            ],
+          }
+        : {}),
+    } as Metadata["openGraph"],
+    ...(hasRealProductImage && primaryImage?.src
+      ? {
+          twitter: {
+            card: "summary_large_image",
+            title: absoluteTitle,
+            description,
+            images: [primaryImage.src],
+          },
+        }
+      : {
+          twitter: {
+            card: "summary_large_image",
+            title: absoluteTitle,
+            description,
+          },
+        }),
     alternates: {
-      canonical: `https://www.belm.pe/productos/${slug}`,
+      canonical,
     },
     other: {
       "product:price:amount": price.toString(),
-      "product:price:currency": "PEN",
+      "product:price:currency": (product.pricing.currency || "PEN").toUpperCase(),
       ...(hasDiscount && {
         "product:original_price:amount": regularPrice.toString(),
-        "product:original_price:currency": "PEN",
+        "product:original_price:currency": (
+          product.pricing.currency || "PEN"
+        ).toUpperCase(),
       }),
     },
   };

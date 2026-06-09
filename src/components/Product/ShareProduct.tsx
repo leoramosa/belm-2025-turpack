@@ -19,6 +19,7 @@ import {
   copyToClipboard,
 } from "@/utils/socialLinks";
 import { toast } from "sonner";
+import { SITE_URL } from "@/lib/site";
 
 interface ShareProductProps {
   productName: string;
@@ -39,7 +40,7 @@ export default function ShareProduct({
   const fullUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}${productUrl}`
-      : `https://www.belm.pe${productUrl}`;
+      : `${SITE_URL}${productUrl}`;
 
   const handleShare = async (
     platform: string,

@@ -1,6 +1,8 @@
-import { fetchPostBySlug } from "@/services/posts";
+import type { Metadata } from "next";
+import { fetchPostBySlug, stripHtml } from "@/services/posts";
 import { notFound } from "next/navigation";
 import PoliticaDetail from "@/components/Politicas/PoliticaDetail";
+import { absoluteUrl } from "@/lib/site";
 
 interface PoliticaPageProps {
   params: Promise<{ slug: string }>;
@@ -11,7 +13,6 @@ export default async function PoliticaPage({ params }: PoliticaPageProps) {
 
   if (!slug) return notFound();
 
-  // Fetch post data
   const post = await fetchPostBySlug(slug);
 
   if (!post) return notFound();
@@ -19,24 +20,33 @@ export default async function PoliticaPage({ params }: PoliticaPageProps) {
   return <PoliticaDetail post={post} />;
 }
 
-export async function generateMetadata({ params }: PoliticaPageProps) {
+export async function generateMetadata({
+  params,
+}: PoliticaPageProps): Promise<Metadata> {
   const { slug } = await params;
 
   try {
     const post = await fetchPostBySlug(slug);
     if (!post) return { title: "Política no encontrada" };
 
+    const description = stripHtml(
+      post.excerpt.rendered || `Lee más sobre ${post.title.rendered}`
+    ).slice(0, 320);
+
     return {
       title: `${post.title.rendered} - Belm`,
-      description:
-        post.excerpt.rendered || `Lee más sobre ${post.title.rendered}`,
+      description,
       openGraph: {
         title: `${post.title.rendered} - Belm`,
-        description:
-          post.excerpt.rendered || `Lee más sobre ${post.title.rendered}`,
+        description,
         type: "article",
         publishedTime: post.date,
         modifiedTime: post.modified,
+        url: absoluteUrl(`/politicas/${slug}`),
+        siteName: "Belm",
+      },
+      alternates: {
+        canonical: absoluteUrl(`/politicas/${slug}`),
       },
     };
   } catch {

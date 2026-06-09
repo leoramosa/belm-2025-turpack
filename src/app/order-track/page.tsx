@@ -1,38 +1,24 @@
 import OrderTrackPage from "@/components/OrderTrack/OrderTrackPage";
 import type { Metadata } from "next";
+import { absoluteUrl } from "@/lib/site";
 
-// Metadata específica para la página Order Track
 export const metadata: Metadata = {
   title: "Rastrear Pedido",
   description:
     "Rastrea el estado de tu pedido en Belm. Ingresa tu número de pedido para ver el estado actual de tu compra.",
-  keywords: [
-    "rastrear pedido",
-    "seguimiento",
-    "estado pedido",
-    "número pedido",
-    "envío",
-  ],
   robots: {
-    index: false, // No indexar páginas de rastreo
+    index: false,
     follow: true,
   },
   openGraph: {
     title: "Rastrear Pedido - Belm",
     description:
       "Rastrea el estado de tu pedido en Belm. Ingresa tu número de pedido para ver el estado actual.",
-    url: "https://www.belm.pe/order-track",
-    images: [
-      {
-        url: "/belm-rs.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Rastrear Pedido - Belm",
-      },
-    ],
+    url: absoluteUrl("/order-track"),
+    siteName: "Belm",
   },
   alternates: {
-    canonical: "https://www.belm.pe/order-track",
+    canonical: absoluteUrl("/order-track"),
   },
 };
 

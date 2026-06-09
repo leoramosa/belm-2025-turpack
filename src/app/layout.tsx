@@ -8,7 +8,11 @@ import CartDrawer from "@/components/CartDrawer/CartDrawer";
 import Footer from "@/components/shared/Footer";
 import GlobalLoader from "@/components/shared/GlobalLoader";
 import { generatePageTitle } from "@/utils/seo";
-import  WhatsAppButton  from "@/components/shared/WhatsAppButton";
+import WhatsAppButton from "@/components/shared/WhatsAppButton";
+import SiteJsonLd from "@/components/seo/SiteJsonLd";
+import { SITE_URL } from "@/lib/site";
+
+const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION?.trim();
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,8 +25,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(`${SITE_URL}/`),
   title: generatePageTitle("Belm", "Belm", "Productos de Belleza"),
   description: "Catálogo headless conectado a WordPress",
+  ...(googleSiteVerification
+    ? { verification: { google: googleSiteVerification } }
+    : {}),
+  openGraph: {
+    siteName: "Belm",
+    url: SITE_URL,
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -54,6 +66,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SiteJsonLd />
         <Navbar categories={categories} />
         
         <main>{children}</main>

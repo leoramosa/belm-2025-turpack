@@ -3,37 +3,21 @@ import { fetchProducts } from '@/services/products';
 import type { Metadata } from 'next';
 import type { IProduct } from '@/types/product';
 import { generatePageTitle } from '@/utils/seo';
+import { absoluteUrl } from '@/lib/site';
 
-// Metadata específica para la página Shop
 export const metadata: Metadata = {
 	title: generatePageTitle('Tienda', 'Belm', 'Productos Premium'),
 	description:
 		'Descubre todos nuestros productos premium en la tienda de Belm. Filtra por categoría, precio y características. Envío gratis a todo el Perú.',
-	keywords: [
-		'tienda',
-		'productos',
-		'catalogo completo',
-		'productos premium',
-		'filtros',
-		'envío gratis',
-		'Perú',
-	],
 	openGraph: {
 		title: 'Tienda - Belm',
 		description:
 			'Descubre todos nuestros productos premium en la tienda de Belm. Filtra por categoría, precio y características.',
-		url: 'https://www.belm.pe/shop',
-		images: [
-			{
-				url: '/belm-rs.jpg',
-				width: 1200,
-				height: 630,
-				alt: 'Tienda - Belm',
-			},
-		],
+		url: absoluteUrl('/shop'),
+		siteName: 'Belm',
 	},
 	alternates: {
-		canonical: 'https://www.belm.pe/shop',
+		canonical: absoluteUrl('/shop'),
 	},
 };
 

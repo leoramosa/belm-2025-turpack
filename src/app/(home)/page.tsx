@@ -17,41 +17,25 @@ import { IProduct, ProductVariation } from '@/types/product';
 import { DynamicShowcase } from '@/interface/IDynamicShowcase';
 import { loadDynamicProductShowcases } from '@/lib/dynamicShowcases';
 import type { Metadata } from 'next';
+import { absoluteUrl } from '@/lib/site';
 
-// Metadata específica para la página Home
 export const metadata: Metadata = {
 	title: 'BELM: Tu Tienda Online de Skincare, Belleza y Moda en Perú',
 	description:
 		'Buscas lo mejor en Skincare, Belleza y moda, explora BELM, tu tienda especializada en Perú, con las marcas más amadas del mundo. ¡Descubre tu mejor versión hoy!',
-	keywords: [
-		'inicio',
-		'productos premium',
-		'tienda online',
-		'envío gratis',
-		'Perú',
-		'calidad',
-	],
 	openGraph: {
 		title: 'BELM: Tu Tienda Online de Skincare, Belleza y Moda en Perú',
 		description:
 			'Buscas lo mejor en Skincare, Belleza y moda, explora BELM, tu tienda especializada en Perú, con las marcas más amadas del mundo. ¡Descubre tu mejor versión hoy!',
-		url: 'https://www.belm.pe',
-		images: [
-			{
-				url: '/belm-rs.jpg',
-				width: 1200,
-				height: 630,
-				alt: 'Belm - Página de Inicio',
-			},
-		],
+		url: absoluteUrl('/'),
+		siteName: 'Belm',
 	},
 	twitter: {
 		title: 'BELM: Tu Tienda Online de Skincare, Belleza y Moda en Perú',
 		description: 'Bienvenido a Belm, tu tienda online de productos premium.',
-		images: ['/belm-rs.jpg'],
 	},
 	alternates: {
-		canonical: 'https://www.belm.pe',
+		canonical: absoluteUrl('/'),
 	},
 };
 

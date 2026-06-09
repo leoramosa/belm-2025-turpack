@@ -2,41 +2,25 @@ import LoMasVendidoPage from "@/components/LoMasVendido/LoMasVendidoPage";
 import { fetchBestSellerProducts } from "@/services/products";
 import type { Metadata } from "next";
 import { generatePageTitle } from "@/utils/seo";
+import { absoluteUrl } from "@/lib/site";
 
-// Metadata específica para la página Lo más vendido
 export const metadata: Metadata = {
-  title: generatePageTitle("Lo más vendido", "Belm", "Productos Populares"),
+  title: generatePageTitle("Lo m?s vendido", "Belm", "Productos Populares"),
   description:
-    "Descubre nuestros productos más populares y vendidos. Los favoritos de nuestros clientes con las mejores calificaciones.",
-  keywords: [
-    "productos más vendidos",
-    "lo más vendido",
-    "productos populares",
-    "best seller",
-    "productos favoritos",
-    "más comprados",
-  ],
+    "Descubre nuestros productos m?s populares y vendidos. Los favoritos de nuestros clientes con las mejores calificaciones.",
   openGraph: {
-    title: "Lo más vendido - Belm",
+    title: "Lo m?s vendido - Belm",
     description:
-      "Descubre nuestros productos más populares y vendidos. Los favoritos de nuestros clientes.",
-    url: "https://www.belm.pe/lo-mas-vendido",
-    images: [
-      {
-        url: "/belm-rs.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Lo más vendido - Belm",
-      },
-    ],
+      "Descubre nuestros productos m?s populares y vendidos. Los favoritos de nuestros clientes.",
+    url: absoluteUrl("/lo-mas-vendido"),
+    siteName: "Belm",
   },
   alternates: {
-    canonical: "https://www.belm.pe/lo-mas-vendido",
+    canonical: absoluteUrl("/lo-mas-vendido"),
   },
 };
 
 export default async function LoMasVendidoRoutePage() {
-  // Máximo 72 productos para la página completa
   const bestSellerProducts = await fetchBestSellerProducts(72, false);
 
   return <LoMasVendidoPage products={bestSellerProducts} />;
