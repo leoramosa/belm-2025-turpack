@@ -99,8 +99,13 @@ export function ProductCard({
   context = "default",
   microdataAsListItem = false,
 }: ProductCardProps) {
-  const primaryImage = product.images[0] ?? null;
-  const { pricing } = product;
+  const primaryImage = product.images?.[0] ?? null;
+  const pricing = product.pricing ?? {
+    price: null,
+    regularPrice: null,
+    salePrice: null,
+    currency: "PEN",
+  };
   const allCategories = useSelectCategories();
   const router = useRouter();
 
@@ -491,12 +496,10 @@ export function ProductCard({
     );
   }
 
-  // Vista vertical (grid) - por defecto (versión principal para SEO)
+  // Vista vertical (grid): microdata y metadatos NO van dentro de <Link>/<a> (HTML inválido → hidratación #418).
   return (
-    <Link
-      className="cursor-pointer"
-      href={`/productos/${product.slug}`}
-      aria-label={anchorText}
+    <div
+      className="block h-full"
       {...(microdataAsListItem && !suppressProductMicrodata
         ? { itemProp: "item" as const }
         : {})}
@@ -507,9 +510,43 @@ export function ProductCard({
           }
         : {})}
     >
-      {/* Texto ancla optimizado para SEO (oculto visualmente pero visible para motores de búsqueda) */}
-      <span className="sr-only">{anchorText}</span>
-      <div className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-md transition hover:shadow-lg">
+      {!suppressProductMicrodata && schemaImageHref ? (
+        <link itemProp="image" href={schemaImageHref} />
+      ) : null}
+      {!suppressProductMicrodata ? (
+        <div
+          className="sr-only"
+          aria-hidden
+          itemProp="offers"
+          itemScope
+          itemType="https://schema.org/Offer"
+        >
+          <meta itemProp="url" content={productPageUrl} />
+          <meta
+            itemProp="availability"
+            content={
+              isOutOfStock
+                ? "https://schema.org/OutOfStock"
+                : "https://schema.org/InStock"
+            }
+          />
+          {displayPrice !== null ? (
+            <>
+              <meta itemProp="price" content={displayPrice.toFixed(2)} />
+              <meta itemProp="priceCurrency" content={schemaCurrency} />
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-md transition hover:shadow-lg">
+        <Link
+          href={`/productos/${product.slug}`}
+          className="flex min-h-0 flex-1 cursor-pointer flex-col text-inherit no-underline"
+          aria-label={anchorText}
+        >
+          {/* Texto ancla optimizado para SEO (oculto visualmente pero visible para motores de búsqueda) */}
+          <span className="sr-only">{anchorText}</span>
         {/* Image Section */}
         <div className="relative object-cover aspect-square w-full overflow-hidden rounded-t-2xl">
           {primaryImage ? (
@@ -523,9 +560,6 @@ export function ProductCard({
                 }`}
                 sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
               />
-              {schemaImageHref && !suppressProductMicrodata ? (
-                <meta itemProp="image" content={schemaImageHref} />
-              ) : null}
               {/* Overlay oscuro cuando está sin stock */}
               {isOutOfStock && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30 pointer-events-none">
@@ -641,11 +675,11 @@ export function ProductCard({
           )}
         </div>
 
-        {/* Content Section */}
-        <div className="p-4 flex flex-col justify-between grow">
+        {/* Content Section (sin botón: no puede ir <button> dentro de <a>) */}
+        <div className="flex flex-1 flex-col p-4">
           {/* Product Name */}
           <h3
-            className="text-sm lg:text-[14px] mb-1 line-clamp-2 cursor-pointer"
+            className="mb-1 line-clamp-2 cursor-pointer text-sm lg:text-[14px]"
             {...(!suppressProductMicrodata ? { itemProp: "name" as const } : {})}
           >
             {product.name}
@@ -658,38 +692,10 @@ export function ProductCard({
             </p>
           )} */}
 
-          {/* Pricing + Offer (microdata en listados; en PDP relacionados solo JSON-LD del producto principal) */}
-          <div
-            className="mb-2 flex flex-wrap items-end gap-2"
-            {...(!suppressProductMicrodata
-              ? {
-                  itemProp: "offers" as const,
-                  itemScope: true,
-                  itemType: "https://schema.org/Offer",
-                }
-              : {})}
-          >
-            {!suppressProductMicrodata ? (
-              <>
-                <link itemProp="url" href={productPageUrl} />
-                <link
-                  itemProp="availability"
-                  href={
-                    isOutOfStock
-                      ? "https://schema.org/OutOfStock"
-                      : "https://schema.org/InStock"
-                  }
-                />
-              </>
-            ) : null}
-            {displayPrice !== null && !suppressProductMicrodata ? (
-              <>
-                <meta itemProp="price" content={displayPrice.toFixed(2)} />
-                <meta itemProp="priceCurrency" content={schemaCurrency} />
-              </>
-            ) : null}
+          {/* Precios visibles (Offer microdata: bloque sr-only hermano del Link) */}
+          <div className="mb-2 flex flex-wrap items-end gap-2">
             {formattedPrice ? (
-              <span className="text-primary font-bold text-md lg:text-[16px]">
+              <span className="text-md font-bold text-primary lg:text-[16px]">
                 {formattedPrice}
               </span>
             ) : (
@@ -706,7 +712,7 @@ export function ProductCard({
 
           {/* Colors */}
           {visibleColors.length > 0 && (
-            <div className="flex items-center gap-2 mb-3">
+            <div className="mb-3 flex items-center gap-2">
               <span className="text-xs text-zinc-500">Colores:</span>
               <div className="flex items-center gap-1.5">
                 {visibleColors.map((option: ProductAttributeOption) => {
@@ -731,15 +737,18 @@ export function ProductCard({
               </div>
             </div>
           )}
+        </div>
+        </Link>
 
-          {/* Action Button */}
+        <div className="px-4 pb-4">
           <button
+            type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               router.push(`/productos/${product.slug}`);
             }}
-            className={`mt-auto cursor-pointer flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-semibold text-white transition ${
+            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-semibold text-white transition ${
               isOutOfStock
                 ? "bg-gray-500 hover:bg-gray-600"
                 : "bg-primary hover:bg-primary/90"
@@ -750,13 +759,13 @@ export function ProductCard({
               {isOutOfStock
                 ? "Ver detalle"
                 : isVariableProduct
-                ? "Seleccionar"
-                : "Comprar"}
+                  ? "Seleccionar"
+                  : "Comprar"}
             </span>
           </button>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 

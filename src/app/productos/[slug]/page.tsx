@@ -130,7 +130,8 @@ export async function generateMetadata({
       description,
       url: canonical,
       siteName: "Belm",
-      type: "product",
+      // Next.js solo admite tipos OG concretos (p. ej. website, article). "product" lanza en servidor.
+      type: "website",
       ...(hasRealProductImage && primaryImage?.src
         ? {
             images: [
@@ -143,7 +144,7 @@ export async function generateMetadata({
             ],
           }
         : {}),
-    } as Metadata["openGraph"],
+    },
     ...(hasRealProductImage && primaryImage?.src
       ? {
           twitter: {
