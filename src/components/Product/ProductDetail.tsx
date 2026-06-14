@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { isColorAttribute, extractColorValue, getBrandFromProduct } from '@/utils/productAttributes';
+import { isColorAttribute, extractColorValue, resolveProductBrandName } from '@/utils/productAttributes';
 import { IProductCategoryNode } from '@/types/ICategory';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import RecentlyViewedProducts from './RecentlyViewedProducts';
@@ -220,15 +220,10 @@ export default function ProductDetail({
 
 	const defaultVariationForPricing = getDefaultVariationForPricing();
 
-	// Obtener la marca del producto: primero desde brands (si viene de la API), sino desde atributos
-	const productBrand = useMemo(() => {
-		// Si viene directamente en brands desde WooCommerce
-		if (product.brands && product.brands.length > 0) {
-			return product.brands[0].name;
-		}
-		// Fallback: buscar en atributos
-		return getBrandFromProduct(product.attributes);
-	}, [product.brands, product.attributes]);
+	const productBrand = useMemo(
+		() => resolveProductBrandName(product),
+		[product]
+	);
 
 	// Obtener el stock disponible del producto o variación seleccionada
 	const getAvailableStock = useMemo(() => {

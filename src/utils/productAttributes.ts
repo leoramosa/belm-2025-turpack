@@ -1,4 +1,4 @@
-import { ProductAttribute, ProductAttributeOption } from "@/types/product";
+import type { IProduct, ProductAttribute, ProductAttributeOption } from "@/types/product";
 
 export function isColorAttribute(attribute: ProductAttribute): boolean {
   const slug = attribute.slug.toLowerCase();
@@ -67,6 +67,16 @@ export function getBrandFromProduct(
 
   // Retornar la primera opción de marca (normalmente solo hay una)
   return brandAttribute.options[0].name;
+}
+
+/** Misma lógica que PDP: taxonomía `brands` de WooCommerce o atributo marca/brand. */
+export function resolveProductBrandName(product: IProduct): string | null {
+  if (product.brands && product.brands.length > 0) {
+    const n = product.brands[0]?.name?.trim();
+    if (n) return n;
+  }
+  const fromAttrs = getBrandFromProduct(product.attributes)?.trim();
+  return fromAttrs || null;
 }
 
 export function getContrastingTextColor(

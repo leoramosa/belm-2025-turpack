@@ -1,5 +1,6 @@
 import type { IProduct } from "@/types/product";
 import { absoluteUrl } from "@/lib/site";
+import { resolveProductBrandName } from "@/utils/productAttributes";
 
 const DESCRIPTION_MAX = 8000;
 
@@ -62,9 +63,11 @@ export function buildProductJsonLd(
   product: IProduct,
   baseUrl: string
 ): Record<string, unknown> {
-  const plainDesc = stripHtmlToPlain(
-    product.shortDescription || product.description || ""
-  );
+  // Descripción corta primero (como en ProductDetail / meta), luego la larga
+  const shortHtml = (product.shortDescription ?? "").trim();
+  const longHtml = (product.description ?? "").trim();
+  const htmlForSchema = shortHtml.length > 0 ? shortHtml : longHtml;
+  const plainDesc = stripHtmlToPlain(htmlForSchema);
   const description =
     plainDesc.length > DESCRIPTION_MAX
       ? plainDesc.slice(0, DESCRIPTION_MAX)
@@ -78,7 +81,7 @@ export function buildProductJsonLd(
     typeof product.sku === "string" && product.sku.trim().length > 0
       ? product.sku.trim()
       : String(product.id);
-  const brandName = product.brands?.[0]?.name?.trim() || "Belm";
+  const brandName = resolveProductBrandName(product) || "Belm";
 
   const payload: Record<string, unknown> = {
     "@context": "https://schema.org",
