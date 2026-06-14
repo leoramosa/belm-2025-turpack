@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-// Buscar cliente WooCommerce por email
+// Buscar cliente WooCommerce por email API
 export const getCustomerIdByEmail = async (
-  email: string
+  email: string,
 ): Promise<number | null> => {
   try {
     console.log("Buscando cliente por email en API:", email);
@@ -10,7 +10,7 @@ export const getCustomerIdByEmail = async (
       `/api/customers?email=${encodeURIComponent(email)}`,
       {
         cache: "no-store",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -37,7 +37,7 @@ export const getCustomerIdByEmail = async (
 
 // Crear cliente en WooCommerce si no existe
 export const createCustomerInWooCommerce = async (
-  email: string
+  email: string,
 ): Promise<number> => {
   try {
     const customerData = {
@@ -94,7 +94,7 @@ export const fetchUserAccountData = async (email: string) => {
         throw new Error(
           `No se pudo crear el cliente en WooCommerce. Error: ${
             error instanceof Error ? error.message : "Error desconocido"
-          }`
+          }`,
         );
       }
     }
@@ -157,7 +157,7 @@ export const fetchUserAccountData = async (email: string) => {
     throw new Error(
       `No se pudo obtener los datos del cliente. Error: ${
         error instanceof Error ? error.message : "Error desconocido"
-      }`
+      }`,
     );
   }
 };
@@ -187,7 +187,7 @@ export const updateCustomerData = async (
     email: string;
     billing: Partial<WooAddress>;
     shipping: Partial<WooAddress>;
-  }>
+  }>,
 ) => {
   try {
     const response = await fetch(`/api/customers/${userId}`, {
@@ -211,7 +211,7 @@ export const updateCustomerData = async (
 // Actualizar solo dirección de facturación
 export const updateCustomerBilling = async (
   userId: number,
-  billing: Partial<WooAddress>
+  billing: Partial<WooAddress>,
 ) => {
   return updateCustomerData(userId, { billing });
 };
@@ -219,7 +219,7 @@ export const updateCustomerBilling = async (
 // Actualizar solo dirección de envío
 export const updateCustomerShipping = async (
   userId: number,
-  shipping: Partial<WooAddress>
+  shipping: Partial<WooAddress>,
 ) => {
   return updateCustomerData(userId, { shipping });
 };
@@ -228,7 +228,7 @@ export const updateCustomerShipping = async (
 export const changeUserPassword = async (
   userId: number,
   newPassword: string,
-  jwtToken: string
+  jwtToken: string,
 ) => {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
