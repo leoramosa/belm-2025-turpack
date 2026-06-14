@@ -18,6 +18,17 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Variables de entorno (SEO y dominio)
+
+En la raíz del proyecto crea `.env.local` (no lo subas al repositorio) o define las variables en el panel de tu hosting (p. ej. Vercel → Settings → Environment Variables).
+
+| Variable | Uso |
+|----------|-----|
+| `NEXT_PUBLIC_SITE_URL` | URL canónica del sitio sin barra final, p. ej. `https://www.belm.pe`. Ver `src/lib/site.ts`. |
+| `GOOGLE_SITE_VERIFICATION` | Valor del código de verificación de Google Search Console (solo el contenido del atributo `content` de la meta). Se aplica en `src/app/layout.tsx` vía `metadata.verification.google`. |
+
+Tras cambiar variables en producción, hace falta un nuevo deploy. En local, reinicia el servidor de desarrollo.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

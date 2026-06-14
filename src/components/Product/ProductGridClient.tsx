@@ -740,7 +740,9 @@ export function ProductGridClient({
               itemType="https://schema.org/ItemList"
             >
               {paginatedProducts.length > 0 ? (
-                paginatedProducts.map((product: IProduct) => {
+                paginatedProducts.map((product: IProduct, index: number) => {
+                  const listPosition =
+                    (currentPage - 1) * itemsPerPage + index + 1;
                   // Detectar si estamos en la ruta /lo-mas-nuevo, /lo-mas-vendido o /ofertas-especiales
                   const isLoMasNuevoPage = pathname === "/lo-mas-nuevo";
                   const isLoMasVendidoPage = pathname === "/lo-mas-vendido";
@@ -806,36 +808,44 @@ export function ProductGridClient({
                   };
 
                   return (
-                    <ProductCard
+                    <div
                       key={product.id}
-                      product={product}
-                      viewMode="grid"
-                      context={getContext()}
-                      customBadge={
-                        isLoMasNuevoPage
-                          ? {
-                              text: "NUEVO",
-                              className: "bg-green-500",
-                            }
-                          : isLoMasVendidoPage
-                          ? {
-                              text: "Más Vendido",
-                              className: "bg-yellow-500",
-                            }
-                          : isOfertasEspecialesPage
-                          ? {
-                              text: "Oferta",
-                              className: "bg-orange-500",
-                            }
-                          : undefined
-                      }
-                      discountPercentage={discountPercentage}
-                      showCategoryBadge={
-                        isLoMasNuevoPage ||
-                        isLoMasVendidoPage ||
-                        isOfertasEspecialesPage
-                      }
-                    />
+                      className="min-w-0"
+                      itemScope
+                      itemType="https://schema.org/ListItem"
+                    >
+                      <meta itemProp="position" content={String(listPosition)} />
+                      <ProductCard
+                        product={product}
+                        viewMode="grid"
+                        microdataAsListItem
+                        context={getContext()}
+                        customBadge={
+                          isLoMasNuevoPage
+                            ? {
+                                text: "NUEVO",
+                                className: "bg-green-500",
+                              }
+                            : isLoMasVendidoPage
+                            ? {
+                                text: "Más Vendido",
+                                className: "bg-yellow-500",
+                              }
+                            : isOfertasEspecialesPage
+                            ? {
+                                text: "Oferta",
+                                className: "bg-orange-500",
+                              }
+                            : undefined
+                        }
+                        discountPercentage={discountPercentage}
+                        showCategoryBadge={
+                          isLoMasNuevoPage ||
+                          isLoMasVendidoPage ||
+                          isOfertasEspecialesPage
+                        }
+                      />
+                    </div>
                   );
                 })
               ) : (

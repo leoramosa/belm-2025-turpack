@@ -17,6 +17,7 @@ import { IProductCategoryNode } from "@/types/ICategory";
 import WishlistButton from "./WishlistButton";
 import { generateAnchorText } from "@/utils/seo";
 import { getContextualProductDescription } from "@/utils/contentVariation";
+import { absoluteUrl } from "@/lib/site";
 
 interface ProductCardProps {
   product: IProduct;
@@ -31,6 +32,8 @@ interface ProductCardProps {
   onRemoveFromWishlist?: (productId: string | number) => void; // Callback para remover de wishlist
   hideWishlistButton?: boolean; // Si es true, oculta completamente el botón de wishlist
   context?: "home" | "category" | "recommendation" | "related" | "default"; // Contexto para variar contenido y evitar duplicación SEO
+  /** true cuando el padre es schema.org/ListItem (p. ej. grid con ItemList); el Product debe ir en itemProp="item" */
+  microdataAsListItem?: boolean;
 }
 
 function findCategoryInTree(
@@ -94,6 +97,7 @@ export function ProductCard({
   onRemoveFromWishlist,
   hideWishlistButton = false,
   context = "default",
+  microdataAsListItem = false,
 }: ProductCardProps) {
   const primaryImage = product.images[0] ?? null;
   const { pricing } = product;
@@ -240,6 +244,12 @@ export function ProductCard({
     product.shortDescription || product.description || "",
     context
   );
+
+  const productPageUrl = absoluteUrl(`/productos/${product.slug}`);
+  const schemaCurrency = (currency || "PEN").toUpperCase();
+  const schemaImageHref = primaryImage?.src
+    ? absoluteSchemaImageUrl(primaryImage.src)
+    : null;
 
   // Vista horizontal (lista) - marcada para no indexarse como contenido duplicado
   if (viewMode === "list") {
@@ -483,7 +493,7 @@ export function ProductCard({
       className="cursor-pointer"
       href={`/productos/${product.slug}`}
       aria-label={anchorText}
-      itemProp="item"
+      {...(microdataAsListItem ? { itemProp: "item" as const } : {})}
       itemScope
       itemType="https://schema.org/Product"
     >
@@ -503,6 +513,9 @@ export function ProductCard({
                 }`}
                 sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
               />
+              {schemaImageHref ? (
+                <meta itemProp="image" content={schemaImageHref} />
+              ) : null}
               {/* Overlay oscuro cuando está sin stock */}
               {isOutOfStock && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30 pointer-events-none">
@@ -621,7 +634,10 @@ export function ProductCard({
         {/* Content Section */}
         <div className="p-4 flex flex-col justify-between grow">
           {/* Product Name */}
-          <h3 className="text-sm lg:text-[14px] mb-1 line-clamp-2 cursor-pointer">
+          <h3
+            className="text-sm lg:text-[14px] mb-1 line-clamp-2 cursor-pointer"
+            itemProp="name"
+          >
             {product.name}
           </h3>
 
@@ -632,8 +648,28 @@ export function ProductCard({
             </p>
           )} */}
 
-          {/* Pricing */}
-          <div className="flex items-end gap-2 mb-2">
+          {/* Pricing + Offer (microdata requerido por Google para Product snippets) */}
+          <div
+            className="mb-2 flex flex-wrap items-end gap-2"
+            itemProp="offers"
+            itemScope
+            itemType="https://schema.org/Offer"
+          >
+            <link itemProp="url" href={productPageUrl} />
+            <link
+              itemProp="availability"
+              href={
+                isOutOfStock
+                  ? "https://schema.org/OutOfStock"
+                  : "https://schema.org/InStock"
+              }
+            />
+            {displayPrice !== null ? (
+              <>
+                <meta itemProp="price" content={displayPrice.toFixed(2)} />
+                <meta itemProp="priceCurrency" content={schemaCurrency} />
+              </>
+            ) : null}
             {formattedPrice ? (
               <span className="text-primary font-bold text-md lg:text-[16px]">
                 {formattedPrice}
@@ -704,6 +740,14 @@ export function ProductCard({
       </div>
     </Link>
   );
+}
+
+function absoluteSchemaImageUrl(src: string): string {
+  const t = src.trim();
+  if (t.startsWith("http://") || t.startsWith("https://")) {
+    return t;
+  }
+  return absoluteUrl(t.startsWith("/") ? t : `/${t}`);
 }
 
 function formatPrice(value: number | null, currency: string): string | null {
