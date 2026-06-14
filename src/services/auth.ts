@@ -50,13 +50,6 @@ export async function loginUser(email: string, password: string) {
             ""
           ).toLowerCase();
 
-          // Log para debug (puedes removerlo después)
-          console.log("🔍 JWT Error Response:", {
-            status: jwtResponse.status,
-            errorText,
-            fullError: errorData,
-          });
-
           // Detectar errores de CONTRASEÑA incorrecta
           if (
             errorText.includes("incorrect password") ||
@@ -132,14 +125,6 @@ export async function loginUser(email: string, password: string) {
           ""
         ).toLowerCase();
 
-        // Log para debug
-        console.log("🔍 JWT Data Error:", {
-          error: jwtData.error,
-          code: jwtData.code,
-          message: errorMessage,
-          fullData: jwtData,
-        });
-
         // Detectar errores de CONTRASEÑA incorrecta
         if (
           errorMessage.includes("incorrect password") ||
@@ -198,8 +183,8 @@ export async function loginUser(email: string, password: string) {
         user_login: jwtData.user_login || jwtData.user_nicename,
         user_display_name: jwtData.user_display_name,
       };
-    } catch (jwtError) {
-      console.log("JWT Auth failed, trying Simple JWT Login");
+    } catch {
+      // Continuar con Simple JWT Login
     }
 
     // Fallback a Simple JWT Login
@@ -222,13 +207,6 @@ export async function loginUser(email: string, password: string) {
         errorData.data?.message ||
         ""
       ).toLowerCase();
-
-      // Log para debug
-      console.log("🔍 Simple JWT Error Response:", {
-        status: simpleJwtResponse.status,
-        errorText,
-        fullError: errorData,
-      });
 
       // Mensajes más amigables según el tipo de error y código de estado
       if (
@@ -359,13 +337,6 @@ export async function registerCustomer({
 
       try {
         const errorData = await response.json();
-
-        // Log para debug (puedes removerlo después)
-        console.log("🔍 Frontend Registration Error:", {
-          status: response.status,
-          errorData,
-          fullError: JSON.stringify(errorData),
-        });
 
         // El error ya viene con un mensaje amigable desde la API
         // El backend devuelve { error: "mensaje" } en el catch

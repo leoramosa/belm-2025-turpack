@@ -75,15 +75,11 @@ class MediaCache {
       this.categoryCache.length > 0 &&
       now - this.categoryCacheTime < this.CACHE_DURATION
     ) {
-      console.log("📦 MediaCache.getCategoryImages: Usando cache");
       return this.categoryCache;
     }
 
     // Si ya hay un fetch en progreso, esperar
     if (this.categoryFetchingPromise) {
-      console.log(
-        "⏳ MediaCache.getCategoryImages: Esperando fetch en progreso"
-      );
       return this.categoryFetchingPromise;
     }
 
@@ -103,15 +99,11 @@ class MediaCache {
   public async getBannerImages(): Promise<MediaItem[]> {
     // SIN CACHE - Siempre obtener datos frescos del backend
     // para reflejar cambios inmediatos en la configuración
-    console.log(
-      "🔄 MediaCache.getBannerImages: Obteniendo datos frescos (sin cache)"
-    );
     return this.fetchBannerImages();
   }
 
   private async fetchCategoryImages(): Promise<MediaItem[]> {
     try {
-      console.log("🌐 MediaCache.fetchCategoryImages: Iniciando...");
       // Obtener TODAS las imágenes de categorías con paginación automática
       const allMediaItems: MediaItem[] = [];
       let page = 1;
@@ -163,10 +155,6 @@ class MediaCache {
 
   private async fetchBannerImages(): Promise<MediaItem[]> {
     try {
-      console.log(
-        "🌐 MediaCache.fetchBannerImages: Obteniendo banners del backend..."
-      );
-
       // Interfaz para los datos que devuelve el endpoint de banners del backend
       interface BackendBannerItem {
         id: number;
@@ -224,9 +212,6 @@ class MediaCache {
         order: item.order,
       }));
 
-      console.log(
-        `🎯 MediaCache.fetchBannerImages: Obtenidos ${mediaItems.length} banners`
-      );
       return mediaItems;
     } catch (error) {
       console.error("Error fetching banner images:", error);
@@ -444,9 +429,6 @@ export async function getBannerShowcases(): Promise<BannerShowcase[]> {
       return orderA - orderB;
     });
 
-    console.log(
-      `🎯 getBannerShowcases: Procesados ${showcases.length} banners`
-    );
     return showcases;
   } catch (error) {
     console.error("Error processing banner showcases:", error);

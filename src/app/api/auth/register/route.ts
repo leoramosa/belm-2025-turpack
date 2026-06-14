@@ -124,12 +124,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Log para debug
-        console.log("🔍 Registration Error Response:", {
-          status: response.status,
-          errorData,
-          fullError: JSON.stringify(errorData),
-        });
-
+        
         // Obtener el texto del error de múltiples fuentes posibles
         // WooCommerce puede devolver errores en diferentes formatos:
         // 1. { code: "woocommerce_rest_customer_invalid_email", message: "...", data: { status: 400 } }

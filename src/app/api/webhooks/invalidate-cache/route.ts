@@ -39,9 +39,7 @@ function verifyWebhook(request: NextRequest): boolean {
 
 // Función para invalidar caches específicos
 async function invalidateCaches(payload: WebhookPayload) {
-  const { action, type, id, slug } = payload;
-
-  console.log(`🔄 Invalidando cache para: ${action} ${type} ${id}`);
+  const { action, type, slug } = payload;
 
   try {
     // Invalidar por tipo de contenido
@@ -56,8 +54,6 @@ async function invalidateCaches(payload: WebhookPayload) {
       }
       await revalidatePath("/shop");
       await revalidatePath("/");
-
-      console.log(`✅ Cache invalidado para producto ${id}`);
     } else if (type === "category") {
       // Invalidar cache de categorías
       await revalidateTag("categories");
@@ -69,13 +65,9 @@ async function invalidateCaches(payload: WebhookPayload) {
       }
       await revalidatePath("/categorias");
       await revalidatePath("/");
-
-      console.log(`✅ Cache invalidado para categoría ${id}`);
     } else if (type === "order") {
       // Invalidar cache relacionado con órdenes
       await revalidateTag("orders");
-
-      console.log(`✅ Cache invalidado para orden ${id}`);
     }
 
     // Invalidar cache general en cambios importantes
@@ -83,8 +75,6 @@ async function invalidateCaches(payload: WebhookPayload) {
       await revalidateTag("dynamic-showcases");
       await revalidateTag("featured-categories");
       await revalidatePath("/");
-
-      console.log(`✅ Cache general invalidado por ${action}`);
     }
   } catch (error) {
     console.error("❌ Error invalidando cache:", error);
@@ -105,13 +95,6 @@ export async function POST(request: NextRequest) {
 
     // Parsear payload
     const payload: WebhookPayload = await request.json();
-
-    console.log("📡 Webhook recibido:", {
-      action: payload.action,
-      type: payload.type,
-      id: payload.id,
-      slug: payload.slug,
-    });
 
     // Invalidar caches
     await invalidateCaches(payload);

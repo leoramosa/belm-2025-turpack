@@ -18,8 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  console.log("🔔 Webhook Izipay recibido:", body);
-
+  
   // Extraer datos del webhook de Izipay
   const paymentData = body.kr_answer || body.clientAnswer;
   const hash = body.kr_hash || body.hash;
@@ -34,26 +33,14 @@ export async function POST(req: NextRequest) {
   const customerEmail = body.customerEmail || body.customer_email || body.email;
   const customerName = body.customerName || body.customer_name || body.name;
 
-  console.log("🔍 WEBHOOK - Datos recibidos:");
-  console.log("🔍 paymentData:", paymentData ? "✅ Presente" : "❌ Ausente");
-  console.log("🔍 hash:", hash ? "✅ Presente" : "❌ Ausente");
-  console.log("🔍 amount:", amount);
-  console.log("🔍 transactionId:", transactionId);
-  console.log("🔍 status:", status);
-  console.log("🔍 cartItems:", cartItems);
-  console.log("🔍 shippingInfo:", shippingInfo);
-  console.log("🔍 customerEmail:", customerEmail);
-  console.log("🔍 customerName:", customerName);
-
+                    
   if (!paymentData || !hash) {
-    console.log("❌ Webhook ignorado: datos de pago incompletos");
-    return NextResponse.json({ ignored: true, reason: "missing_payment_data" });
+        return NextResponse.json({ ignored: true, reason: "missing_payment_data" });
   }
 
   try {
     // 🔍 PASO 1: Validar el pago con la API de Izipay
-    console.log("🔍 Validando pago con API de Izipay...");
-
+    
     const validationResponse = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/wp-json/izipay/v1/validate`,
       {
@@ -67,25 +54,21 @@ export async function POST(req: NextRequest) {
     );
 
     if (!validationResponse.ok) {
-      console.log("❌ Error en validación de pago:", validationResponse.status);
-      return NextResponse.json({ error: "validation_failed" }, { status: 400 });
+            return NextResponse.json({ error: "validation_failed" }, { status: 400 });
     }
 
     const validationResult = await validationResponse.json();
-    console.log("✅ Resultado de validación:", validationResult);
-
+    
     // 🔍 PASO 2: Verificar si la validación fue exitosa
     if (!validationResult.valid || !validationResult.success) {
-      console.log("❌ Pago no validado por Izipay");
-      return NextResponse.json({
+            return NextResponse.json({
         ignored: true,
         reason: "payment_not_validated",
       });
     }
 
     // 🎯 PASO 3: Pago confirmado exitosamente - Crear/actualizar orden
-    console.log("✅ Pago confirmado exitosamente, procesando orden...");
-
+    
     let wcOrder;
 
     if (orderId) {
@@ -95,16 +78,13 @@ export async function POST(req: NextRequest) {
           `${WC_API_URL}/wp-json/wc/v3/orders/${orderId}?consumer_key=${WC_CK}&consumer_secret=${WC_CS}`
         );
         wcOrder = existingOrderRes.data;
-        console.log(`📦 Orden existente encontrada: #${orderId}`);
-      } catch {
-        console.log(`⚠️ Orden #${orderId} no encontrada, se creará una nueva`);
-      }
+              } catch {
+              }
     }
 
     if (wcOrder) {
       // 🔄 Actualizar orden existente
-      console.log(`🔄 Actualizando orden #${orderId} a estado "processing"`);
-
+      
       await axios.put(
         `${WC_API_URL}/wp-json/wc/v3/orders/${orderId}?consumer_key=${WC_CK}&consumer_secret=${WC_CS}`,
         {
@@ -118,19 +98,11 @@ export async function POST(req: NextRequest) {
         }
       );
 
-      console.log(
-        `✅ Orden #${orderId} actualizada exitosamente a "processing"`
-      );
-    } else {
+          } else {
       // 🆕 Crear nueva orden con los datos del pago confirmado
-      console.log("🆕 Creando nueva orden para pago confirmado...");
-
+      
       // 🆕 Usar datos del webhook en lugar de depender de la validación
-      console.log("🛒 Datos del carrito recibidos:", cartItems);
-      console.log("📍 Información de envío recibida:", shippingInfo);
-      console.log("📧 Email del cliente:", customerEmail);
-      console.log("👤 Nombre del cliente:", customerName);
-
+                        
       // 🆕 Construir line_items desde los datos del carrito del webhook
       let lineItems = [];
 
@@ -168,10 +140,7 @@ export async function POST(req: NextRequest) {
         });
       } else {
         // 🚨 Fallback: crear item genérico si no hay datos del carrito
-        console.log(
-          "⚠️ No se recibieron datos del carrito, creando item genérico"
-        );
-        lineItems = [
+                lineItems = [
           {
             product_id: 1, // Producto por defecto
             quantity: 1,
@@ -182,11 +151,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 📍 Construir datos de facturación y envío desde el webhook
-      console.log("🔍 WEBHOOK - Construyendo billingShipping:");
-      console.log("🔍 shippingInfo:", shippingInfo);
-      console.log("🔍 customerName:", customerName);
-      console.log("🔍 customerEmail:", customerEmail);
-
+                        
       const billingShipping = {
         first_name:
           shippingInfo.firstName || customerName?.split(" ")[0] || "Cliente",
@@ -202,8 +167,7 @@ export async function POST(req: NextRequest) {
         country: "PE",
       };
 
-      console.log("🔍 WEBHOOK - billingShipping construido:", billingShipping);
-
+      
       const newOrderData = {
         status: "processing",
         set_paid: true,
@@ -229,22 +193,15 @@ export async function POST(req: NextRequest) {
         ],
       };
 
-      console.log("🔍 WEBHOOK - newOrderData completo:", newOrderData);
-      console.log("🔍 WEBHOOK - line_items:", lineItems);
-      console.log("🔍 WEBHOOK - billing:", billingShipping);
-      console.log("🔍 WEBHOOK - total:", amount);
-
-      const newOrderRes = await axios.post(
+                        
+      await axios.post(
         `${WC_API_URL}/wp-json/wc/v3/orders?consumer_key=${WC_CK}&consumer_secret=${WC_CS}`,
         newOrderData,
         {
           headers: { "Content-Type": "application/json" },
         }
       );
-
-      const newOrder = newOrderRes.data;
-      console.log(`✅ Nueva orden creada exitosamente: #${newOrder.id}`);
-    }
+          }
 
     return NextResponse.json({
       success: true,

@@ -19,28 +19,11 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  console.log("🔔 IPN Mi Cuenta Web recibido:", body);
-  console.log("🔍 DATOS RECIBIDOS EN EL IPN:");
-  console.log("🔍 kr_answer:", body.kr_answer ? "✅ Presente" : "❌ Ausente");
-  console.log("🔍 kr_hash:", body.kr_hash ? "✅ Presente" : "❌ Ausente");
-  console.log("🔍 kr_transaction_id:", body.kr_transaction_id);
-  console.log("🔍 kr_amount:", body.kr_amount);
-  console.log("🔍 kr_status:", body.kr_status);
-  console.log("🔍 kr_order_id:", body.kr_order_id);
-  console.log("🔍 kr_customer_email:", body.kr_customer_email);
-  console.log("🔍 kr_customer_name:", body.kr_customer_name);
-  console.log("🔍 kr_cart_items:", body.kr_cart_items);
-  console.log("🔍 kr_shipping_info:", body.kr_shipping_info);
-  console.log("🔍 TODOS los campos del body:", Object.keys(body));
-
+                          
   // 🔍 PASO 1: Validar campos requeridos del IPN
   const fieldValidation = validateIPNFields(body);
   if (!fieldValidation.valid) {
-    console.log(
-      "❌ IPN ignorado: campos requeridos faltantes:",
-      fieldValidation.missingFields
-    );
-    return NextResponse.json({
+        return NextResponse.json({
       ignored: true,
       reason: "missing_required_fields",
       missingFields: fieldValidation.missingFields,
@@ -62,14 +45,12 @@ export async function POST(req: NextRequest) {
   } = body;
 
   if (!kr_answer || !kr_hash) {
-    console.log("❌ IPN ignorado: datos de pago incompletos");
-    return NextResponse.json({ ignored: true, reason: "missing_payment_data" });
+        return NextResponse.json({ ignored: true, reason: "missing_payment_data" });
   }
 
   try {
     // 🔍 PASO 2: Validar el pago con la API de Izipay
-    console.log("🔍 Validando pago con API de Izipay...");
-
+    
     const validationResponse = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/wp-json/izipay/v1/validate`,
       {
@@ -83,17 +64,14 @@ export async function POST(req: NextRequest) {
     );
 
     if (!validationResponse.ok) {
-      console.log("❌ Error en validación de pago:", validationResponse.status);
-      return NextResponse.json({ error: "validation_failed" }, { status: 400 });
+            return NextResponse.json({ error: "validation_failed" }, { status: 400 });
     }
 
     const validationResult = await validationResponse.json();
-    console.log("✅ Resultado de validación:", validationResult);
-
+    
     // 🔍 PASO 3: Verificar si la validación fue exitosa
     if (!validationResult.valid || !validationResult.success) {
-      console.log("❌ Pago no validado por Izipay");
-      return NextResponse.json({
+            return NextResponse.json({
         ignored: true,
         reason: "payment_not_validated",
       });
@@ -101,8 +79,7 @@ export async function POST(req: NextRequest) {
 
     // 🔍 PASO 4: Verificar si la transacción es exitosa según Mi Cuenta Web
     if (!isSuccessfulTransaction(kr_status)) {
-      console.log(`❌ Transacción no exitosa. Estado: ${kr_status}`);
-      return NextResponse.json({
+            return NextResponse.json({
         ignored: true,
         reason: "transaction_not_successful",
         status: kr_status,
@@ -110,15 +87,10 @@ export async function POST(req: NextRequest) {
     }
 
     // 🎯 PASO 5: Pago confirmado exitosamente - Procesar orden
-    console.log("✅ Pago confirmado exitosamente, procesando orden...");
-    console.log("💰 Monto:", kr_amount);
-    console.log("🏦 Estado:", kr_status);
-    console.log("🆔 Transacción:", kr_transaction_id);
-
+                
     // Mapear estado de Mi Cuenta Web a WooCommerce
     const wcStatus = mapMCWStatusToWC(kr_status);
-    console.log(`🔄 Mapeando estado ${kr_status} → ${wcStatus}`);
-
+    
     let wcOrder;
 
     if (kr_order_id) {
@@ -128,20 +100,13 @@ export async function POST(req: NextRequest) {
           `${WC_API_URL}/wp-json/wc/v3/orders/${kr_order_id}?consumer_key=${WC_CK}&consumer_secret=${WC_CS}`
         );
         wcOrder = existingOrderRes.data;
-        console.log(`📦 Orden existente encontrada: #${kr_order_id}`);
-      } catch {
-        console.log(
-          `⚠️ Orden #${kr_order_id} no encontrada, se creará una nueva`
-        );
-      }
+              } catch {
+              }
     }
 
     if (wcOrder) {
       // 🔄 Actualizar orden existente
-      console.log(
-        `🔄 Actualizando orden #${kr_order_id} a estado "${wcStatus}"`
-      );
-
+      
       await axios.put(
         `${WC_API_URL}/wp-json/wc/v3/orders/${kr_order_id}?consumer_key=${WC_CK}&consumer_secret=${WC_CS}`,
         {
@@ -155,13 +120,9 @@ export async function POST(req: NextRequest) {
         }
       );
 
-      console.log(
-        `✅ Orden #${kr_order_id} actualizada exitosamente a "${wcStatus}"`
-      );
-    } else {
+          } else {
       // 🆕 Crear nueva orden con los datos del pago confirmado
-      console.log("🆕 Creando nueva orden para pago confirmado...");
-
+      
       // 🛒 Construir line_items desde los datos del carrito
       let lineItems = [];
 
@@ -170,8 +131,7 @@ export async function POST(req: NextRequest) {
         Array.isArray(kr_cart_items) &&
         kr_cart_items.length > 0
       ) {
-        console.log("✅ Usando datos del carrito del IPN:", kr_cart_items);
-        lineItems = kr_cart_items.map(
+                lineItems = kr_cart_items.map(
           (item: {
             product_id: number;
             quantity: number;
@@ -227,19 +187,9 @@ export async function POST(req: NextRequest) {
         );
       } else {
         // 🚨 PROBLEMA: No hay datos del carrito en el IPN
-        console.log(
-          "🚨 PROBLEMA: No se recibieron datos del carrito en el IPN"
-        );
-        console.log("🚨 kr_cart_items:", kr_cart_items);
-        console.log("🚨 kr_shipping_info:", kr_shipping_info);
-        console.log("🚨 kr_customer_email:", kr_customer_email);
-        console.log("🚨 kr_customer_name:", kr_customer_name);
-
+                                        
         // 🆕 SOLUCIÓN: Llamar al webhook para obtener los datos del checkout
-        console.log(
-          "🔄 Llamando al webhook para obtener datos del checkout..."
-        );
-
+        
         try {
           const webhookResponse = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/api/izipay/webhook`,
@@ -263,14 +213,10 @@ export async function POST(req: NextRequest) {
 
           if (webhookResponse.ok) {
             const webhookResult = await webhookResponse.json();
-            console.log("✅ Webhook procesado exitosamente:", webhookResult);
-
+            
             // 🆕 Usar los datos del webhook para crear la orden
             if (webhookResult.order_created || webhookResult.order_updated) {
-              console.log(
-                "✅ Orden procesada por el webhook, no crear duplicado"
-              );
-              return NextResponse.json({
+                            return NextResponse.json({
                 success: true,
                 message: "Orden procesada por webhook",
                 webhook_processed: true,
@@ -285,8 +231,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 🆕 Si el webhook falla, crear orden con datos genéricos
-        console.log("⚠️ Webhook falló, creando orden con datos genéricos");
-        lineItems = [
+                lineItems = [
           {
             product_id: 1, // Producto por defecto
             quantity: 1,
@@ -297,11 +242,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 📍 Construir datos de facturación y envío
-      console.log("🔍 Construyendo datos de facturación:");
-      console.log("🔍 kr_customer_name:", kr_customer_name);
-      console.log("🔍 kr_customer_email:", kr_customer_email);
-      console.log("🔍 kr_shipping_info:", kr_shipping_info);
-
+                        
       const billingShipping = {
         first_name: kr_customer_name?.split(" ")[0] || "Cliente",
         last_name: kr_customer_name?.split(" ").slice(1).join(" ") || "Izipay",
@@ -313,8 +254,7 @@ export async function POST(req: NextRequest) {
         country: "PE",
       };
 
-      console.log("🔍 billingShipping construido:", billingShipping);
-
+      
       const newOrderData = {
         status: wcStatus,
         set_paid: wcStatus === "processing",
@@ -344,22 +284,15 @@ export async function POST(req: NextRequest) {
         ],
       };
 
-      console.log("🔍 newOrderData completo:", newOrderData);
-      console.log("🔍 line_items:", lineItems);
-      console.log("🔍 billing:", billingShipping);
-      console.log("🔍 total:", kr_amount);
-
-      const newOrderRes = await axios.post(
+                        
+      await axios.post(
         `${WC_API_URL}/wp-json/wc/v3/orders?consumer_key=${WC_CK}&consumer_secret=${WC_CS}`,
         newOrderData,
         {
           headers: { "Content-Type": "application/json" },
         }
       );
-
-      const newOrder = newOrderRes.data;
-      console.log(`✅ Nueva orden creada exitosamente: #${newOrder.id}`);
-    }
+          }
 
     return NextResponse.json({
       success: true,

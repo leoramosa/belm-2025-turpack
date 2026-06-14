@@ -64,12 +64,6 @@ export function useFreeShipping(
         currentSubtotal
       );
 
-      console.log("📦 Shipping calculation result:", {
-        subtotal: currentSubtotal,
-        qualifies: calc.qualifies_for_free_shipping,
-        threshold: calc.threshold,
-      });
-
       setCalculation(calc);
     } catch (err) {
       console.error("Error calculating shipping:", err);
@@ -108,13 +102,6 @@ export function useFreeShipping(
         ? config.threshold
         : 0;
     const qualifies = config.enabled && validSubtotal >= validThreshold;
-    console.log("🔄 Qualifies calculation:", {
-      configEnabled: config.enabled,
-      subtotal: validSubtotal,
-      threshold: validThreshold,
-      qualifies,
-      calculation: calculation?.qualifies_for_free_shipping,
-    });
     // Si hay un cálculo del backend, usarlo como fuente de verdad
     if (calculation !== null) {
       return calculation.qualifies_for_free_shipping;
@@ -133,15 +120,6 @@ export function useFreeShipping(
     if (!config.enabled) {
       return originalShippingCost;
     }
-
-    // Debug logs
-    console.log("Free Shipping Debug:", {
-      subtotal,
-      threshold: config.threshold,
-      qualifiesForFreeShipping,
-      originalShippingCost,
-      config,
-    });
 
     return qualifiesForFreeShipping ? 0 : originalShippingCost;
   }, [config, qualifiesForFreeShipping, originalShippingCost, subtotal]);

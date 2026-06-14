@@ -1806,12 +1806,6 @@ export default function CheckoutPage() {
     if (!isClient) return 0;
     // El subtotal NO incluye descuentos, es el total del carrito sin cupones
     const calculatedSubtotal = getSubtotal();
-    console.log("💰 Subtotal calculation:", {
-      calculatedSubtotal,
-      cartLength: cart.length,
-      hasCoupon: !!appliedCoupon,
-      couponCode: appliedCoupon?.code,
-    });
     return calculatedSubtotal;
   }, [isClient, cart, cartKey, getSubtotal]);
 
@@ -1874,31 +1868,6 @@ export default function CheckoutPage() {
     // Si no es gratuito, usar el costo original
     return originalShippingCost;
   }, [isClient, isShippingFree, originalShippingCost]);
-
-  // Debug: Log cuando cambia el cupón o el subtotal
-  useEffect(() => {
-    if (isClient) {
-      console.log("🛒 Checkout State Update:", {
-        subtotal,
-        discount,
-        appliedCoupon: appliedCoupon?.code || null,
-        couponFreeShipping: appliedCoupon?.free_shipping || false,
-        cartLength: cart.length,
-        qualifiesForFreeShipping,
-        isShippingFree,
-        costoEnvio,
-      });
-    }
-  }, [
-    isClient,
-    subtotal,
-    discount,
-    appliedCoupon,
-    cart.length,
-    qualifiesForFreeShipping,
-    isShippingFree,
-    costoEnvio,
-  ]);
 
   const total = useMemo(() => {
     if (!isClient) return 0;

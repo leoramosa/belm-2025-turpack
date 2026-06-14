@@ -65,12 +65,7 @@ export async function POST(request: NextRequest) {
       const coupon = searchData[0];
 
       // Debug: Verificar free_shipping del cupón
-      console.log("🔍 Cupón validado:", {
-        code: coupon.code,
-        free_shipping: coupon.free_shipping,
-        free_shipping_type: typeof coupon.free_shipping,
-      });
-
+      
       // Verificar si el cupón está activo
       if (coupon.status !== "publish") {
         return NextResponse.json({

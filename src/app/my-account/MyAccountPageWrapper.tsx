@@ -28,9 +28,6 @@ export default function MyAccountPageWrapper() {
 
       // Si ya tenemos profile y tiene datos válidos, no cargar de nuevo
       if (profile && profile.id && profile.email) {
-        console.log(
-          "Profile ya existe con datos válidos, no es necesario cargar"
-        );
         setIsLoading(false);
         hasAttemptedLoad.current = true;
         return;
@@ -43,7 +40,6 @@ export default function MyAccountPageWrapper() {
       // Verificar nuevamente si el profile se cargó mientras esperábamos
       const currentProfile = useUserStore.getState().profile;
       if (currentProfile && currentProfile.id && currentProfile.email) {
-        console.log("Profile se cargó mientras esperábamos");
         setIsLoading(false);
         hasAttemptedLoad.current = true;
         return;
@@ -51,15 +47,12 @@ export default function MyAccountPageWrapper() {
 
       // Si ya intentamos cargar y no hay profile, intentar de nuevo una vez más
       if (hasAttemptedLoad.current && !currentProfile) {
-        console.log("Reintentando cargar perfil...");
         hasAttemptedLoad.current = false; // Permitir un reintento
         // Esperar un poco antes de reintentar
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       try {
-        console.log("Iniciando carga de perfil...");
-
         // Obtener el email del store directamente para evitar race conditions
         const currentUser = useUserStore.getState().user;
         let userEmail = currentUser?.user_email || currentUser?.email;
@@ -67,7 +60,6 @@ export default function MyAccountPageWrapper() {
         // Si no hay email del user, intentar obtenerlo del profile existente
         if (!userEmail && currentProfile?.email) {
           userEmail = currentProfile.email;
-          console.log("Usando email del profile existente:", userEmail);
         }
 
         // Si aún no hay email, esperar un poco más y reintentar
@@ -82,7 +74,6 @@ export default function MyAccountPageWrapper() {
 
           // Verificar si el profile se cargó mientras esperábamos
           if (retryProfile && retryProfile.id && retryProfile.email) {
-            console.log("Profile se cargó durante la espera");
             setIsLoading(false);
             hasAttemptedLoad.current = true;
             return;
@@ -91,7 +82,6 @@ export default function MyAccountPageWrapper() {
 
         // Si finalmente no hay email, pero hay profile válido, no hacer nada
         if (!userEmail && currentProfile && currentProfile.email) {
-          console.log("Profile ya existe, no es necesario cargar de nuevo");
           setIsLoading(false);
           hasAttemptedLoad.current = true;
           return;
@@ -117,7 +107,6 @@ export default function MyAccountPageWrapper() {
         }
 
         const loadedProfile = await loadUserProfile(!currentProfile, userEmail);
-        console.log("Perfil cargado:", loadedProfile);
 
         if (loadedProfile) {
           setIsLoading(false);
@@ -162,7 +151,6 @@ export default function MyAccountPageWrapper() {
   // Efecto para detectar cuando el profile se carga y actualizar el estado
   useEffect(() => {
     if (profile && profile.id && profile.email && isLoading) {
-      console.log("Profile detectado, actualizando estado de loading");
       setIsLoading(false);
       hasAttemptedLoad.current = true;
       if (loadingTimeoutRef.current) {

@@ -5,7 +5,6 @@ export const getCustomerIdByEmail = async (
   email: string,
 ): Promise<number | null> => {
   try {
-    console.log("Buscando cliente por email en API:", email);
     const response = await fetch(
       `/api/customers?email=${encodeURIComponent(email)}`,
       {
@@ -19,11 +18,9 @@ export const getCustomerIdByEmail = async (
     }
 
     const data = await response.json();
-    console.log("Respuesta de búsqueda de cliente:", data);
 
     if (Array.isArray(data) && data.length > 0) {
       const customerId = data[0].id;
-      console.log("Cliente encontrado con ID:", customerId);
       return customerId;
     }
 
@@ -77,18 +74,13 @@ export const createCustomerInWooCommerce = async (
 
 export const fetchUserAccountData = async (email: string) => {
   try {
-    console.log("Buscando cliente por email:", email);
-
     // Intentar buscar el cliente por email
     let userId = await getCustomerIdByEmail(email);
-    console.log("ID del cliente encontrado:", userId);
 
     // Si no existe el cliente en WooCommerce, crearlo
     if (!userId) {
-      console.log("Cliente no encontrado, creando nuevo cliente...");
       try {
         userId = await createCustomerInWooCommerce(email);
-        console.log("Cliente creado con ID:", userId);
       } catch (error) {
         console.error("Error al crear cliente:", error);
         throw new Error(
@@ -100,7 +92,6 @@ export const fetchUserAccountData = async (email: string) => {
     }
 
     // Obtener datos del cliente
-    console.log("Obteniendo datos del cliente con ID:", userId);
     const response = await fetch(`/api/customers/${userId}`, {
       cache: "no-store",
     });
@@ -112,7 +103,6 @@ export const fetchUserAccountData = async (email: string) => {
     }
 
     const customerData = await response.json();
-    console.log("Datos del cliente recibidos:", customerData);
 
     // Verificar que customerData no sea null
     if (!customerData) {
@@ -150,7 +140,6 @@ export const fetchUserAccountData = async (email: string) => {
       },
     };
 
-    console.log("Datos procesados del cliente:", defaultData);
     return defaultData;
   } catch (error) {
     console.error("Error completo en fetchUserAccountData:", error);

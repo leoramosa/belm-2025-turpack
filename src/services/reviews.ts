@@ -78,8 +78,6 @@ export async function fetchProductReviews(
   const url = `${apiUrl}/wp-json/wc/v3/products/reviews?product=${productId}&${queryParams}`;
   const authHeader = buildBasicAuthHeader(consumerKey, consumerSecret);
 
-  console.log(`Fetching reviews from: ${url}`);
-
   // Agregar timeout para evitar que la petición se cuelgue
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
@@ -97,7 +95,6 @@ export async function fetchProductReviews(
     });
 
     clearTimeout(timeoutId);
-    console.log(`Response status: ${response.status}`);
 
     if (!response.ok) {
       // Si es 404, el producto no tiene reviews, devolver array vacío
@@ -140,8 +137,6 @@ export async function fetchProductReviews(
         currentPage: page,
       };
     }
-
-    console.log(`Found ${wooReviews.length} reviews from WooCommerce`);
   } catch (fetchError) {
     clearTimeout(timeoutId);
 
@@ -230,8 +225,6 @@ export async function createProductReview(
     status: "hold", // Status "hold" = pendiente de aprobación
   };
 
-  console.log(`Creating review at: ${url}`, reviewPayload);
-
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -241,8 +234,6 @@ export async function createProductReview(
     body: JSON.stringify(reviewPayload),
   });
 
-  console.log(`Create review response status: ${response.status}`);
-
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`WooCommerce API error: ${response.status}`, errorText);
@@ -250,7 +241,6 @@ export async function createProductReview(
   }
 
   const review: IProductReview = await response.json();
-  console.log(`Review created successfully:`, review);
 
   return review;
 }

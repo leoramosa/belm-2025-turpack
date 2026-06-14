@@ -164,28 +164,6 @@ export default function ProductDetail({
 		return html;
 	}, [product.description]);
 
-	// Debug: Verificar la descripción recibida
-	useEffect(() => {
-		if (product.description) {
-			console.log(
-				'📝 Longitud de descripción original:',
-				product.description.length
-			);
-			console.log(
-				'📝 Longitud de descripción procesada:',
-				processedDescription.length
-			);
-			console.log(
-				'📝 Primeros 200 caracteres:',
-				product.description.substring(0, 200)
-			);
-			console.log(
-				'📝 Últimos 200 caracteres:',
-				product.description.substring(product.description.length - 200)
-			);
-		}
-	}, [product.description, processedDescription]);
-
 	const { addToCart, cart } = useCartStore();
 	const { addProduct } = useRecentlyViewedStore();
 	const { openCart } = useUIStore();
@@ -1160,11 +1138,6 @@ export default function ProductDetail({
 						{product.attributes && product.attributes.length > 0 && (
 							<div className="space-y-6">
 								{product.attributes.map(attr => {
-									console.log('🔍 Atributo completo:', attr);
-									console.log(
-										'🔄 Variaciones del producto:',
-										product.variations
-									);
 									const isColorAttr = isColorAttribute(attr);
 
 									// Obtener información del color seleccionado si es un atributo de color
@@ -1189,10 +1162,6 @@ export default function ProductDetail({
 													selectedOption.description || undefined,
 											};
 										}
-										console.log(
-											'🎨 Color seleccionado info:',
-											selectedColorInfo
-										);
 									}
 
 									// Buscar la descripción del término seleccionado

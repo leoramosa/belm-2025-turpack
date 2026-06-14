@@ -13,13 +13,6 @@ export default function GlobalLoader() {
     setIsMounted(true);
   }, []);
 
-  // Debug: Log cuando cambia el estado
-  useEffect(() => {
-    if (isMounted) {
-      console.log("🔍 GlobalLoader state:", { isLoading, loadingText });
-    }
-  }, [isMounted, isLoading, loadingText]);
-
   if (!isMounted || !isLoading) return null;
 
   return (

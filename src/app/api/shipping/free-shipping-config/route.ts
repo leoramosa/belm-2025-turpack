@@ -105,10 +105,7 @@ export async function GET(request: NextRequest) {
                 zone.name.toLowerCase().includes("cupon") ||
                 zone.name.toLowerCase().includes("cupón")
               ) {
-                console.log(
-                  `⏭️ Saltando zona "${zone.name}" - requiere cupón (requires: ${requiresValue})`
-                );
-                continue; // Saltar esta zona, buscar la siguiente
+                                continue; // Saltar esta zona, buscar la siguiente
               }
 
               freeShippingConfig.enabled = true;
@@ -178,10 +175,7 @@ export async function GET(request: NextRequest) {
 
               // Si requiere cupón, NO incluirlo
               if (requiresValue === "coupon" || requiresValue === "either") {
-                console.log(
-                  `⏭️ Saltando zona "Resto del mundo" - requiere cupón (requires: ${requiresValue})`
-                );
-                continue;
+                                continue;
               }
 
               freeShippingConfig.enabled = true;
@@ -233,8 +227,7 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    console.log("Free shipping config found:", freeShippingConfig);
-
+    
     return NextResponse.json(response, {
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",

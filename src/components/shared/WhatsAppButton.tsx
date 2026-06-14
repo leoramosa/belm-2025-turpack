@@ -47,7 +47,6 @@ const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
       // Rate limiting: evitar clicks muy seguidos (mínimo 2 segundos entre clicks)
       const now = Date.now();
       if (now - lastClickTime < 2000) {
-        console.log("Rate limiting: esperando antes del siguiente click");
         return;
       }
       setLastClickTime(now);
@@ -71,15 +70,6 @@ const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
       }
 
       const whatsappUrl = `https://web.whatsapp.com/send?phone=${cleanPhoneNumber}&text=${encodedMessage}`;
-
-      // Debug logging
-      console.log("WhatsApp Button Clicked:", {
-        phoneNumber: cleanPhoneNumber,
-        message: dynamicMessage,
-        encodedMessage,
-        whatsappUrl,
-        pathname,
-      });
 
       // Intentar abrir WhatsApp
       const newWindow = window.open(

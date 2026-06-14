@@ -74,12 +74,9 @@ export const useAuth = () => {
         return null;
       }
 
-      console.log("Cargando perfil para email:", userEmail);
-
       // Intentar cargar datos reales de WooCommerce
       try {
         const userData = await fetchUserAccountData(userEmail);
-        console.log("Perfil cargado exitosamente:", userData);
         setProfile(userData);
         return userData;
       } catch (fetchError) {

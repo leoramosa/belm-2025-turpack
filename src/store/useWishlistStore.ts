@@ -138,9 +138,6 @@ export const useWishlistStore = create<WishlistState>(
           // Si hay cambios locales recientes (menos de 3 segundos), no recargar del backend
           // para evitar sobrescribir cambios que aún se están sincronizando
           if (lastLocalChange && Date.now() - lastLocalChange < 3000) {
-            console.log(
-              "Cambios locales recientes detectados, omitiendo recarga del backend"
-            );
             return;
           }
 

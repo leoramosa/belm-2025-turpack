@@ -102,14 +102,12 @@ const HeroBanner = ({ initialData }: HeroBannerProps) => {
             })
           );
           setSlides(adminSlidesWithResponsive);
-          console.log(`✅ Usando ${initialData.length} banners del servidor`);
           setLoading(false);
           hasLoaded.current = true;
           return;
         }
 
         // Si no hay datos iniciales, usar slides por defecto
-        console.log("⚠️ No se encontraron banners, usando slides por defecto");
         setSlides(defaultSlides);
 
         hasLoaded.current = true;
@@ -156,12 +154,8 @@ const HeroBanner = ({ initialData }: HeroBannerProps) => {
   };
 
   const goToNext = () => {
-    console.log("Next clicked, swiperInstance:", swiperInstance);
     if (swiperInstance) {
-      console.log("Calling slideNext()");
       swiperInstance.slideNext();
-    } else {
-      console.log("No swiperInstance available");
     }
   };
 
@@ -214,14 +208,6 @@ const HeroBanner = ({ initialData }: HeroBannerProps) => {
       return slide.image;
     }
 
-    // Debug solo si hay responsive image
-    if ("responsiveImage" in slide && slide.responsiveImage) {
-      console.log("🔍 Responsive image disponible:", {
-        isMobile,
-        responsiveImage: slide.responsiveImage,
-      });
-    }
-
     // Verificar si es AdminSlide o DynamicSlide con responsiveImage
     if (
       ("responsiveImage" in slide && slide.responsiveImage) ||
@@ -236,11 +222,6 @@ const HeroBanner = ({ initialData }: HeroBannerProps) => {
           ? slide.responsiveImage
           : null;
 
-        console.log(
-          `📱 Usando imagen responsive: ${
-            responsiveUrl || "fallback a desktop"
-          }`
-        );
         return responsiveUrl || slide.image;
       }
     }

@@ -322,16 +322,9 @@ export class WishlistSyncService {
           return [];
         }
 
-        console.log(
-          "Obteniendo productos completos para IDs:",
-          productIds.length,
-          "productos"
-        );
-
         // Obtener productos completos desde WooCommerce usando batch
         const fullProducts = await this.fetchProductsBatch(productIds);
 
-        console.log("Productos completos obtenidos:", fullProducts.length);
         return fullProducts;
       } else {
         console.warn("Error cargando wishlist del backend");
