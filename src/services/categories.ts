@@ -18,6 +18,21 @@ const WORDPRESS_WC_CONSUMER_SECRET = getWordpressConsumerSecret();
 const CATEGORY_PAGE_SIZE = 100;
 const CATEGORY_NAMESPACE = "/wp-json/wc/v3/products/categories";
 
+/** WooCommerce a veces devuelve `image.src` no-string; evita errores al usar .trim() o Next/Image. */
+function normalizeCategoryImage(
+  image: WordpressCategoryResponse["image"] | null | undefined
+): IProductCategoryNode["image"] {
+  if (!image) return null;
+  const raw = image.src as unknown;
+  const src = typeof raw === "string" ? raw.trim() : "";
+  if (!src) return null;
+  return {
+    id: typeof image.id === "number" ? image.id : 0,
+    src,
+    alt: typeof image.alt === "string" ? image.alt : undefined,
+  };
+}
+
 interface CategoryNodeAccumulator extends IProductCategoryNode {
   menuOrder: number;
   children: CategoryNodeAccumulator[];
@@ -40,7 +55,7 @@ export async function fetchProductCategoriesTree(): Promise<
       description: category.description,
       parentId: category.parent === 0 ? null : category.parent,
       count: category.count,
-      image: category.image ?? null,
+      image: normalizeCategoryImage(category.image),
       children: [],
       menuOrder: category.menu_order ?? 0,
     };

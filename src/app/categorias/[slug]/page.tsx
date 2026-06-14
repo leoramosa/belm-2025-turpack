@@ -110,7 +110,9 @@ export async function generateMetadata({
 	);
 
 	const canonical = absoluteUrl(`/categorias/${slug}`);
-	const categoryImageSrc = category.image?.src?.trim();
+	const rawCategoryImg = category.image?.src;
+	const categoryImageSrc =
+		typeof rawCategoryImg === 'string' ? rawCategoryImg.trim() : '';
 	const hasRealCategoryImage = Boolean(
 		categoryImageSrc &&
 			!categoryImageSrc.includes('belm-rs.jpg') &&

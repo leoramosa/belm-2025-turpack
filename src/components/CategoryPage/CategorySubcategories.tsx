@@ -104,8 +104,9 @@ export default function CategorySubcategories({
 
 	// Obtener imagen de categoría o imagen por defecto
 	const getCategoryImage = (category: IProductCategoryNode): string => {
-		if (category.image?.src) {
-			return category.image.src;
+		const raw = category.image?.src;
+		if (typeof raw === 'string' && raw.trim()) {
+			return raw.trim();
 		}
 		// Imagen por defecto si no tiene imagen
 		return '/logo-belm-v2.png';
