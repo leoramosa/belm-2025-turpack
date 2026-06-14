@@ -74,6 +74,11 @@ export function buildProductJsonLd(
   const productPageUrl = `${baseUrl}${productPath}`;
   const currency = (product.pricing.currency || "PEN").toUpperCase();
   const categoryName = product.categories?.[0]?.name;
+  const sku =
+    typeof product.sku === "string" && product.sku.trim().length > 0
+      ? product.sku.trim()
+      : String(product.id);
+  const brandName = product.brands?.[0]?.name?.trim() || "Belm";
 
   const payload: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -81,11 +86,11 @@ export function buildProductJsonLd(
     name: product.name,
     description: description || product.name,
     image: collectProductImages(product, baseUrl),
-    sku: String(product.sku ?? product.id),
+    sku,
     url: productPageUrl,
     brand: {
       "@type": "Brand",
-      name: "Belm",
+      name: brandName,
     },
     offers: {
       "@type": "Offer",
@@ -104,6 +109,21 @@ export function buildProductJsonLd(
 
   if (categoryName) {
     payload.category = categoryName;
+  }
+
+  const ratingCount = product.ratingCount ?? 0;
+  const avg =
+    product.averageRating != null && product.averageRating > 0
+      ? product.averageRating
+      : null;
+  if (ratingCount > 0 && avg != null) {
+    payload.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: avg.toFixed(1),
+      reviewCount: ratingCount,
+      bestRating: "5",
+      worstRating: "1",
+    };
   }
 
   return payload;

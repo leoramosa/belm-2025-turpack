@@ -99,6 +99,10 @@ export interface IProduct {
   variations: ProductVariation[];
   tags?: IProductTag[];
   brands?: IProductBrand[];
+  /** Promedio WooCommerce (solo informativo / JSON-LD si hay rating_count > 0) */
+  averageRating?: number | null;
+  /** Número de valoraciones aprobadas en WooCommerce */
+  ratingCount?: number | null;
 }
 
 export interface WordpressProductResponse {
@@ -138,6 +142,10 @@ export interface WordpressProductResponse {
     name: string;
     slug: string;
   }>;
+  /** WooCommerce: promedio como string, p. ej. "4.50" */
+  average_rating?: string;
+  /** WooCommerce: total de valoraciones */
+  rating_count?: number | string;
   attributes?: WordpressProductAttribute[];
   variations?: number[];
 }

@@ -425,6 +425,8 @@ function mapWordpressProductToProduct(
         name: brand.name,
         slug: brand.slug,
       })) ?? [],
+    averageRating: parseWooAverageRating(product.average_rating),
+    ratingCount: parseWooRatingCount(product.rating_count),
     attributes: mapWordpressAttributes(product.attributes),
     variations: [],
   };
@@ -468,6 +470,21 @@ function toNumberOrNull(value: string | null | undefined): number | null {
   if (!value) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseWooRatingCount(raw: number | string | undefined | null): number {
+  if (raw == null) return 0;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return Math.max(0, Math.floor(raw));
+  }
+  const n = parseInt(String(raw), 10);
+  return Number.isFinite(n) ? Math.max(0, n) : 0;
+}
+
+function parseWooAverageRating(raw: string | undefined | null): number | null {
+  if (raw == null || String(raw).trim() === "") return null;
+  const n = parseFloat(String(raw));
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 function normalizePerPage(perPage?: number): number {
