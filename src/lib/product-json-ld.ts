@@ -1,8 +1,16 @@
 import type { IProduct } from "@/types/product";
+import type { IProductReview } from "@/interface/IProductReview";
 import { absoluteUrl } from "@/lib/site";
 import { resolveProductBrandName } from "@/utils/productAttributes";
 
 const DESCRIPTION_MAX = 8000;
+const JSON_LD_REVIEW_BODY_MAX = 5000;
+const JSON_LD_MAX_REVIEWS = 8;
+
+export interface BuildProductJsonLdOptions {
+  /** Reseñas aprobadas (WooCommerce); solo se incluyen en el grafo si hay al menos una válida. */
+  approvedReviews?: IProductReview[];
+}
 
 function stripHtmlToPlain(html: string): string {
   if (!html) return "";
@@ -56,12 +64,43 @@ function collectProductImages(product: IProduct, baseUrl: string): string[] {
   return urls;
 }
 
+function mapReviewToJsonLd(
+  r: IProductReview,
+  productName: string
+): Record<string, unknown> {
+  const reviewBody = stripHtmlToPlain(r.review).slice(0, JSON_LD_REVIEW_BODY_MAX);
+  const authorName = (r.reviewer || "Cliente").trim() || "Cliente";
+  const rating = Math.min(
+    5,
+    Math.max(1, Math.round(Number(r.rating)))
+  );
+  return {
+    "@type": "Review",
+    author: {
+      "@type": "Person",
+      name: authorName,
+    },
+    datePublished: r.date_created_gmt || r.date_created,
+    reviewBody:
+      reviewBody.length > 0
+        ? reviewBody
+        : `Valoración del producto: ${productName}`,
+    reviewRating: {
+      "@type": "Rating",
+      ratingValue: String(rating),
+      bestRating: "5",
+      worstRating: "1",
+    },
+  };
+}
+
 /**
  * Objeto JSON-LD Schema.org Product para rich results.
  */
 export function buildProductJsonLd(
   product: IProduct,
-  baseUrl: string
+  baseUrl: string,
+  options?: BuildProductJsonLdOptions
 ): Record<string, unknown> {
   // Descripción corta primero (como en ProductDetail / meta), luego la larga
   const shortHtml = (product.shortDescription ?? "").trim();
@@ -119,6 +158,7 @@ export function buildProductJsonLd(
     product.averageRating != null && product.averageRating > 0
       ? product.averageRating
       : null;
+  // Solo datos reales de WooCommerce: no inventar "0 estrellas" (políticas de Google / datos engañosos).
   if (ratingCount > 0 && avg != null) {
     payload.aggregateRating = {
       "@type": "AggregateRating",
@@ -127,6 +167,18 @@ export function buildProductJsonLd(
       bestRating: "5",
       worstRating: "1",
     };
+  }
+
+  const reviewCandidates =
+    options?.approvedReviews?.filter((r) => {
+      if (r.status !== "approved") return false;
+      const rr = Number(r.rating);
+      return Number.isFinite(rr) && rr >= 1 && rr <= 5;
+    }) ?? [];
+  if (reviewCandidates.length > 0) {
+    payload.review = reviewCandidates
+      .slice(0, JSON_LD_MAX_REVIEWS)
+      .map((r) => mapReviewToJsonLd(r, product.name));
   }
 
   return payload;

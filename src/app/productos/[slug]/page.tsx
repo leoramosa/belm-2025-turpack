@@ -6,7 +6,9 @@ import ProductJsonLd from "@/components/Product/ProductJsonLd";
 import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
 import { fetchProductBySlug, fetchProducts } from "@/services/products";
 import { fetchProductCategoriesTree } from "@/services/categories";
+import { fetchProductReviews } from "@/services/reviews";
 import type { IProduct } from "@/types/product";
+import type { IProductReview } from "@/interface/IProductReview";
 import {
 	optimizeMetaDescription,
 	generateProductMetaDescription,
@@ -28,6 +30,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   if (!product) {
     notFound();
+  }
+
+  let approvedReviewsForJsonLd: IProductReview[] = [];
+  try {
+    const reviewsRes = await fetchProductReviews(
+      product.id,
+      1,
+      8,
+      "approved"
+    );
+    approvedReviewsForJsonLd = reviewsRes.reviews;
+  } catch {
+    approvedReviewsForJsonLd = [];
   }
 
   let recommendations: IProduct[] = [];
@@ -59,7 +74,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <>
-      <ProductJsonLd product={product} siteUrl={SITE_URL} />
+      <ProductJsonLd
+        product={product}
+        siteUrl={SITE_URL}
+        approvedReviews={approvedReviewsForJsonLd}
+      />
       <BreadcrumbJsonLd items={breadcrumbItems} />
       <div className="min-h-screen ">
         <ProductDetail
