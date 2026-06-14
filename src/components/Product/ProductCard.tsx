@@ -251,6 +251,10 @@ export function ProductCard({
     ? absoluteSchemaImageUrl(primaryImage.src)
     : null;
 
+  /** PDP blocks (recomendados / vistos recientemente): el Product canonical va en JSON-LD; evita Product microdata duplicados que GSC marca como inválidos. */
+  const suppressProductMicrodata =
+    context === "recommendation" || context === "related";
+
   // Vista horizontal (lista) - marcada para no indexarse como contenido duplicado
   if (viewMode === "list") {
     return (
@@ -493,9 +497,15 @@ export function ProductCard({
       className="cursor-pointer"
       href={`/productos/${product.slug}`}
       aria-label={anchorText}
-      {...(microdataAsListItem ? { itemProp: "item" as const } : {})}
-      itemScope
-      itemType="https://schema.org/Product"
+      {...(microdataAsListItem && !suppressProductMicrodata
+        ? { itemProp: "item" as const }
+        : {})}
+      {...(!suppressProductMicrodata
+        ? {
+            itemScope: true,
+            itemType: "https://schema.org/Product",
+          }
+        : {})}
     >
       {/* Texto ancla optimizado para SEO (oculto visualmente pero visible para motores de búsqueda) */}
       <span className="sr-only">{anchorText}</span>
@@ -513,7 +523,7 @@ export function ProductCard({
                 }`}
                 sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
               />
-              {schemaImageHref ? (
+              {schemaImageHref && !suppressProductMicrodata ? (
                 <meta itemProp="image" content={schemaImageHref} />
               ) : null}
               {/* Overlay oscuro cuando está sin stock */}
@@ -636,7 +646,7 @@ export function ProductCard({
           {/* Product Name */}
           <h3
             className="text-sm lg:text-[14px] mb-1 line-clamp-2 cursor-pointer"
-            itemProp="name"
+            {...(!suppressProductMicrodata ? { itemProp: "name" as const } : {})}
           >
             {product.name}
           </h3>
@@ -648,23 +658,31 @@ export function ProductCard({
             </p>
           )} */}
 
-          {/* Pricing + Offer (microdata requerido por Google para Product snippets) */}
+          {/* Pricing + Offer (microdata en listados; en PDP relacionados solo JSON-LD del producto principal) */}
           <div
             className="mb-2 flex flex-wrap items-end gap-2"
-            itemProp="offers"
-            itemScope
-            itemType="https://schema.org/Offer"
+            {...(!suppressProductMicrodata
+              ? {
+                  itemProp: "offers" as const,
+                  itemScope: true,
+                  itemType: "https://schema.org/Offer",
+                }
+              : {})}
           >
-            <link itemProp="url" href={productPageUrl} />
-            <link
-              itemProp="availability"
-              href={
-                isOutOfStock
-                  ? "https://schema.org/OutOfStock"
-                  : "https://schema.org/InStock"
-              }
-            />
-            {displayPrice !== null ? (
+            {!suppressProductMicrodata ? (
+              <>
+                <link itemProp="url" href={productPageUrl} />
+                <link
+                  itemProp="availability"
+                  href={
+                    isOutOfStock
+                      ? "https://schema.org/OutOfStock"
+                      : "https://schema.org/InStock"
+                  }
+                />
+              </>
+            ) : null}
+            {displayPrice !== null && !suppressProductMicrodata ? (
               <>
                 <meta itemProp="price" content={displayPrice.toFixed(2)} />
                 <meta itemProp="priceCurrency" content={schemaCurrency} />
