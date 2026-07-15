@@ -7,8 +7,12 @@ export function isColorAttribute(attribute: ProductAttribute): boolean {
   return (
     slug.includes("color") ||
     slug.includes("colour") ||
+    slug.includes("tono") ||
+    slug.includes("shade") ||
     name.includes("color") ||
-    name.includes("colour")
+    name.includes("colour") ||
+    name.includes("tono") ||
+    name.includes("shade")
   );
 }
 
@@ -67,6 +71,13 @@ export function getBrandFromProduct(
 
   // Retornar la primera opción de marca (normalmente solo hay una)
   return brandAttribute.options[0].name;
+}
+
+/** Primer tono/color disponible (atributo de variación o visible). */
+export function getFirstProductTono(product: IProduct): string | null {
+  const colorAttr = product.attributes?.find(isColorAttribute);
+  const first = colorAttr?.options?.find((o) => o.name?.trim());
+  return first?.name?.trim() || null;
 }
 
 /** Misma lógica que PDP: taxonomía `brands` de WooCommerce o atributo marca/brand. */

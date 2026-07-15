@@ -21,7 +21,7 @@ try {
   }
 } catch {
   console.warn(
-    "WORDPRESS_HEADLESS_BASE_URL no es una URL válida. Asegúrate de incluir el protocolo (https://)."
+    "WORDPRESS_HEADLESS_BASE_URL no es una URL válida. Asegúrate de incluir el protocolo (https://).",
   );
 }
 
@@ -35,9 +35,14 @@ if (wordpressMediaHost) {
 if (!remotePatterns.length) {
   remotePatterns.push({
     protocol: "https",
-    hostname: "back-belm-pe-929276.hostingersite.com",
+    hostname: "api.belm.pe",
   });
 }
+
+remotePatterns.push({
+  protocol: "https",
+  hostname: "back-belm-pe-929276.hostingersite.com",
+});
 
 const nextConfig = {
   images: {

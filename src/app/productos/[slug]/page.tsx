@@ -12,7 +12,8 @@ import type { IProductReview } from "@/interface/IProductReview";
 import {
 	optimizeMetaDescription,
 	generateProductMetaDescription,
-	optimizeTitle,
+	buildProductSeoTitle,
+	resolveProductRootCategoryName,
 } from "@/utils/seo";
 import { absoluteUrl, SITE_URL } from "@/lib/site";
 
@@ -74,6 +75,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <>
+      {/* Next.js Metadata API no admite og:type "product"; se inyecta aquí. */}
+      <meta property="og:type" content="product" />
       <ProductJsonLd
         product={product}
         siteUrl={SITE_URL}
@@ -95,7 +98,10 @@ export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await fetchProductBySlug(slug);
+  const [product, categoryTree] = await Promise.all([
+    fetchProductBySlug(slug),
+    fetchProductCategoriesTree(),
+  ]);
 
   if (!product) {
     return {
@@ -103,13 +109,10 @@ export async function generateMetadata({
     };
   }
 
-  const categoryName = product.categories?.[0]?.name;
-  const absoluteTitle = optimizeTitle(
-    categoryName
-      ? `${product.name} — ${categoryName} | Belm · Perú`
-      : `${product.name} | Belm · Perú`,
-    "Belm"
-  );
+  const absoluteTitle = buildProductSeoTitle(product, categoryTree);
+  const categoryName =
+    resolveProductRootCategoryName(product.categories, categoryTree) ??
+    product.categories?.[0]?.name;
 
   const rawDescription = extractPlainText(
     product.shortDescription || product.description
@@ -149,8 +152,8 @@ export async function generateMetadata({
       description,
       url: canonical,
       siteName: "Belm",
-      // Next.js solo admite tipos OG concretos (p. ej. website, article). "product" lanza en servidor.
-      type: "website",
+      // Next.js no soporta type: "product" (lanza Invalid OpenGraph type).
+      // og:type=product se inyecta en el JSX de la página.
       ...(hasRealProductImage && primaryImage?.src
         ? {
             images: [

@@ -2,6 +2,13 @@
  * Utilidades para optimización SEO
  */
 
+import type { IProduct } from "@/types/product";
+import type { IProductCategoryNode } from "@/types/ICategory";
+import {
+  getFirstProductTono,
+  resolveProductBrandName,
+} from "@/utils/productAttributes";
+
 /**
  * Constantes para metadescripciones SEO
  * - Límite de píxeles: 1000 píxeles máximo
@@ -307,46 +314,122 @@ function truncateAtWord(text: string, maxLength: number): string {
 
 /**
  * Genera un título optimizado para productos
- * Estructura: Nombre del producto (truncado si es necesario) | Marca
+ * Plantilla Digiltek: {nombre} {marca} {tono} | {categoría padre} | Belm | Perú
  */
 export function generateProductTitle(
   productName: string,
   brand: string = "Belm"
 ): string {
-  // Limpiar el nombre del producto
-  let cleanName = productName.replace(/\s+/g, " ").trim();
+  return generateProductSeoTitle({
+    productName,
+    brand: brand !== "Belm" ? brand : null,
+    category: null,
+  });
+}
 
-  // Remover palabras repetidas
-  cleanName = removeRepeatedWords(cleanName);
+/**
+ * Título SEO de producto según plantilla:
+ * `{nombre} {marca} {tono} | {categoría} | Belm | Perú`
+ * - marca: marca del producto (si existe)
+ * - tono: primer color/tono (si tiene)
+ * - categoría: categoría padre (raíz)
+ */
+export function generateProductSeoTitle(input: {
+  productName: string;
+  brand?: string | null;
+  tono?: string | null;
+  category?: string | null;
+}): string {
+  const name = input.productName.replace(/\s+/g, " ").trim();
+  const brand = input.brand?.replace(/\s+/g, " ").trim() || "";
+  const tono = input.tono?.replace(/\s+/g, " ").trim() || "";
+  const category = input.category?.replace(/\s+/g, " ").trim() || "";
 
-  // Si el nombre es muy largo, truncarlo antes de agregar la marca
-  // Usar un límite más estricto para evitar exceder 580 píxeles
-  const maxNameLength = SEO_TITLE.OPTIMAL_LENGTH - brand.length - 3; // 3 para " | "
+  const headParts: string[] = [name];
+  // Marca de producto (no repetir "Belm": ya va al final de la plantilla)
+  if (brand && brand.toLowerCase() !== "belm") headParts.push(brand);
+  if (tono) headParts.push(tono);
 
-  if (cleanName.length > maxNameLength) {
-    cleanName = truncateAtWord(cleanName, maxNameLength);
+  const head = removeRepeatedWords(headParts.join(" "));
+  const tailParts = [
+    ...(category ? [category] : []),
+    "Belm",
+    "Perú",
+  ];
+
+  return `${head} | ${tailParts.join(" | ")}`.trim();
+}
+
+/** Nombre de la categoría raíz (padre) del producto según el árbol WooCommerce. */
+export function resolveProductRootCategoryName(
+  productCategories: Array<{ id: number; name: string; slug: string }> | undefined,
+  categoryTree: IProductCategoryNode[] | undefined
+): string | null {
+  if (!productCategories?.length) return null;
+
+  if (!categoryTree?.length) {
+    return productCategories[0]?.name?.trim() || null;
   }
 
-  const title = `${cleanName} | ${brand}`;
+  let bestRoot: IProductCategoryNode | null = null;
+  let bestDepth = -1;
 
-  // Asegurar que el título final esté optimizado y no exceda el límite
-  let optimized = optimizeTitle(title, brand);
-
-  // Verificación adicional: si aún es muy largo, truncar más agresivamente
-  if (optimized.length > SEO_TITLE.MAX_LENGTH) {
-    const parts = optimized.split(" | ");
-    if (parts.length > 1) {
-      const mainPart = parts[0];
-      const brandPart = parts[parts.length - 1];
-      const maxMainLength = SEO_TITLE.OPTIMAL_LENGTH - brandPart.length - 3;
-      const truncatedMain = truncateAtWord(mainPart, maxMainLength);
-      optimized = `${truncatedMain} | ${brandPart}`;
-    } else {
-      optimized = truncateAtWord(optimized, SEO_TITLE.OPTIMAL_LENGTH);
+  for (const pc of productCategories) {
+    const node = findCategoryNodeById(categoryTree, pc.id);
+    if (!node) continue;
+    const path = getPathToRoot(node, categoryTree);
+    if (path.length > bestDepth) {
+      bestDepth = path.length;
+      bestRoot = path[0] ?? null;
     }
   }
 
-  return optimized;
+  if (bestRoot?.name?.trim()) return bestRoot.name.trim();
+  return productCategories[0]?.name?.trim() || null;
+}
+
+/** Título SEO completo a partir del producto + árbol de categorías. */
+export function buildProductSeoTitle(
+  product: IProduct,
+  categoryTree?: IProductCategoryNode[]
+): string {
+  return generateProductSeoTitle({
+    productName: product.name,
+    brand: resolveProductBrandName(product),
+    tono: getFirstProductTono(product),
+    category: resolveProductRootCategoryName(product.categories, categoryTree),
+  });
+}
+
+function findCategoryNodeById(
+  nodes: IProductCategoryNode[],
+  id: number
+): IProductCategoryNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children?.length) {
+      const found = findCategoryNodeById(node.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function getPathToRoot(
+  category: IProductCategoryNode,
+  allCategories: IProductCategoryNode[]
+): IProductCategoryNode[] {
+  const path: IProductCategoryNode[] = [category];
+  let current = category;
+
+  while (current.parentId !== null) {
+    const parent = findCategoryNodeById(allCategories, current.parentId);
+    if (!parent) break;
+    path.unshift(parent);
+    current = parent;
+  }
+
+  return path;
 }
 
 /**

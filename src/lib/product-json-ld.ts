@@ -7,6 +7,116 @@ const DESCRIPTION_MAX = 8000;
 const JSON_LD_REVIEW_BODY_MAX = 5000;
 const JSON_LD_MAX_REVIEWS = 8;
 
+/** Envío para Google Product rich results (OfferShippingDetails). */
+const PRODUCT_SHIPPING_DETAILS = [
+  {
+    "@type": "OfferShippingDetails",
+    shippingLabel: "Lima Metropolitana y Callao",
+    shippingRate: {
+      "@type": "MonetaryAmount",
+      minValue: 10.0,
+      maxValue: 15.0,
+      currency: "PEN",
+    },
+    shippingDestination: {
+      "@type": "DefinedRegion",
+      addressCountry: "PE",
+      addressRegion: "Lima",
+    },
+    deliveryTime: {
+      "@type": "ShippingDeliveryTime",
+      handlingTime: {
+        "@type": "QuantitativeValue",
+        minValue: 1,
+        maxValue: 1,
+        unitCode: "DAY",
+      },
+      transitTime: {
+        "@type": "QuantitativeValue",
+        minValue: 1,
+        maxValue: 3,
+        unitCode: "DAY",
+      },
+    },
+  },
+  {
+    "@type": "OfferShippingDetails",
+    shippingLabel: "Provincias",
+    shippingRate: {
+      "@type": "MonetaryAmount",
+      minValue: 21.0,
+      maxValue: 30.0,
+      currency: "PEN",
+    },
+    shippingDestination: {
+      "@type": "DefinedRegion",
+      addressCountry: "PE",
+    },
+    deliveryTime: {
+      "@type": "ShippingDeliveryTime",
+      handlingTime: {
+        "@type": "QuantitativeValue",
+        minValue: 1,
+        maxValue: 1,
+        unitCode: "DAY",
+      },
+      transitTime: {
+        "@type": "QuantitativeValue",
+        minValue: 5,
+        maxValue: 7,
+        unitCode: "DAY",
+      },
+    },
+  },
+  {
+    "@type": "OfferShippingDetails",
+    shippingLabel: "Envío gratis desde S/ 149",
+    shippingRate: {
+      "@type": "MonetaryAmount",
+      value: 0.0,
+      currency: "PEN",
+    },
+    shippingDestination: {
+      "@type": "DefinedRegion",
+      addressCountry: "PE",
+    },
+    deliveryTime: {
+      "@type": "ShippingDeliveryTime",
+      handlingTime: {
+        "@type": "QuantitativeValue",
+        minValue: 1,
+        maxValue: 1,
+        unitCode: "DAY",
+      },
+      transitTime: {
+        "@type": "QuantitativeValue",
+        minValue: 1,
+        maxValue: 7,
+        unitCode: "DAY",
+      },
+    },
+  },
+] as const;
+
+/** Política de devoluciones para Google Product rich results (MerchantReturnPolicy). */
+const PRODUCT_MERCHANT_RETURN_POLICY = {
+  "@type": "MerchantReturnPolicy",
+  applicableCountry: "PE",
+  returnPolicyCategory:
+    "https://schema.org/MerchantReturnFiniteReturnWindow",
+  merchantReturnDays: 7,
+  returnMethod: "https://schema.org/ReturnByMail",
+  returnFees: "https://schema.org/FreeReturn",
+  refundType: [
+    "https://schema.org/ExchangeRefund",
+    "https://schema.org/FullRefund",
+    "https://schema.org/StoreCreditRefund",
+  ],
+  url: "https://www.belm.pe/politicas/politicas-de-cambio-y-devoluciones",
+  description:
+    "Devoluciones aceptadas únicamente por fallas de fabricación. El cliente debe notificar vía correo electrónico dentro de los 7 días calendario desde la recepción del producto. BELM asume el costo de devolución en casos de defecto de origen. La resolución puede ser cambio de producto, reembolso al medio de pago original o nota de crédito.",
+} as const;
+
 export interface BuildProductJsonLdOptions {
   /** Reseñas aprobadas (WooCommerce); solo se incluyen en el grafo si hay al menos una válida. */
   approvedReviews?: IProductReview[];
@@ -146,6 +256,8 @@ export function buildProductJsonLd(
         name: "Belm",
         url: baseUrl,
       },
+      shippingDetails: PRODUCT_SHIPPING_DETAILS,
+      hasMerchantReturnPolicy: PRODUCT_MERCHANT_RETURN_POLICY,
     },
   };
 
