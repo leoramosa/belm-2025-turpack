@@ -52,6 +52,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 					key={`subcategories-${category.id}`}
 					subcategories={category.children}
 					parentCategoryName={category.name}
+					backHref={
+						parentCategory
+							? `/categorias/${parentCategory.slug}`
+							: null
+					}
 				/>
 			) : (
 				/* Si no hay subcategorías, mostrar el título aquí con el mismo estilo */
